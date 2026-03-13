@@ -1,0 +1,74 @@
+{
+  "expo": {
+    "name": "Readiness",
+    "slug": "readiness",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "readiness",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D0F14"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.bobanilikj.readiness",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "Readiness reads your Apple Watch health data (HRV, resting heart rate, sleep) to calculate your daily readiness score.",
+        "NSHealthUpdateUsageDescription": "Readiness does not write any health data.",
+        "UIBackgroundModes": [
+          "fetch"
+        ]
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.background-delivery": true
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#0D0F14"
+      },
+      "package": "com.readiness.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "react-native-health",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#F5A623",
+          "sounds": []
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Readiness uses your photo library to set a profile picture.",
+          "cameraPermission": "Readiness uses your camera to take a profile photo."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-eas-project-id-here"
+      }
+    }
+  }
+}
