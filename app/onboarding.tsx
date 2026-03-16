@@ -21,6 +21,7 @@ import {
   TextInput,
   Platform,
   Keyboard,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -58,7 +59,11 @@ const PROFILE_HEIGHT_KEY = '@readiness/profile_height_cm';
 const PROFILE_WEIGHT_KEY = '@readiness/profile_weight_kg';
 const PROFILE_GOAL_KEY   = '@readiness/profile_goal';
 
-const TOTAL_STEPS = 6;  // steps 0–5 show progress dots; step 6 = auto setup
+const TOTAL_STEPS = 7;  // steps 0–6 show progress dots; step 7 = auto setup
+
+const NOTIF_ENABLED_KEY = '@readiness/notif_digest_enabled';
+const NOTIF_HOUR_KEY    = '@readiness/notif_digest_hour';
+const NOTIF_MINUTE_KEY  = '@readiness/notif_digest_minute';
 
 type DeviceType       = 'garmin' | 'apple_watch' | 'both';
 type TrainingFrequency = 'light' | 'moderate' | 'high';
@@ -419,98 +424,193 @@ function StepBodyStats({
   onBack:    () => void;
 }) {
   return (
-    <ScrollView
-      style={styles.scrollStep}
-      contentContainerStyle={styles.scrollContent}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={8}
     >
-      <Text style={styles.stepTitle}>About you</Text>
-      <Text style={styles.stepSubtitle}>
-        Optional — lets your coach give more personalised advice. You can update these any time on your profile.
-      </Text>
+      <ScrollView
+        style={styles.scrollStep}
+        contentContainerStyle={[styles.scrollContent, { justifyContent: 'flex-start' }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.stepTitle}>About you</Text>
+        <Text style={styles.stepSubtitle}>
+          Optional — lets your coach give more personalised advice. You can update these any time on your profile.
+        </Text>
 
-      <View style={styles.statsCard}>
+        <View style={styles.statsCard}>
 
-        {/* Age */}
-        <View style={styles.statsRow}>
-          <Text style={styles.statsLabel}>Age</Text>
-          <TextInput
-            style={styles.statsInput}
-            placeholder="—"
-            placeholderTextColor={colors.text.tertiary}
-            value={age}
-            onChangeText={v => setAge(v.replace(/[^0-9]/g, ''))}
-            keyboardType="number-pad"
-            maxLength={3}
-            returnKeyType="done"
-          />
-        </View>
-
-        <View style={styles.statsDivider} />
-
-        {/* Sex */}
-        <View style={[styles.statsRow, { alignItems: 'flex-start', paddingVertical: spacing[3] }]}>
-          <Text style={[styles.statsLabel, { paddingTop: spacing[1] }]}>Sex</Text>
-          <View style={styles.sexPicker}>
-            {SEX_OPTIONS.map(opt => {
-              const active = sex === opt.key;
-              return (
-                <TouchableOpacity
-                  key={opt.key}
-                  style={[styles.sexBtn, active && styles.sexBtnActive]}
-                  onPress={() => setSex(active ? null : opt.key)}
-                  activeOpacity={0.75}
-                >
-                  <Text style={[styles.sexBtnText, active && styles.sexBtnTextActive]}>
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        <View style={styles.statsDivider} />
-
-        {/* Height */}
-        <View style={styles.statsRow}>
-          <Text style={styles.statsLabel}>Height</Text>
-          <View style={styles.statsInputWithUnit}>
+          {/* Age */}
+          <View style={styles.statsRow}>
+            <Text style={styles.statsLabel}>Age</Text>
             <TextInput
-              style={[styles.statsInput, { textAlign: 'right' }]}
+              style={styles.statsInput}
               placeholder="—"
               placeholderTextColor={colors.text.tertiary}
-              value={height}
-              onChangeText={v => setHeight(v.replace(/[^0-9]/g, ''))}
+              value={age}
+              onChangeText={v => setAge(v.replace(/\D/g, ''))}
               keyboardType="number-pad"
               maxLength={3}
               returnKeyType="done"
+              selectTextOnFocus
+              onSubmitEditing={Keyboard.dismiss}
             />
-            <Text style={styles.statsUnit}>cm</Text>
           </View>
+
+          <View style={styles.statsDivider} />
+
+          {/* Sex */}
+          <View style={[styles.statsRow, { alignItems: 'flex-start', paddingVertical: spacing[3] }]}>
+            <Text style={[styles.statsLabel, { paddingTop: spacing[1] }]}>Sex</Text>
+            <View style={styles.sexPicker}>
+              {SEX_OPTIONS.map(opt => {
+                const active = sex === opt.key;
+                return (
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={[styles.sexBtn, active && styles.sexBtnActive]}
+                    onPress={() => setSex(active ? null : opt.key)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.sexBtnText, active && styles.sexBtnTextActive]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={styles.statsDivider} />
+
+          {/* Height */}
+          <View style={styles.statsRow}>
+            <Text style={styles.statsLabel}>Height</Text>
+            <View style={styles.statsInputWithUnit}>
+              <TextInput
+                style={styles.statsInput}
+                placeholder="—"
+                placeholderTextColor={colors.text.tertiary}
+                value={height}
+                onChangeText={v => setHeight(v.replace(/\D/g, ''))}
+                keyboardType="number-pad"
+                maxLength={3}
+                returnKeyType="done"
+                selectTextOnFocus
+                onSubmitEditing={Keyboard.dismiss}
+              />
+              <Text style={styles.statsUnit}>cm</Text>
+            </View>
+          </View>
+
+          <View style={styles.statsDivider} />
+
+          {/* Weight */}
+          <View style={styles.statsRow}>
+            <Text style={styles.statsLabel}>Weight</Text>
+            <View style={styles.statsInputWithUnit}>
+              <TextInput
+                style={styles.statsInput}
+                placeholder="—"
+                placeholderTextColor={colors.text.tertiary}
+                value={weight}
+                onChangeText={v => setWeight(v.replace(/[^0-9.]/g, ''))}
+                keyboardType="decimal-pad"
+                maxLength={5}
+                returnKeyType="done"
+                selectTextOnFocus
+                onSubmitEditing={Keyboard.dismiss}
+              />
+              <Text style={styles.statsUnit}>kg</Text>
+            </View>
+          </View>
+
         </View>
 
-        <View style={styles.statsDivider} />
-
-        {/* Weight */}
-        <View style={styles.statsRow}>
-          <Text style={styles.statsLabel}>Weight</Text>
-          <View style={styles.statsInputWithUnit}>
-            <TextInput
-              style={[styles.statsInput, { textAlign: 'right' }]}
-              placeholder="—"
-              placeholderTextColor={colors.text.tertiary}
-              value={weight}
-              onChangeText={v => setWeight(v.replace(/[^0-9.]/g, ''))}
-              keyboardType="decimal-pad"
-              maxLength={5}
-              returnKeyType="done"
-            />
-            <Text style={styles.statsUnit}>kg</Text>
-          </View>
+        <View style={styles.navRow}>
+          <TouchableOpacity style={styles.backBtn} onPress={onBack}>
+            <Text style={styles.backBtnText}>← Back</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.primaryBtnSmall} onPress={onNext} activeOpacity={0.85}>
+            <Text style={styles.primaryBtnText}>Continue →</Text>
+          </TouchableOpacity>
         </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
 
+// ─── Step 5: Morning briefing time ────────────────────────────────────────────
+
+const TIME_OPTIONS = [
+  { hour: 6,  label: '6:00 AM',  sub: 'Early riser' },
+  { hour: 7,  label: '7:00 AM',  sub: 'Before work' },
+  { hour: 8,  label: '8:00 AM',  sub: 'With breakfast' },
+  { hour: 9,  label: '9:00 AM',  sub: 'Mid-morning' },
+  { hour: 10, label: '10:00 AM', sub: 'Late start' },
+];
+
+function StepNotificationTime({
+  hour,
+  setHour,
+  onNext,
+  onBack,
+}: {
+  hour:    number;
+  setHour: (h: number) => void;
+  onNext:  () => void;
+  onBack:  () => void;
+}) {
+  return (
+    <ScrollView
+      style={styles.scrollStep}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <Text style={styles.stepTitle}>Morning briefing</Text>
+      <Text style={styles.stepSubtitle}>
+        We'll send you a daily readiness score digest. Pick a time that works for you — you can change it any time.
+      </Text>
+
+      <View style={styles.freqList}>
+        {TIME_OPTIONS.map(opt => {
+          const active = hour === opt.hour;
+          return (
+            <TouchableOpacity
+              key={opt.hour}
+              style={[styles.freqCard, active && styles.freqCardActive]}
+              onPress={() => setHour(opt.hour)}
+              activeOpacity={0.75}
+            >
+              <Ionicons
+                name="time-outline"
+                size={22}
+                color={active ? colors.amber[400] : colors.text.tertiary}
+                style={{ width: 36 }}
+              />
+              <View style={styles.freqText}>
+                <Text style={[styles.freqLabel, active && styles.freqLabelActive]}>
+                  {opt.label}
+                </Text>
+                <Text style={styles.freqSub}>{opt.sub}</Text>
+              </View>
+              {active && (
+                <View style={styles.freqCheck}>
+                  <Text style={styles.freqCheckMark}>✓</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View style={styles.privacyBanner}>
+        <Ionicons name="notifications-outline" size={14} color={colors.text.tertiary} />
+        <Text style={styles.privacyText}>
+          Notifications only fire after your wearable syncs overnight data. No data = no notification.
+        </Text>
       </View>
 
       <View style={styles.navRow}>
@@ -525,7 +625,7 @@ function StepBodyStats({
   );
 }
 
-// ─── Step 5: Permissions ──────────────────────────────────────────────────────
+// ─── Step 6: Permissions ──────────────────────────────────────────────────────
 
 const HEALTH_PERMS = [
   { icon: '🫀', label: 'Heart Rate Variability', detail: 'Recovery score component' },
@@ -647,6 +747,7 @@ function StepSetup({
   sex,
   height,
   weight,
+  digestHour,
   onComplete,
 }: {
   permissionGranted: boolean;
@@ -658,6 +759,7 @@ function StepSetup({
   sex:               BiologicalSex | null;
   height:            string;
   weight:            string;
+  digestHour:        number;
   onComplete:        () => void;
 }) {
   const [s, setS] = useState<SetupState>({
@@ -680,12 +782,15 @@ function StepSetup({
 
       // Persist all completion flags + profile data
       const pairs: [string, string][] = [
-        [ONBOARDING_KEY, 'true'],
-        [DEVICE_KEY,     selectedDevice],
-        [NAME_KEY,       userName.trim()],
-        [FREQ_KEY,       trainingFreq],
-        [JOINED_AT_KEY,  new Date().toISOString()],
-        [PROFILE_GOAL_KEY, goal],
+        [ONBOARDING_KEY,    'true'],
+        [DEVICE_KEY,        selectedDevice],
+        [NAME_KEY,          userName.trim()],
+        [FREQ_KEY,          trainingFreq],
+        [JOINED_AT_KEY,     new Date().toISOString()],
+        [PROFILE_GOAL_KEY,  goal],
+        [NOTIF_ENABLED_KEY, 'true'],
+        [NOTIF_HOUR_KEY,    String(digestHour)],
+        [NOTIF_MINUTE_KEY,  '0'],
       ];
 
       if (age.trim())    pairs.push([PROFILE_AGE_KEY,    age.trim()]);
@@ -701,6 +806,10 @@ function StepSetup({
   }, []);
 
   const firstName = userName.trim() ? `, ${userName.trim().split(' ')[0]}` : '';
+
+  const hourLabel = digestHour < 12
+    ? `${digestHour}:00 AM`
+    : `${digestHour === 12 ? 12 : digestHour - 12}:00 PM`;
 
   return (
     <View style={styles.setupContainer}>
@@ -725,6 +834,15 @@ function StepSetup({
           done={s.allDone}
         />
       </View>
+
+      {s.allDone && (
+        <View style={styles.firstWeekBanner}>
+          <Ionicons name="information-circle-outline" size={16} color={colors.amber[400]} />
+          <Text style={styles.firstWeekText}>
+            Your first readiness score will appear tomorrow morning after your wearable syncs overnight data. We'll send your daily briefing at {hourLabel}.
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -742,6 +860,7 @@ export default function OnboardingScreen() {
   const [sex,               setSex]    = useState<BiologicalSex | null>(null);
   const [height,            setHeight] = useState('');
   const [weight,            setWeight] = useState('');
+  const [digestHour,        setDigestHour] = useState(8);
   const [permissionGranted, setPermissionGranted] = useState(false);
 
   function next() { setStep(s => s + 1); }
@@ -749,7 +868,7 @@ export default function OnboardingScreen() {
 
   function handlePermissionsNext(granted: boolean) {
     setPermissionGranted(granted);
-    setStep(6); // jump to auto-setup
+    setStep(7); // jump to auto-setup
   }
 
   function handleComplete() {
@@ -758,8 +877,8 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      {/* Progress dots for steps 0-5 only */}
-      {step < 6 && <ProgressDots step={step} />}
+      {/* Progress dots for steps 0-6 only */}
+      {step < 7 && <ProgressDots step={step} />}
 
       {step === 0 && (
         <StepWelcome name={name} setName={setName} onNext={next} />
@@ -796,9 +915,17 @@ export default function OnboardingScreen() {
         />
       )}
       {step === 5 && (
-        <StepPermissions onNext={handlePermissionsNext} onBack={back} />
+        <StepNotificationTime
+          hour={digestHour}
+          setHour={setDigestHour}
+          onNext={next}
+          onBack={back}
+        />
       )}
       {step === 6 && (
+        <StepPermissions onNext={handlePermissionsNext} onBack={back} />
+      )}
+      {step === 7 && (
         <StepSetup
           permissionGranted={permissionGranted}
           selectedDevice={device}
@@ -809,6 +936,7 @@ export default function OnboardingScreen() {
           sex={sex}
           height={height}
           weight={weight}
+          digestHour={digestHour}
           onComplete={handleComplete}
         />
       )}
@@ -1167,8 +1295,11 @@ const styles = StyleSheet.create({
   statsInput: {
     color: colors.text.primary,
     fontSize: fontSize.base,
-    minWidth: 60,
+    minWidth: 72,
+    minHeight: 44,         // iOS minimum recommended touch target
     textAlign: 'right',
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[2],
   },
   statsInputWithUnit: {
     flexDirection: 'row',
@@ -1343,5 +1474,23 @@ const styles = StyleSheet.create({
   setupLabelDone: {
     color: colors.text.primary,
     fontWeight: fontWeight.medium,
+  },
+
+  // First-week expectations banner (shown when setup completes)
+  firstWeekBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing[2],
+    backgroundColor: colors.amber[900] + '44',
+    borderRadius: radius.md,
+    padding: spacing[3],
+    borderWidth: 1,
+    borderColor: colors.amber[700] + '55',
+  },
+  firstWeekText: {
+    flex: 1,
+    color: colors.text.secondary,
+    fontSize: fontSize.xs,
+    lineHeight: 18,
   },
 });

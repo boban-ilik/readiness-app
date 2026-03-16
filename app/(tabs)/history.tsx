@@ -39,7 +39,64 @@ import { formatDuration } from '@utils/index';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type RangeMode = '7d' | '28d' | 'cal';
+type RangeMode  = '7d' | '28d' | 'cal';
+type MetricMode = 'score' | 'hrv' | 'sleep' | 'rhr';
+
+// ─── Metric configuration ─────────────────────────────────────────────────────
+
+interface MetricConfig {
+  label:     string;
+  unit:      string;
+  color:     string;
+  getValue:  (d: DayHistory) => number | null;
+  gridLines: number[];
+  yMin:      number;
+  yMax:      number;
+  format:    (v: number) => string;
+}
+
+const METRIC_CONFIG: Record<MetricMode, MetricConfig> = {
+  score: {
+    label:     'READINESS',
+    unit:      'pts',
+    color:     '#F5A623',   // amber
+    getValue:  d => d.score,
+    gridLines: [25, 50, 75],
+    yMin:      0,
+    yMax:      100,
+    format:    v => String(Math.round(v)),
+  },
+  hrv: {
+    label:     'HRV',
+    unit:      'ms',
+    color:     '#4ADE80',   // green
+    getValue:  d => d.hrv,
+    gridLines: [20, 40, 60, 80],
+    yMin:      0,
+    yMax:      120,
+    format:    v => `${Math.round(v)}`,
+  },
+  sleep: {
+    label:     'SLEEP',
+    unit:      'hrs',
+    color:     '#60A5FA',   // blue
+    getValue:  d => d.sleepMinutes !== null ? Math.round(d.sleepMinutes / 6) / 10 : null,
+    gridLines: [5, 6, 7, 8, 9],
+    yMin:      3,
+    yMax:      10,
+    format:    v => `${v.toFixed(1)}h`,
+  },
+  rhr: {
+    label:     'RESTING HR',
+    unit:      'bpm',
+    color:     '#F87171',   // red
+    getValue:  d => d.rhr,
+    gridLines: [50, 60, 70, 80],
+    yMin:      40,
+    yMax:      100,
+    format:    v => `${Math.round(v)}`,
+  },
+};
 
 interface CalendarCell {
   date:      string;       // YYYY-MM-DD
@@ -132,26 +189,41 @@ function buildPoints(
   plotHeight:  number,
   padTop:      number,
   todayStr:    string,
+  cfg:         MetricConfig,
 ): ChartPt[] {
   const n = data.length;
-  return data.map((d, i) => ({
-    x:        n <= 1 ? plotWidth / 2 : (i / (n - 1)) * plotWidth,
-    y:        d.score !== null ? padTop + (1 - d.score / 100) * plotHeight : null,
-    score:    d.score,
-    dayLabel: d.dayLabel,
-    isToday:  d.date === todayStr,
-  }));
+  const range = cfg.yMax - cfg.yMin;
+  return data.map((d, i) => {
+    const raw = cfg.getValue(d);
+    const clamped = raw !== null ? Math.max(cfg.yMin, Math.min(cfg.yMax, raw)) : null;
+    return {
+      x:        n <= 1 ? plotWidth / 2 : (i / (n - 1)) * plotWidth,
+      y:        clamped !== null ? padTop + (1 - (clamped - cfg.yMin) / range) * plotHeight : null,
+      score:    raw,
+      dayLabel: d.dayLabel,
+      isToday:  d.date === todayStr,
+    };
+  });
 }
 
-function TrendChart({ data, chartWidth }: { data: DayHistory[]; chartWidth: number }) {
+function TrendChart({
+  data,
+  chartWidth,
+  metric = 'score',
+}: {
+  data:        DayHistory[];
+  chartWidth:  number;
+  metric?:     MetricMode;
+}) {
   const CHART_H  = 164;
   const PAD_TOP  = 14;
   const PAD_BOT  = 30;
   const PLOT_H   = CHART_H - PAD_TOP - PAD_BOT;
   const BOTTOM_Y = PAD_TOP + PLOT_H;
 
+  const cfg      = METRIC_CONFIG[metric];
   const todayStr = new Date().toISOString().split('T')[0];
-  const pts      = buildPoints(data, chartWidth, PLOT_H, PAD_TOP, todayStr);
+  const pts      = buildPoints(data, chartWidth, PLOT_H, PAD_TOP, todayStr, cfg);
   const validPts = pts.filter(p => p.y !== null);
 
   let linePath = '';
@@ -171,24 +243,25 @@ function TrendChart({ data, chartWidth }: { data: DayHistory[]; chartWidth: numb
       `L ${first.x.toFixed(1)} ${BOTTOM_Y.toFixed(1)} Z`;
   }
 
-  const gridLines  = [25, 50, 75].map(s => ({
-    s,
-    y: (PAD_TOP + (1 - s / 100) * PLOT_H).toFixed(1),
+  const gridLines = cfg.gridLines.map(v => ({
+    v,
+    label: cfg.format(v),
+    y: (PAD_TOP + (1 - (v - cfg.yMin) / (cfg.yMax - cfg.yMin)) * PLOT_H).toFixed(1),
   }));
-  const labelStep  = data.length > 10 ? Math.ceil(data.length / 7) : 1;
+  const labelStep = data.length > 10 ? Math.ceil(data.length / 7) : 1;
 
   return (
     <Svg width={chartWidth} height={CHART_H}>
       <Defs>
         <LinearGradient id="aGrad" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0%"   stopColor={colors.amber[400]} stopOpacity="0.28" />
-          <Stop offset="100%" stopColor={colors.amber[400]} stopOpacity="0"    />
+          <Stop offset="0%"   stopColor={cfg.color} stopOpacity="0.25" />
+          <Stop offset="100%" stopColor={cfg.color} stopOpacity="0"    />
         </LinearGradient>
       </Defs>
 
       {gridLines.map(g => (
         <Line
-          key={g.s}
+          key={g.v}
           x1={0}          y1={g.y}
           x2={chartWidth} y2={g.y}
           stroke={colors.border.subtle}
@@ -197,11 +270,20 @@ function TrendChart({ data, chartWidth }: { data: DayHistory[]; chartWidth: numb
         />
       ))}
 
+      {/* Grid value labels on left edge */}
+      {gridLines.map(g => (
+        <SvgText key={`gl-${g.v}`}
+          x={0} y={(parseFloat(g.y) - 3).toFixed(1)}
+          fontSize={8} fill={colors.text.tertiary} textAnchor="start">
+          {g.label}
+        </SvgText>
+      ))}
+
       {areaPath !== '' && <Path d={areaPath} fill="url(#aGrad)" />}
       {linePath !== '' && (
         <Path
           d={linePath}
-          stroke={colors.amber[400]}
+          stroke={cfg.color}
           strokeWidth={2.5}
           fill="none"
           strokeLinecap="round"
@@ -211,7 +293,7 @@ function TrendChart({ data, chartWidth }: { data: DayHistory[]; chartWidth: numb
 
       {pts.map((p, i) => {
         if (p.y === null || p.score === null) return null;
-        const dotColor = getScoreColor(p.score);
+        const dotColor = metric === 'score' ? getScoreColor(p.score) : cfg.color;
         const r = p.isToday ? 6 : (data.length > 10 ? 3 : 4);
         return (
           <Circle key={i} cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} r={r}
@@ -222,9 +304,9 @@ function TrendChart({ data, chartWidth }: { data: DayHistory[]; chartWidth: numb
       {pts.map((p, i) => {
         if (!p.isToday || p.y === null || p.score === null) return null;
         return (
-          <SvgText key={`score-${i}`} x={p.x.toFixed(1)} y={(p.y - 12).toFixed(1)}
-            fontSize={11} fill={colors.amber[400]} textAnchor="middle" fontWeight="600">
-            {p.score}
+          <SvgText key={`val-${i}`} x={p.x.toFixed(1)} y={(p.y - 12).toFixed(1)}
+            fontSize={11} fill={cfg.color} textAnchor="middle" fontWeight="600">
+            {cfg.format(p.score)}
           </SvgText>
         );
       })}
@@ -664,6 +746,54 @@ function TeaserBanner({ daysTracked }: { daysTracked: number }) {
 
 // ─── Range toggle ─────────────────────────────────────────────────────────────
 
+function MetricToggle({
+  value,
+  onChange,
+  history,
+}: {
+  value:    MetricMode;
+  onChange: (v: MetricMode) => void;
+  history:  DayHistory[];
+}) {
+  const opts: { key: MetricMode; label: string; hasData: boolean }[] = [
+    { key: 'score', label: 'Score', hasData: history.some(d => d.score !== null) },
+    { key: 'hrv',   label: 'HRV',   hasData: history.some(d => d.hrv   !== null) },
+    { key: 'sleep', label: 'Sleep', hasData: history.some(d => d.sleepMinutes !== null) },
+    { key: 'rhr',   label: 'RHR',   hasData: history.some(d => d.rhr   !== null) },
+  ];
+
+  return (
+    <View style={styles.metricToggle}>
+      {opts.map(opt => {
+        const cfg     = METRIC_CONFIG[opt.key];
+        const active  = value === opt.key;
+        return (
+          <TouchableOpacity
+            key={opt.key}
+            style={[
+              styles.metricBtn,
+              active && { backgroundColor: cfg.color + '22', borderColor: cfg.color + '66' },
+              !opt.hasData && { opacity: 0.35 },
+            ]}
+            onPress={() => opt.hasData && onChange(opt.key)}
+            activeOpacity={0.75}
+          >
+            <Text style={[
+              styles.metricBtnText,
+              active && { color: cfg.color, fontWeight: fontWeight.semiBold },
+            ]}>
+              {opt.label}
+            </Text>
+            {!opt.hasData && (
+              <Text style={styles.metricBtnNoData}>–</Text>
+            )}
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
 function RangeToggle({
   value,
   onChange,
@@ -697,7 +827,8 @@ function RangeToggle({
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function HistoryScreen() {
-  const [rangeMode,          setRangeMode]          = useState<RangeMode>('7d');
+  const [rangeMode,           setRangeMode]           = useState<RangeMode>('7d');
+  const [metricMode,          setMetricMode]          = useState<MetricMode>('score');
   const [weeklyReportVisible, setWeeklyReportVisible] = useState(false);
   const days = rangeMode === 'cal' || rangeMode === '28d' ? 28 : 7;
 
@@ -771,9 +902,22 @@ export default function HistoryScreen() {
 
           {/* Chart card — trend or calendar */}
           <View style={styles.chartCard}>
-            <Text style={styles.chartLabel}>
-              {rangeMode === 'cal' ? 'READINESS · THIS MONTH' : `READINESS · ${days} DAYS`}
-            </Text>
+            <View style={styles.chartHeader}>
+              <Text style={styles.chartLabel}>
+                {rangeMode === 'cal'
+                  ? 'READINESS · THIS MONTH'
+                  : `${METRIC_CONFIG[metricMode].label} · ${days} DAYS`}
+              </Text>
+              {rangeMode !== 'cal' && (
+                <Text style={styles.chartUnit}>
+                  {METRIC_CONFIG[metricMode].unit}
+                </Text>
+              )}
+            </View>
+
+            {rangeMode !== 'cal' && (
+              <MetricToggle value={metricMode} onChange={setMetricMode} history={history} />
+            )}
 
             {rangeMode === 'cal' ? (
               history.length > 0
@@ -781,7 +925,7 @@ export default function HistoryScreen() {
                 : <View style={styles.chartEmpty}><Text style={styles.chartEmptyText}>No data yet</Text></View>
             ) : (
               history.length > 0
-                ? <TrendChart data={history} chartWidth={chartWidth} />
+                ? <TrendChart data={history} chartWidth={chartWidth} metric={metricMode} />
                 : <View style={styles.chartEmpty}><Text style={styles.chartEmptyText}>No data yet</Text></View>
             )}
           </View>
@@ -1147,12 +1291,49 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border.subtle,
   },
+  chartHeader: {
+    flexDirection:  'row',
+    alignItems:     'baseline',
+    justifyContent: 'space-between',
+    marginBottom:   spacing[2],
+  },
   chartLabel: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semiBold,
+    color:         colors.text.tertiary,
+    fontSize:      fontSize.xs,
+    fontWeight:    fontWeight.semiBold,
     letterSpacing: 1.5,
-    marginBottom: spacing[3],
+  },
+  chartUnit: {
+    color:     colors.text.tertiary,
+    fontSize:  fontSize.xs,
+    opacity:   0.6,
+  },
+  // ── Metric toggle ────────────────────────────────────────────────────────
+  metricToggle: {
+    flexDirection:  'row',
+    gap:            spacing[1],
+    marginBottom:   spacing[3],
+  },
+  metricBtn: {
+    flex:              1,
+    alignItems:        'center',
+    justifyContent:    'center',
+    paddingVertical:   spacing[1],
+    borderRadius:      radius.md,
+    borderWidth:       1,
+    borderColor:       colors.border.subtle,
+    backgroundColor:   colors.bg.tertiary,
+    flexDirection:     'row',
+    gap:               2,
+  },
+  metricBtnText: {
+    fontSize:   fontSize.xs,
+    color:      colors.text.secondary,
+    fontWeight: fontWeight.medium,
+  },
+  metricBtnNoData: {
+    fontSize: 8,
+    color:    colors.text.tertiary,
   },
   chartEmpty: {
     height: 164,

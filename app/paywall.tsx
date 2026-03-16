@@ -14,6 +14,7 @@
  *   lifetime    → lifetime  (one-time purchase, non-consumable)
  */
 
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,7 +27,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { useSubscription } from '@contexts/SubscriptionContext';
 import {
   colors,
@@ -51,28 +52,32 @@ interface DisplayPackage {
 
 // ─── Feature list ─────────────────────────────────────────────────────────────
 
-const FEATURES = [
+const FEATURES: Array<{
+  icon:  React.ComponentProps<typeof Ionicons>['name'];
+  title: string;
+  body:  string;
+}> = [
   {
-    icon:  '📈',
+    icon:  'trending-up',
     title: '7-Day Trends',
     body:  'See your score chart, weekly average, and best day at a glance.',
   },
   {
-    icon:  '🎯',
+    icon:  'barbell-outline',
     title: 'Training Guide',
     body:  'Daily workout prescription — zone, duration, and effort level explained in plain English.',
   },
   {
-    icon:  '🔔',
+    icon:  'notifications-outline',
     title: 'Smart Alerts',
     body:  'Morning digest with your score preview and alerts when you dip below your target.',
   },
   {
-    icon:  '📊',
+    icon:  'bar-chart-outline',
     title: 'Export & Insights',
     body:  'CSV export, pattern correlations, and a shareable weekly summary card.',
   },
-] as const;
+];
 
 // ─── Fallback pricing (shown when RevenueCat packages haven't loaded) ─────────
 
@@ -107,14 +112,14 @@ function FeatureRow({
   title,
   body,
 }: {
-  icon:  string;
+  icon:  React.ComponentProps<typeof Ionicons>['name'];
   title: string;
   body:  string;
 }) {
   return (
     <View style={styles.featureRow}>
       <View style={styles.featureIconWrap}>
-        <Text style={styles.featureIcon}>{icon}</Text>
+        <Ionicons name={icon} size={22} color={colors.amber[400]} />
       </View>
       <View style={styles.featureText}>
         <Text style={styles.featureTitle}>{title}</Text>
@@ -484,16 +489,15 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border.subtle,
   },
   featureIconWrap: {
-    width: 38,
-    height: 38,
+    width: 44,
+    height: 44,
     borderRadius: radius.md,
-    backgroundColor: colors.bg.elevated,
+    backgroundColor: colors.amber[900] + '33',
+    borderWidth: 1,
+    borderColor: colors.amber[700] + '55',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
-  },
-  featureIcon: {
-    fontSize: 18,
   },
   featureText: {
     flex: 1,
@@ -522,32 +526,32 @@ const styles = StyleSheet.create({
   },
   toggleBtn: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing[3],
-    gap: spacing[2],
+    paddingVertical: spacing[2],
+    gap: spacing[1],
   },
   toggleBtnActive: {
     backgroundColor: colors.amber[400],
   },
   toggleLabel: {
     color: colors.text.secondary,
-    fontSize: fontSize.sm,
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.semiBold,
   },
   toggleLabelActive: {
     color: colors.text.inverse,
   },
   saveBadge: {
-    backgroundColor: colors.bg.primary + 'aa',
+    backgroundColor: 'rgba(0,0,0,0.20)',
     borderRadius: radius.xs,
     paddingHorizontal: spacing[1.5],
-    paddingVertical: 1,
+    paddingVertical: 2,
   },
   saveBadgeText: {
-    color: colors.amber[400],
-    fontSize: 9,
+    color: '#fff',
+    fontSize: 8,
     fontWeight: fontWeight.bold,
     letterSpacing: 0.5,
   },

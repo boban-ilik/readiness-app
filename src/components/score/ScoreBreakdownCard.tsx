@@ -24,7 +24,7 @@ export default function ScoreBreakdownCard({
 }: ScoreBreakdownCardProps) {
   const router   = useRouter();
   const barColor = getBarColor(score);
-  const tappable = !isLocked && !!onPress;
+  const tappable = !!onPress;  // always tappable — locked cards go to paywall
 
   // ── Animated progress bar ──────────────────────────────────────────────────
   // RN's Animated.Value supports string interpolation (for '%') and doesn't
@@ -33,12 +33,12 @@ export default function ScoreBreakdownCard({
 
   useEffect(() => {
     Animated.timing(barAnim, {
-      toValue:         isLocked ? 0 : score,
+      toValue:         score,   // always animate — free users see their real score
       duration:        700,
       useNativeDriver: false,
-      delay:           120,  // slight pause after card enters before bar fills
+      delay:           120,
     }).start();
-  }, [score, isLocked]);
+  }, [score]);
 
   const animatedBarWidth = barAnim.interpolate({
     inputRange:  [0, 100],
@@ -52,7 +52,7 @@ export default function ScoreBreakdownCard({
   const cardContent = (
     <>
       {/* Score-coloured left accent strip */}
-      <View style={[styles.accentBar, { backgroundColor: isLocked ? colors.border.default : barColor }]} />
+      <View style={[styles.accentBar, { backgroundColor: barColor }]} />
 
       <View style={styles.inner}>
         <View style={styles.header}>
@@ -62,14 +62,12 @@ export default function ScoreBreakdownCard({
             <Text style={styles.weight}>{weight}</Text>
           </View>
           <View style={styles.scoreRow}>
-            <Text style={[styles.score, isLocked && styles.locked]}>
-              {isLocked ? '—' : Math.round(score)}
-            </Text>
+            <Text style={styles.score}>{Math.round(score)}</Text>
             {tappable && <Text style={styles.chevron}>›</Text>}
           </View>
         </View>
 
-        {/* Animated progress bar */}
+        {/* Animated progress bar — always shows real score */}
         <View style={styles.barTrack}>
           <Animated.View
             style={[
@@ -79,12 +77,18 @@ export default function ScoreBreakdownCard({
           />
         </View>
 
-        {/* Detail line */}
+        {/* Detail line — free users see a teaser; Pro see the full line */}
         {detail && !isLocked && (
           <Text style={styles.detail}>{detail}</Text>
         )}
-        {isLocked && (
-          <Text style={styles.upgradeHint}>Upgrade to Pro to see breakdown</Text>
+        {detail && isLocked && (
+          <Text style={styles.detail} numberOfLines={1}>
+            {detail.split('·')[0].trim()}
+            <Text style={styles.upgradeHint}> · Tap for full analysis →</Text>
+          </Text>
+        )}
+        {!detail && isLocked && (
+          <Text style={styles.upgradeHint}>Tap to see what's driving this →</Text>
         )}
       </View>
     </>

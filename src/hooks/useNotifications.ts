@@ -57,13 +57,21 @@ const IS_EXPO_GO =
 // ─── Storage keys ─────────────────────────────────────────────────────────────
 
 const K = {
-  DIGEST_ENABLED:    '@readiness/notif_digest_enabled',
-  DIGEST_HOUR:       '@readiness/notif_digest_hour',
-  DIGEST_MINUTE:     '@readiness/notif_digest_minute',
-  THRESHOLD_ENABLED: '@readiness/notif_threshold_enabled',
-  THRESHOLD_VALUE:   '@readiness/notif_threshold_value',
-  THRESHOLD_LAST:    '@readiness/notif_threshold_last_date',
-  LAST_SCORE:        '@readiness/notif_last_score',
+  DIGEST_ENABLED:       '@readiness/notif_digest_enabled',
+  DIGEST_HOUR:          '@readiness/notif_digest_hour',
+  DIGEST_MINUTE:        '@readiness/notif_digest_minute',
+  THRESHOLD_ENABLED:    '@readiness/notif_threshold_enabled',
+  THRESHOLD_VALUE:      '@readiness/notif_threshold_value',
+  THRESHOLD_LAST:       '@readiness/notif_threshold_last_date',
+  LAST_SCORE:           '@readiness/notif_last_score',
+  // ── Smart alerts (Pro) ──────────────────────────────────────────────────
+  HRV_DROP_ENABLED:     '@readiness/notif_hrv_drop_enabled',
+  HRV_DROP_LAST:        '@readiness/notif_hrv_drop_last_date',
+  RHR_SPIKE_ENABLED:    '@readiness/notif_rhr_spike_enabled',
+  RHR_SPIKE_LAST:       '@readiness/notif_rhr_spike_last_date',
+  TREND_DECLINE_ENABLED:'@readiness/notif_trend_decline_enabled',
+  TREND_DECLINE_LAST:   '@readiness/notif_trend_decline_last_date',
+  SCORE_HISTORY:        '@readiness/notif_score_history',  // JSON: [{date,score}]
 } as const;
 
 // ─── Native setup (custom build only) ────────────────────────────────────────
@@ -92,11 +100,18 @@ if (!IS_EXPO_GO) {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface NotificationPrefs {
-  digestEnabled:    boolean;
-  digestHour:       number;   // 0–23
-  digestMinute:     number;   // 0–59
-  thresholdEnabled: boolean;
-  thresholdValue:   number;   // 0–100 score
+  digestEnabled:       boolean;
+  digestHour:          number;   // 0–23
+  digestMinute:        number;   // 0–59
+  thresholdEnabled:    boolean;
+  thresholdValue:      number;   // 0–100 score
+  // ── Smart alerts (Pro) ────────────────────────────────────────────────
+  /** Fire when today's HRV is ≥15 % below personal 30-day baseline. */
+  hrvDropEnabled:      boolean;
+  /** Fire when today's RHR is ≥10 % above personal 30-day baseline. */
+  rhrSpikeEnabled:     boolean;
+  /** Fire when readiness score has declined for 3 consecutive days. */
+  trendDeclineEnabled: boolean;
 }
 
 interface UseNotificationsReturn {
@@ -108,16 +123,25 @@ interface UseNotificationsReturn {
   checkAndAlertScore: (score: number) => Promise<void>;
   /** Save the score and reschedule the morning digest with personalised copy. */
   rescheduleDigestWithScore: (score: number) => Promise<void>;
+  /** Check HRV against baseline; alert if a significant drop is detected (Pro). */
+  checkAndAlertHRV: (hrv: number, baseline: number) => Promise<void>;
+  /** Check RHR against baseline; alert if an elevation is detected (Pro). */
+  checkAndAlertRHR: (rhr: number, baseline: number) => Promise<void>;
+  /** Push today's score; alert if a 3-day downward trend is detected (Pro). */
+  checkAndAlertTrend: (score: number) => Promise<void>;
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
 
 const DEFAULT_PREFS: NotificationPrefs = {
-  digestEnabled:    false,
-  digestHour:       8,
-  digestMinute:     0,
-  thresholdEnabled: false,
-  thresholdValue:   60,
+  digestEnabled:       false,
+  digestHour:          8,
+  digestMinute:        0,
+  thresholdEnabled:    false,
+  thresholdValue:      60,
+  hrvDropEnabled:      false,
+  rhrSpikeEnabled:     false,
+  trendDeclineEnabled: false,
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -129,30 +153,42 @@ async function loadPrefs(): Promise<NotificationPrefs> {
     digestMinute,
     thresholdEnabled,
     thresholdValue,
+    hrvDropEnabled,
+    rhrSpikeEnabled,
+    trendDeclineEnabled,
   ] = await AsyncStorage.multiGet([
     K.DIGEST_ENABLED,
     K.DIGEST_HOUR,
     K.DIGEST_MINUTE,
     K.THRESHOLD_ENABLED,
     K.THRESHOLD_VALUE,
+    K.HRV_DROP_ENABLED,
+    K.RHR_SPIKE_ENABLED,
+    K.TREND_DECLINE_ENABLED,
   ]);
 
   return {
-    digestEnabled:    (digestEnabled[1]    ?? 'false') === 'true',
-    digestHour:       parseInt(digestHour[1]    ?? '8',  10),
-    digestMinute:     parseInt(digestMinute[1]  ?? '0',  10),
-    thresholdEnabled: (thresholdEnabled[1] ?? 'false') === 'true',
-    thresholdValue:   parseInt(thresholdValue[1] ?? '60', 10),
+    digestEnabled:       (digestEnabled[1]       ?? 'false') === 'true',
+    digestHour:          parseInt(digestHour[1]   ?? '8',  10),
+    digestMinute:        parseInt(digestMinute[1] ?? '0',  10),
+    thresholdEnabled:    (thresholdEnabled[1]     ?? 'false') === 'true',
+    thresholdValue:      parseInt(thresholdValue[1] ?? '60', 10),
+    hrvDropEnabled:      (hrvDropEnabled[1]       ?? 'false') === 'true',
+    rhrSpikeEnabled:     (rhrSpikeEnabled[1]      ?? 'false') === 'true',
+    trendDeclineEnabled: (trendDeclineEnabled[1]  ?? 'false') === 'true',
   };
 }
 
 async function savePrefs(p: NotificationPrefs): Promise<void> {
   await AsyncStorage.multiSet([
-    [K.DIGEST_ENABLED,    p.digestEnabled    ? 'true' : 'false'],
-    [K.DIGEST_HOUR,       String(p.digestHour)],
-    [K.DIGEST_MINUTE,     String(p.digestMinute)],
-    [K.THRESHOLD_ENABLED, p.thresholdEnabled ? 'true' : 'false'],
-    [K.THRESHOLD_VALUE,   String(p.thresholdValue)],
+    [K.DIGEST_ENABLED,        p.digestEnabled       ? 'true' : 'false'],
+    [K.DIGEST_HOUR,           String(p.digestHour)],
+    [K.DIGEST_MINUTE,         String(p.digestMinute)],
+    [K.THRESHOLD_ENABLED,     p.thresholdEnabled    ? 'true' : 'false'],
+    [K.THRESHOLD_VALUE,       String(p.thresholdValue)],
+    [K.HRV_DROP_ENABLED,      p.hrvDropEnabled      ? 'true' : 'false'],
+    [K.RHR_SPIKE_ENABLED,     p.rhrSpikeEnabled     ? 'true' : 'false'],
+    [K.TREND_DECLINE_ENABLED, p.trendDeclineEnabled ? 'true' : 'false'],
   ]);
 }
 
@@ -269,6 +305,101 @@ const LOW_SCORE_COPY = [
     body:  'Your readiness is below your threshold. Tap to see the breakdown and recovery guidance.',
   },
 ];
+
+// ── HRV drop alert ────────────────────────────────────────────────────────────
+
+/** Fires when HRV is ≥15 % below baseline (≥20 % gets "significantly"). */
+const HRV_DROP_COPY = [
+  {
+    title: (pct: number) => `HRV dropped ${pct}% overnight 📉`,
+    body: 'Your nervous system is signalling incomplete recovery. A lighter day will pay dividends.',
+  },
+  {
+    title: (pct: number) => `HRV is down ${pct}% — worth noting →`,
+    body: 'Lower-than-normal HRV often predicts a lower readiness score. Open the app for guidance.',
+  },
+  {
+    title: (_pct: number) => 'Recovery signal: low HRV this morning →',
+    body: "Your HRV is below your baseline. Consider scaling today's training back a notch.",
+  },
+];
+
+// ── RHR spike alert ───────────────────────────────────────────────────────────
+
+/** Fires when RHR is ≥10 % above baseline. */
+const RHR_SPIKE_COPY = [
+  {
+    title: (bpm: number) => `Resting heart rate elevated (+${bpm}bpm) ❤️`,
+    body: 'Your RHR is higher than your baseline. Common causes: stress, illness, or accumulated fatigue.',
+  },
+  {
+    title: (bpm: number) => `Heart rate up ${bpm}bpm above normal →`,
+    body: "Elevated RHR is your body's early warning. Check your score and let the coach weigh in.",
+  },
+  {
+    title: (_bpm: number) => 'Elevated resting heart rate this morning →',
+    body: 'Your heart is working harder at rest than usual. A recovery-focused day is likely best.',
+  },
+];
+
+// ── 3-day trend decline alert ─────────────────────────────────────────────────
+
+const TREND_DECLINE_COPY = [
+  {
+    title: 'Readiness trending down 3 days running 📉',
+    body: "Something's compounding. Open the app for a trend breakdown and recovery protocol.",
+  },
+  {
+    title: '3-day score decline detected →',
+    body: "Your readiness has been dropping. It's a good time to look at sleep, load, and stress.",
+  },
+  {
+    title: 'Recovery trend alert →',
+    body: 'Three consecutive dips in your readiness score. Worth understanding what\'s driving it.',
+  },
+];
+
+// ── Score history helpers (for trend detection) ───────────────────────────────
+
+interface ScoreEntry { date: string; score: number }
+
+async function loadScoreHistory(): Promise<ScoreEntry[]> {
+  try {
+    const raw = await AsyncStorage.getItem(K.SCORE_HISTORY);
+    if (!raw) return [];
+    return JSON.parse(raw) as ScoreEntry[];
+  } catch {
+    return [];
+  }
+}
+
+/** Push today's score, keep last 7 entries (one per date), return updated list. */
+async function pushScoreHistory(score: number): Promise<ScoreEntry[]> {
+  const today   = todayStr();
+  const history = await loadScoreHistory();
+
+  // Upsert today
+  const filtered = history.filter(e => e.date !== today);
+  filtered.push({ date: today, score: Math.round(score) });
+
+  // Sort ascending, keep last 7
+  const sorted = filtered
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-7);
+
+  await AsyncStorage.setItem(K.SCORE_HISTORY, JSON.stringify(sorted));
+  return sorted;
+}
+
+/** Returns true if the last `n` entries form a strictly descending sequence. */
+function isStrictlyDecline(entries: ScoreEntry[], n = 3): boolean {
+  if (entries.length < n) return false;
+  const tail = entries.slice(-n);
+  for (let i = 1; i < tail.length; i++) {
+    if (tail[i].score >= tail[i - 1].score) return false;
+  }
+  return true;
+}
 
 /** Cancel all scheduled digest notifications and re-schedule if enabled. */
 async function syncDigestNotification(
@@ -413,6 +544,89 @@ export function useNotifications(): UseNotificationsReturn {
     await syncDigestNotification(prefs, Math.round(score));
   }, [prefs, permissionStatus]);
 
+  // ── HRV drop alert ────────────────────────────────────────────────────────
+
+  const checkAndAlertHRV = useCallback(async (hrv: number, baseline: number) => {
+    if (IS_EXPO_GO)                     return;
+    if (!prefs.hrvDropEnabled)          return;
+    if (permissionStatus !== 'granted') return;
+    if (baseline <= 0)                  return;
+
+    const dropPct = Math.round(((baseline - hrv) / baseline) * 100);
+    if (dropPct < 15) return;  // less than 15 % drop — not actionable
+
+    const lastAlerted = await AsyncStorage.getItem(K.HRV_DROP_LAST);
+    if (lastAlerted === todayStr()) return;  // already fired today
+
+    await AsyncStorage.setItem(K.HRV_DROP_LAST, todayStr());
+
+    const variant = HRV_DROP_COPY[dailyVariant(HRV_DROP_COPY.length)];
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: variant.title(dropPct),
+        body:  variant.body,
+        data:  { type: 'hrv_drop', hrv, baseline, dropPct },
+      },
+      trigger: { seconds: 3, repeats: false },
+    });
+  }, [prefs.hrvDropEnabled, permissionStatus]);
+
+  // ── RHR spike alert ───────────────────────────────────────────────────────
+
+  const checkAndAlertRHR = useCallback(async (rhr: number, baseline: number) => {
+    if (IS_EXPO_GO)                     return;
+    if (!prefs.rhrSpikeEnabled)         return;
+    if (permissionStatus !== 'granted') return;
+    if (baseline <= 0)                  return;
+
+    const elevatedBpm = Math.round(rhr - baseline);
+    const elevatedPct = ((rhr - baseline) / baseline) * 100;
+    if (elevatedPct < 10) return;  // less than 10 % above baseline — normal variation
+
+    const lastAlerted = await AsyncStorage.getItem(K.RHR_SPIKE_LAST);
+    if (lastAlerted === todayStr()) return;
+
+    await AsyncStorage.setItem(K.RHR_SPIKE_LAST, todayStr());
+
+    const variant = RHR_SPIKE_COPY[dailyVariant(RHR_SPIKE_COPY.length)];
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: variant.title(elevatedBpm),
+        body:  variant.body,
+        data:  { type: 'rhr_spike', rhr, baseline, elevatedBpm },
+      },
+      trigger: { seconds: 4, repeats: false },
+    });
+  }, [prefs.rhrSpikeEnabled, permissionStatus]);
+
+  // ── 3-day trend decline alert ─────────────────────────────────────────────
+
+  const checkAndAlertTrend = useCallback(async (score: number) => {
+    if (IS_EXPO_GO)                      return;
+    if (!prefs.trendDeclineEnabled)      return;
+    if (permissionStatus !== 'granted')  return;
+    if (score <= 0)                      return;
+
+    // Push today's score and check for 3-day decline
+    const history = await pushScoreHistory(score);
+    if (!isStrictlyDecline(history, 3)) return;
+
+    const lastAlerted = await AsyncStorage.getItem(K.TREND_DECLINE_LAST);
+    if (lastAlerted === todayStr()) return;
+
+    await AsyncStorage.setItem(K.TREND_DECLINE_LAST, todayStr());
+
+    const variant = TREND_DECLINE_COPY[dailyVariant(TREND_DECLINE_COPY.length)];
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: variant.title,
+        body:  variant.body,
+        data:  { type: 'trend_decline', history: history.slice(-3) },
+      },
+      trigger: { seconds: 5, repeats: false },
+    });
+  }, [prefs.trendDeclineEnabled, permissionStatus]);
+
   return {
     prefs,
     isLoading,
@@ -421,5 +635,8 @@ export function useNotifications(): UseNotificationsReturn {
     updatePrefs,
     checkAndAlertScore,
     rescheduleDigestWithScore,
+    checkAndAlertHRV,
+    checkAndAlertRHR,
+    checkAndAlertTrend,
   };
 }

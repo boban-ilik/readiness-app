@@ -1,6 +1,6 @@
 import {
   View, Text, TouchableOpacity, Switch, StyleSheet,
-  Alert, ScrollView, Image, Platform,
+  Alert, ScrollView, Image, Platform, Linking,
 } from 'react-native';
 import { SafeAreaView }              from 'react-native-safe-area-context';
 import { useEffect, useState }       from 'react';
@@ -9,9 +9,13 @@ import Constants                     from 'expo-constants';
 import { useRouter }                 from 'expo-router';
 import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
 import { useAuth }                   from '@contexts/AuthContext';
+import { supabase }                 from '@services/supabase';
 import { useSubscription }           from '@contexts/SubscriptionContext';
 import { useNotifications }          from '@hooks/useNotifications';
+import { useCycleTracking }          from '@hooks/useCycleTracking';
+import { useStravaActivities }       from '@hooks/useStravaActivities';
 import { ProGate }                   from '@components/common/ProGate';
+import { Ionicons }                  from '@expo/vector-icons';
 import { NAME_KEY, FREQ_KEY, JOINED_AT_KEY } from '../onboarding';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
@@ -372,6 +376,56 @@ function NotificationsContent() {
         )}
       </SettingsCard>
 
+      <SectionLabel title="SMART ALERTS  ✦ PRO" />
+      <SettingsCard>
+        <ToggleRow
+          label="HRV drop alert"
+          sublabel="Alert when HRV is 15%+ below your 30-day baseline"
+          value={prefs.hrvDropEnabled}
+          onValueChange={async (value) => {
+            if (value && !hasPermission) {
+              const granted = await requestPermissions();
+              if (!granted) {
+                Alert.alert('Notifications blocked', 'Enable notifications for Readiness in iOS Settings → Readiness → Notifications.', [{ text: 'OK' }]);
+                return;
+              }
+            }
+            await updatePrefs({ hrvDropEnabled: value });
+          }}
+          topBorder={false}
+        />
+        <ToggleRow
+          label="Elevated RHR alert"
+          sublabel="Alert when resting heart rate spikes 10%+ above baseline"
+          value={prefs.rhrSpikeEnabled}
+          onValueChange={async (value) => {
+            if (value && !hasPermission) {
+              const granted = await requestPermissions();
+              if (!granted) {
+                Alert.alert('Notifications blocked', 'Enable notifications for Readiness in iOS Settings → Readiness → Notifications.', [{ text: 'OK' }]);
+                return;
+              }
+            }
+            await updatePrefs({ rhrSpikeEnabled: value });
+          }}
+        />
+        <ToggleRow
+          label="3-day decline alert"
+          sublabel="Alert when your readiness score drops 3 days in a row"
+          value={prefs.trendDeclineEnabled}
+          onValueChange={async (value) => {
+            if (value && !hasPermission) {
+              const granted = await requestPermissions();
+              if (!granted) {
+                Alert.alert('Notifications blocked', 'Enable notifications for Readiness in iOS Settings → Readiness → Notifications.', [{ text: 'OK' }]);
+                return;
+              }
+            }
+            await updatePrefs({ trendDeclineEnabled: value });
+          }}
+        />
+      </SettingsCard>
+
       {permissionStatus === 'denied' && (
         <View style={styles.permWarning}>
           <Text style={styles.permWarningText}>
@@ -404,6 +458,12 @@ export default function ProfileScreen() {
 
   // Training goal
   const [goal, setGoal] = useState<TrainingGoal | null>(null);
+
+  // ── Cycle tracking ──────────────────────────────────────────────────────────
+  const cycle = useCycleTracking();
+
+  // ── Strava connection ────────────────────────────────────────────────────────
+  const strava = useStravaActivities(7);
 
   // ── Load saved data ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -638,6 +698,105 @@ export default function ProfileScreen() {
     await presentCustomerCenter();
   };
 
+  // ── Report a bug ────────────────────────────────────────────────────────────
+  const handleReportBug = async () => {
+    const version  = Constants.expoConfig?.version ?? '—';
+    const platform = Platform.OS === 'ios'
+      ? `iOS ${Platform.Version}`
+      : `Android ${Platform.Version}`;
+    const uid = user?.id?.slice(0, 8) ?? '—';
+
+    const subject = encodeURIComponent(`Bug Report — Readiness v${version}`);
+    const body    = encodeURIComponent(
+      `App version: ${version}\nPlatform: ${platform}\nUser ID (partial): ${uid}\n\n` +
+      `--- Describe the bug ---\n\n` +
+      `What happened:\n\n` +
+      `Steps to reproduce:\n1.\n2.\n3.\n\n` +
+      `Expected behaviour:\n\n` +
+      `--- End of report ---`,
+    );
+
+    const url = `mailto:support@readinessapp.com?subject=${subject}&body=${body}`;
+    const canOpen = await Linking.canOpenURL(url);
+    if (canOpen) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert(
+        'No email app found',
+        'Please email us directly at support@readinessapp.com',
+        [{ text: 'OK' }],
+      );
+    }
+  };
+
+  // ── Delete account ──────────────────────────────────────────────────────────
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete account',
+      'This will permanently delete your account and all readiness history. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () => {
+            // Second confirmation — makes accidental taps impossible
+            Alert.alert(
+              'Are you absolutely sure?',
+              'Every score, trend, and insight will be deleted forever. Your Strava connection will also be disconnected.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete everything',
+                  style: 'destructive',
+                  onPress: deleteAccountConfirmed,
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
+  };
+
+  const deleteAccountConfirmed = async () => {
+    try {
+      // Call the Edge Function — it deletes DB rows + auth user server-side
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error('Not authenticated');
+
+      const res = await fetch(
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`,
+        {
+          method:  'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type':  'application/json',
+          },
+        },
+      );
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error ?? `Server error ${res.status}`);
+      }
+
+      // Wipe all local data
+      await AsyncStorage.clear();
+
+      // Sign out (session is already invalidated server-side, but clean up locally)
+      await signOut().catch(() => {});
+
+    } catch (e: any) {
+      Alert.alert(
+        'Could not delete account',
+        e.message ?? 'Something went wrong. Please try again or contact support@readinessapp.com.',
+        [{ text: 'OK' }],
+      );
+    }
+  };
+
   const handlePlanLongPress = () => {
     if (!__DEV__) return;
     Alert.alert('Dev toggle', `Switch to ${isPro ? 'Free' : 'Pro'}?`, [
@@ -739,6 +898,49 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         )}
 
+        {/* ── Connections ──────────────────────────────────────────────────── */}
+        <SectionLabel title="CONNECTIONS" />
+        <SettingsCard>
+          {strava.isConnected ? (
+            <RowBase
+              topBorder={false}
+              label="Strava"
+              sublabel={strava.athleteName ? `Connected as ${strava.athleteName}` : 'Connected'}
+              right={
+                <TouchableOpacity
+                  onPress={() => Alert.alert(
+                    'Disconnect Strava',
+                    'Remove Strava connection? You can reconnect any time.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Disconnect', style: 'destructive', onPress: () => strava.disconnect() },
+                    ],
+                  )}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <View style={styles.stravaConnectedPill}>
+                    <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+                    <Text style={styles.stravaConnectedText}>Connected</Text>
+                  </View>
+                </TouchableOpacity>
+              }
+            />
+          ) : (
+            <RowBase
+              topBorder={false}
+              label="Strava"
+              sublabel="Import workouts, Suffer Score, and training load"
+              onPress={strava.connect}
+              right={
+                <View style={styles.stravaConnectPill}>
+                  <Ionicons name="link-outline" size={13} color={colors.amber[400]} />
+                  <Text style={styles.stravaConnectText}>Connect</Text>
+                </View>
+              }
+            />
+          )}
+        </SettingsCard>
+
         {/* ── Personal details ─────────────────────────────────────────────── */}
         <SectionLabel title="PERSONAL DETAILS" />
         <SettingsCard>
@@ -796,6 +998,68 @@ export default function ProfileScreen() {
           Used to personalise your coach recommendations and readiness context.
         </Text>
 
+        {/* ── Cycle tracking — only shown for female users ────────────────── */}
+        {sex === 'female' && (
+          <>
+            <SectionLabel title="CYCLE TRACKING" />
+            <SettingsCard>
+              <ToggleRow
+                label="Track menstrual cycle"
+                sublabel="Contextualise HRV and RHR changes across your cycle"
+                value={cycle.settings.enabled}
+                onValueChange={(v) => cycle.updateSettings({ enabled: v })}
+                topBorder={false}
+              />
+              {cycle.settings.enabled && (
+                <>
+                  <StepperRow
+                    label="Cycle length"
+                    sublabel="Average days between periods"
+                    value={cycle.settings.cycleLengthDays}
+                    unit="days"
+                    min={21}
+                    max={40}
+                    onDecrement={() => cycle.updateSettings({ cycleLengthDays: cycle.settings.cycleLengthDays - 1 })}
+                    onIncrement={() => cycle.updateSettings({ cycleLengthDays: cycle.settings.cycleLengthDays + 1 })}
+                  />
+                  <StepperRow
+                    label="Period length"
+                    sublabel="Average days of bleeding"
+                    value={cycle.settings.periodLengthDays}
+                    unit="days"
+                    min={2}
+                    max={8}
+                    onDecrement={() => cycle.updateSettings({ periodLengthDays: cycle.settings.periodLengthDays - 1 })}
+                    onIncrement={() => cycle.updateSettings({ periodLengthDays: cycle.settings.periodLengthDays + 1 })}
+                  />
+                  <RowBase
+                    label="Log period start"
+                    sublabel="Mark today as day 1 of your cycle"
+                    topBorder
+                    right={
+                      <TouchableOpacity
+                        onPress={() => {
+                          cycle.logToday().catch(() => {});
+                          Alert.alert('Logged ✓', 'Period start logged for today.');
+                        }}
+                        style={{ paddingHorizontal: spacing[3], paddingVertical: spacing[1] }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={{ color: colors.amber[400], fontSize: fontSize.sm, fontWeight: fontWeight.semiBold }}>
+                          Log today
+                        </Text>
+                      </TouchableOpacity>
+                    }
+                  />
+                </>
+              )}
+            </SettingsCard>
+            <Text style={styles.sectionHint}>
+              🔒 All cycle data is stored on your device only and never shared.
+            </Text>
+          </>
+        )}
+
         {/* ── Notifications — Pro feature ─────────────────────────────────── */}
         <ProGate
           feature="Custom Thresholds & Notifications"
@@ -805,6 +1069,18 @@ export default function ProfileScreen() {
           <NotificationsContent />
         </ProGate>
 
+        {/* ── Support ─────────────────────────────────────────────────────── */}
+        <SectionLabel title="SUPPORT" />
+        <SettingsCard>
+          <RowBase
+            label="Report a bug"
+            sublabel="Opens your email app with a pre-filled report"
+            topBorder={false}
+            onPress={handleReportBug}
+            right={<Text style={styles.rowChevron}>›</Text>}
+          />
+        </SettingsCard>
+
         {/* ── Sign out ────────────────────────────────────────────────────── */}
         <TouchableOpacity
           style={styles.signOutButton}
@@ -812,6 +1088,15 @@ export default function ProfileScreen() {
           activeOpacity={0.8}
         >
           <Text style={styles.signOutText}>Sign out</Text>
+        </TouchableOpacity>
+
+        {/* ── Delete account ───────────────────────────────────────────────── */}
+        <TouchableOpacity
+          style={styles.deleteAccountButton}
+          onPress={handleDeleteAccount}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.deleteAccountText}>Delete account</Text>
         </TouchableOpacity>
 
         {/* ── DEV tools ──────────────────────────────────────────────────── */}
@@ -933,6 +1218,36 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
 
+  // ── Strava connection pills ────────────────────────────────────────────────
+  stravaConnectPill: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               4,
+    backgroundColor:   colors.amber[400] + '22',
+    borderRadius:      radius.full,
+    paddingHorizontal: spacing[2.5],
+    paddingVertical:   spacing[1],
+  },
+  stravaConnectText: {
+    color:      colors.amber[400],
+    fontSize:   fontSize.xs,
+    fontWeight: fontWeight.semiBold,
+  },
+  stravaConnectedPill: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               4,
+    backgroundColor:   colors.success + '20',
+    borderRadius:      radius.full,
+    paddingHorizontal: spacing[2.5],
+    paddingVertical:   spacing[1],
+  },
+  stravaConnectedText: {
+    color:      colors.success,
+    fontSize:   fontSize.xs,
+    fontWeight: fontWeight.semiBold,
+  },
+
   // ── Badges / pills ─────────────────────────────────────────────────────────
   proPill: {
     backgroundColor: colors.amber[400],
@@ -1036,6 +1351,12 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semiBold,
   },
 
+  rowChevron: {
+    color:    colors.text.tertiary,
+    fontSize: fontSize.lg,
+    lineHeight: fontSize.lg,
+  },
+
   // ── Sign out ───────────────────────────────────────────────────────────────
   signOutButton: {
     paddingVertical: spacing[5],
@@ -1046,6 +1367,19 @@ const styles = StyleSheet.create({
     color: colors.error,
     fontSize: fontSize.base,
     fontWeight: fontWeight.medium,
+  },
+
+  // ── Delete account ────────────────────────────────────────────────────────
+  deleteAccountButton: {
+    paddingVertical:  spacing[2],
+    paddingBottom:    spacing[4],
+    alignItems:       'center',
+  },
+  deleteAccountText: {
+    color:      colors.text.tertiary,
+    fontSize:   fontSize.sm,
+    fontWeight: fontWeight.medium,
+    textDecorationLine: 'underline',
   },
 
   bottomPad: { height: spacing[8] },

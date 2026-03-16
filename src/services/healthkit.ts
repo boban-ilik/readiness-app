@@ -430,18 +430,27 @@ function getYesterdayWindow(): { start: Date; end: Date } {
 
 /**
  * Shared step-count fetcher with source deduplication.
- * getDailyStepCountSamples exposes per-source metadata so we can pick a single
- * authoritative source (Garmin preferred) and avoid double-counting when
- * multiple devices all write to HealthKit simultaneously.
+ *
+ * Uses `getSamples` (HKSampleQuery) instead of `getDailyStepCountSamples`
+ * (HKStatisticsCollectionQuery) because the statistics API only returns
+ * aggregated totals — it doesn't expose per-source data.
+ * `getSamples` returns individual quantity samples, each carrying
+ * `sourceName`, `sourceId`, and `quantity` fields, letting us sum by source
+ * and prefer Garmin over the iPhone pedometer.
  */
 function fetchStepsDeduped(start: Date, end: Date, label: string): Promise<number | null> {
   return new Promise((resolve) => {
-    AppleHealthKit.getDailyStepCountSamples(
-      { startDate: start.toISOString(), endDate: end.toISOString(), ascending: true },
+    AppleHealthKit.getSamples(
+      {
+        type: 'StepCount',
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+        ascending: true,
+      },
       (err: any, results: any[]) => {
         if (err || !results?.length) {
           // Fall back to simple aggregate — no source filtering but better than null.
-          console.log(`[Readiness] ${label} getDailyStepCountSamples failed, falling back:`, err);
+          console.log(`[Readiness] ${label} getSamples failed, falling back:`, err);
           AppleHealthKit.getStepCount(
             { date: start.toISOString() },
             (err2: any, result: any) => {
@@ -452,23 +461,19 @@ function fetchStepsDeduped(start: Date, end: Date, label: string): Promise<numbe
           return;
         }
 
-        // Sum per-source quantities across all period buckets.
+        // Sum per-source quantities.
+        // getSamples returns { quantity, sourceName, sourceId, start, end, ... }
+        // "quantity" is the step count field for non-distance types.
         const bySource: Record<string, number> = {};
-        for (const bucket of results) {
-          const sources = bucket.metadata as Array<{
-            sourceName?: string;
-            sourceId?: string;
-            quantity?: number;
-          }> | undefined;
-
-          if (sources?.length) {
-            for (const s of sources) {
-              const name = s.sourceName ?? s.sourceId ?? 'Unknown';
-              bySource[name] = (bySource[name] ?? 0) + (s.quantity ?? 0);
-            }
-          } else {
-            bySource['Unknown'] = (bySource['Unknown'] ?? 0) + (bucket.value ?? 0);
-          }
+        for (const sample of results) {
+          const name = (
+            (sample.sourceName as string | undefined) ??
+            (sample.sourceId   as string | undefined) ??
+            'Unknown'
+          ).trim();
+          // quantity is the count field; fall back to value in case of API variance
+          const count = (sample.quantity as number | undefined) ?? (sample.value as number | undefined) ?? 0;
+          bySource[name] = (bySource[name] ?? 0) + count;
         }
 
         console.log(`[Readiness] ${label} steps by source:`, JSON.stringify(bySource));
@@ -476,7 +481,8 @@ function fetchStepsDeduped(start: Date, end: Date, label: string): Promise<numbe
         const entries = Object.entries(bySource);
         if (!entries.length) return resolve(null);
 
-        // Prefer Garmin Connect; otherwise take the single highest-count source.
+        // Prefer Garmin Connect; otherwise take the single highest-count source
+        // (avoids double-counting when both iPhone and Garmin write to HealthKit).
         const garminEntry = entries.find(([src]) =>
           src.toLowerCase().includes('garmin') || src.toLowerCase().includes('connect'),
         );
@@ -622,13 +628,23 @@ export function fetchYesterdayWorkouts(): Promise<RawWorkout[]> {
         if (err || !data.length) return resolve([]);
 
         const workouts: RawWorkout[] = data.map((r: any) => {
-          // duration field is in minutes in getAnchoredWorkouts
-          const durationSecs = r.duration
+          // Priority 1: calculate from start/end timestamps — most reliable across
+          // all HealthKit sources (Garmin, Apple Watch, Strava, etc.)
+          const startMs = new Date(r.start ?? r.startDate ?? '').getTime();
+          const endMs   = new Date(r.end   ?? r.endDate   ?? '').getTime();
+          const fromDates = (!isNaN(startMs) && !isNaN(endMs) && endMs > startMs)
+            ? Math.round((endMs - startMs) / 1000)
+            : 0;
+
+          // Priority 2: duration field (getAnchoredWorkouts reports minutes)
+          const fromDurationField = r.duration && r.duration > 0
             ? Math.round(r.duration * 60)
-            : Math.round(
-                (new Date(r.end ?? r.endDate).getTime() -
-                 new Date(r.start ?? r.startDate).getTime()) / 1000,
-              );
+            : 0;
+
+          // Prefer timestamp-derived value; fall back to duration field only when
+          // timestamps are missing or malformed (e.g. some third-party apps)
+          const durationSecs = fromDates > 0 ? fromDates : fromDurationField;
+
           return {
             activityName: r.activityName ?? 'Workout',
             durationSecs,

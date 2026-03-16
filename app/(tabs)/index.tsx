@@ -7,6 +7,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ScoreRing from '@components/score/ScoreRing';
 import ScoreBreakdownCard from '@components/score/ScoreBreakdownCard';
 import TrainingLoadCard from '@components/score/TrainingLoadCard';
+import NutritionCard from '@components/score/NutritionCard';
+import StreakBanner from '@components/score/StreakBanner';
+import WorkoutContextBanner from '@components/score/WorkoutContextBanner';
+import { StravaLastWorkoutSection } from '@components/score/StravaLastWorkoutCard';
+import { StravaTrainingLoadSection } from '@components/score/StravaTrainingLoadCard';
+import { CalibrationBanner } from '@components/score/CalibrationBanner';
+import { CyclePhaseSection } from '@components/score/CyclePhaseCard';
+import { OvertrainingWarningCard } from '@components/score/OvertrainingWarningCard';
 import TrendInsightCard from '@components/score/TrendInsightCard';
 import ForecastStrip from '@components/score/ForecastStrip';
 import LifeEventTagger from '@components/score/LifeEventTagger';
@@ -16,8 +24,14 @@ import ShareCard from '@components/score/ShareCard';
 import { ProGate } from '@components/common/ProGate';
 import { colors, fontSize, fontWeight, spacing, radius, getScoreColor, getScoreLabel } from '@constants/theme';
 import { useHealthData } from '@hooks/useHealthData';
+import { useRecentWorkouts } from '@hooks/useRecentWorkouts';
+import { useStravaActivities } from '@hooks/useStravaActivities';
 import { useSubscription } from '@contexts/SubscriptionContext';
 import { useNotifications } from '@hooks/useNotifications';
+import { useCalibrationStatus } from '@hooks/useCalibrationStatus';
+import { useCycleTracking } from '@hooks/useCycleTracking';
+import { useOvertrainingWarning } from '@hooks/useOvertrainingWarning';
+import { PROFILE_SEX_KEY } from '@services/userProfile';
 import { formatDisplayDate } from '@utils/index';
 import { computeActivityScore } from '@utils/breakdown';
 import { fetchTodayActivity, type TodayActivity } from '@services/healthkit';
@@ -141,10 +155,31 @@ function buildSleepDetail(h: HealthData | null): string | undefined {
 export default function HomeScreen() {
   const { readiness, isLoading, isRefreshing, error, refresh, rhrBaseline, hrvBaseline, setManualHRV } = useHealthData();
   const { isPro, presentPaywall } = useSubscription();
-  const { checkAndAlertScore, rescheduleDigestWithScore } = useNotifications();
+  const calibration = useCalibrationStatus();
+  const {
+    checkAndAlertScore,
+    rescheduleDigestWithScore,
+    checkAndAlertHRV,
+    checkAndAlertRHR,
+    checkAndAlertTrend,
+  } = useNotifications();
+
+  // Strava — fetch 28 days to power both the last-workout card and the 4-week trend card
+  const { isConnected: stravaConnected, activities: stravaActivities, isLoading: stravaLoading } =
+    useStravaActivities(28);
+
+  // Workout load from Apple Health — used by WorkoutContextBanner and coach context
+  const { loadSummary: workoutLoad, isLoading: workoutsLoading } = useRecentWorkouts(
+    readiness?.healthData?.hrv ?? null,
+    hrvBaseline,
+  );
+
+  const cycle = useCycleTracking();
+  const overtraining = useOvertrainingWarning(stravaActivities);
 
   const [selectedCard,    setSelectedCard]    = useState<'recovery' | 'sleep' | 'stress' | 'activity' | null>(null);
   const [userName,        setUserName]        = useState<string>('');
+  const [profileSex,      setProfileSex]      = useState<string | null>(null);
   const [briefingVisible, setBriefingVisible] = useState(false);
   const [isSharing,       setIsSharing]       = useState(false);
   const [todayActivity,   setTodayActivity]   = useState<TodayActivity | null>(null);
@@ -220,10 +255,13 @@ export default function HomeScreen() {
     }
   }, [readiness, isSharing]);
 
-  // Load stored name once on mount
+  // Load stored name + sex once on mount
   useEffect(() => {
     AsyncStorage.getItem(NAME_KEY)
       .then(v => { if (v) setUserName(v.trim().split(' ')[0]); })
+      .catch(() => {});
+    AsyncStorage.getItem(PROFILE_SEX_KEY)
+      .then(v => setProfileSex(v))
       .catch(() => {});
   }, []);
 
@@ -300,14 +338,23 @@ export default function HomeScreen() {
   const scoreLabel    = getScoreLabel(score);
   const activityScore = computeActivityScore(readiness?.healthData ?? null);
 
-  // Fire threshold alert + update digest notification once data is settled.
-  // Both hooks guard against unnecessary work (Expo Go, missing permissions,
-  // digest disabled) so these are always safe to call.
+  // Fire all notification checks once data is settled.
+  // Each guard inside the hook handles Expo Go / missing permissions / toggle off
+  // so these are always safe to call unconditionally.
   useEffect(() => {
-    if (!isLoading && !isRefreshing && score > 0) {
-      checkAndAlertScore(score);
-      rescheduleDigestWithScore(score);
-    }
+    if (isLoading || isRefreshing || score <= 0) return;
+
+    const hrv = readiness?.healthData?.hrv              ?? null;
+    const rhr = readiness?.healthData?.restingHeartRate ?? null;
+
+    // Standard alerts
+    checkAndAlertScore(score);
+    rescheduleDigestWithScore(score);
+
+    // Smart alerts (Pro) — each function is a no-op if the pref is off
+    checkAndAlertTrend(score);
+    if (hrv != null && hrvBaseline > 0) checkAndAlertHRV(hrv, hrvBaseline);
+    if (rhr != null && rhrBaseline > 0) checkAndAlertRHR(rhr, rhrBaseline);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, isRefreshing]);
 
@@ -404,6 +451,39 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
+        {/* Streak banner */}
+        <StreakBanner score={score} />
+
+        {/* Yesterday's workout context — shows load tier + HRV suppression note */}
+        <WorkoutContextBanner loadSummary={workoutLoad} isLoading={workoutsLoading} />
+
+        {/* Last Strava workout — only shown when Strava is connected */}
+        <StravaLastWorkoutSection
+          isConnected={stravaConnected}
+          activities={stravaActivities}
+          isLoading={stravaLoading}
+        />
+
+        {/* Strava 4-week training load trend — Pro feature */}
+        <StravaTrainingLoadSection
+          isConnected={stravaConnected}
+          activities={stravaActivities}
+          isLoading={stravaLoading}
+          isPro={isPro}
+        />
+
+        {/* Cycle phase card — shown for female users with tracking enabled */}
+        <CyclePhaseSection
+          sex={profileSex}
+          enabled={cycle.settings.enabled}
+          cycleState={cycle.cycleState}
+          hasEntries={cycle.entries.length > 0}
+          onLogToday={cycle.logToday}
+        />
+
+        {/* Overtraining early warning — shown when pattern analysis detects fatigue risk */}
+        <OvertrainingWarningCard warning={overtraining} />
+
         {/* Data confidence banner — shown when Apple Watch data is missing or partial */}
         {score > 0 && readiness?.dataQuality?.confidence !== 'high' &&
           readiness?.dataQuality?.warningMessage && (
@@ -430,6 +510,9 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* Calibration week banner — shown for first 7 days after onboarding */}
+        <CalibrationBanner status={calibration} />
+
         {/* Breakdown */}
         {score > 0 && (
           <View style={styles.breakdown}>
@@ -443,7 +526,7 @@ export default function HomeScreen() {
                 icon="💓"
                 detail={buildRecoveryDetail(readiness?.healthData ?? null, rhrBaseline)}
                 isLocked={!isPro}
-                onPress={isPro ? () => setSelectedCard('recovery') : undefined}
+                onPress={() => isPro ? setSelectedCard('recovery') : presentPaywall()}
               />
             </Animated.View>
 
@@ -455,7 +538,7 @@ export default function HomeScreen() {
                 icon="🌙"
                 detail={buildSleepDetail(readiness?.healthData ?? null)}
                 isLocked={!isPro}
-                onPress={isPro ? () => setSelectedCard('sleep') : undefined}
+                onPress={() => isPro ? setSelectedCard('sleep') : presentPaywall()}
               />
             </Animated.View>
 
@@ -467,7 +550,7 @@ export default function HomeScreen() {
                 icon="🧠"
                 detail={buildStressDetail(readiness?.healthData ?? null, rhrBaseline, hrvBaseline)}
                 isLocked={!isPro}
-                onPress={isPro ? () => setSelectedCard('stress') : undefined}
+                onPress={() => isPro ? setSelectedCard('stress') : presentPaywall()}
               />
             </Animated.View>
 
@@ -501,6 +584,24 @@ export default function HomeScreen() {
               <TrainingLoadCard
                 score={score}
                 components={readiness?.components ?? { recovery: 50, sleep: 50, stress: 50 }}
+              />
+            </ProGate>
+          </View>
+        )}
+
+        {/* Nutrition — Pro feature */}
+        {score > 0 && (
+          <View style={styles.trainingSection}>
+            <Text style={styles.sectionTitle}>NUTRITION TODAY</Text>
+            <ProGate
+              feature="Nutrition Recommendations"
+              description="Get personalised food and hydration guidance based on your HRV, sleep quality, and today's readiness score."
+            >
+              <NutritionCard
+                score={score}
+                components={readiness?.components ?? { recovery: 50, sleep: 50, stress: 50 }}
+                healthData={readiness?.healthData ?? null}
+                hrvBaseline={hrvBaseline}
               />
             </ProGate>
           </View>
