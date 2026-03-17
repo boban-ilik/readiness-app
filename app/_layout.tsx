@@ -10,6 +10,17 @@ import { colors } from '@constants/theme';
 
 SplashScreen.preventAutoHideAsync();
 
+// ─── Global fatal error catcher ───────────────────────────────────────────────
+// Intercepts fatal JS exceptions before they crash the app so we can read the
+// actual error message in the device console.
+const _prevHandler = (global as any).ErrorUtils?.getGlobalHandler?.();
+(global as any).ErrorUtils?.setGlobalHandler?.((error: Error, isFatal?: boolean) => {
+  console.error('[READINESS FATAL]', isFatal ? 'FATAL' : 'non-fatal', error?.message);
+  console.error('[READINESS STACK]', error?.stack);
+  // Still call the previous handler so React Native can do cleanup
+  _prevHandler?.(error, isFatal);
+});
+
 // ─── Global unhandled rejection handler ──────────────────────────────────────
 // In dev mode React Native turns unhandled promise rejections into the red
 // error overlay. Network errors (Supabase auth refresh, fetch timeouts) are
