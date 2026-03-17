@@ -22,14 +22,5 @@
         "resourceClass": "m-medium"
       }
     }
-  },
-  "submit": {
-    "production": {
-      "ios": {
-        "appleId": "boban.ilik08@gmail.com",
-        "ascAppId": "",
-        "appleTeamId": ""
-      }
-    }
   }
 }
