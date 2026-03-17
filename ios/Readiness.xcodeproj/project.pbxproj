@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AA000003AA000003AA000003 /* SceneDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA000002AA000002 /* SceneDelegate.mm */; };
 		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
@@ -21,6 +22,8 @@
 /* Begin PBXFileReference section */
 		11B79F3DFCF140D9AA06B70D /* noop-file.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = "noop-file.swift"; path = "Readiness/noop-file.swift"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* Readiness.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Readiness.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA000001AA000001AA000001 /* SceneDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SceneDelegate.h; path = Readiness/SceneDelegate.h; sourceTree = "<group>"; };
+		AA000002AA000002AA000002 /* SceneDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = SceneDelegate.mm; path = Readiness/SceneDelegate.mm; sourceTree = "<group>"; };
 		13B07FAF1A68108700A75B9A /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AppDelegate.h; path = Readiness/AppDelegate.h; sourceTree = "<group>"; };
 		13B07FB01A68108700A75B9A /* AppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = AppDelegate.mm; path = Readiness/AppDelegate.mm; sourceTree = "<group>"; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Readiness/Images.xcassets; sourceTree = "<group>"; };
@@ -53,7 +56,9 @@
 			isa = PBXGroup;
 			children = (
 				BB2F792B24A3F905000567C9 /* Supporting */,
-				13B07FAF1A68108700A75B9A /* AppDelegate.h */,
+				AA000001AA000001AA000001 /* SceneDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SceneDelegate.h; path = Readiness/SceneDelegate.h; sourceTree = "<group>"; };
+		AA000002AA000002AA000002 /* SceneDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = SceneDelegate.mm; path = Readiness/SceneDelegate.mm; sourceTree = "<group>"; };
+		13B07FAF1A68108700A75B9A /* AppDelegate.h */,
 				13B07FB01A68108700A75B9A /* AppDelegate.mm */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
@@ -331,7 +336,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
+				AA000003AA000003AA000003 /* SceneDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = AA000002AA000002AA000002 /* SceneDelegate.mm */; };
+		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 				B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */,
 				C0AC591836A14EDCBABFC03B /* noop-file.swift in Sources */,
