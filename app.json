@@ -83,9 +83,6 @@
     "extra": {
       "eas": {
         "projectId": "e17d6d14-937d-448d-a40a-4d7c5370f696"
-      },
-      "router": {
-        "origin": false
       }
     },
     "owner": "readinessapp"
