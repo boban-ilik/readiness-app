@@ -87,7 +87,7 @@ const MOCK_PACKAGES: Record<BillingCycle, DisplayPackage> = {
     priceLabel: '$49.99 / year',
     perMonth:   '$4.17',
     total:      'billed annually',
-    badge:      '−40%',
+    badge:      '-40%',
     rcPackage:  null,
   },
   monthly: {
@@ -214,7 +214,7 @@ export default function PaywallScreen() {
               priceLabel: `${price} / year`,
               perMonth:   monthly,
               total:      'billed annually',
-              badge:      '−40%',
+              badge:      '-40%',
               rcPackage:  pkg,
             };
           } else if (isLifetime) {
