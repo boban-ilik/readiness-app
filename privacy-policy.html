@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Readiness</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: #0D0F14;
+      color: #E8EAF0;
+      line-height: 1.7;
+      padding: 48px 24px 80px;
+    }
+    .container { max-width: 720px; margin: 0 auto; }
+    .logo {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #F5A623;
+      margin-bottom: 48px;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .updated {
+      color: #7A8299;
+      font-size: 14px;
+      margin-bottom: 40px;
+    }
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #F5A623;
+      margin: 40px 0 12px;
+    }
+    p { margin-bottom: 16px; color: #BFC5D6; }
+    ul { margin: 0 0 16px 20px; color: #BFC5D6; }
+    ul li { margin-bottom: 8px; }
+    a { color: #F5A623; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .card {
+      background: #161A23;
+      border: 1px solid #252A38;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+    }
+    .card p { margin: 0; }
+    footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid #252A38;
+      color: #7A8299;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">READINESS</div>
+
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: March 2026</p>
+
+    <div class="card">
+      <p>Readiness is built on a simple principle: <strong style="color:#E8EAF0">your health data belongs to you.</strong> We collect only what is necessary to calculate your daily readiness score and personalise your coaching. We never sell your data, never share it with advertisers, and never use it for purposes beyond the app.</p>
+    </div>
+
+    <h2>1. What We Collect</h2>
+    <p><strong style="color:#E8EAF0">Health &amp; fitness data (Apple Health / HealthKit)</strong></p>
+    <ul>
+      <li>Heart rate variability (HRV SDNN)</li>
+      <li>Resting heart rate</li>
+      <li>Sleep duration, stages, and efficiency</li>
+      <li>Step count and active energy burned</li>
+      <li>Exercise minutes and workouts</li>
+    </ul>
+    <p>This data is read directly from Apple Health on your device. It is processed locally to produce your readiness score and is only uploaded to our servers if you are signed in and have an active session.</p>
+
+    <p><strong style="color:#E8EAF0">Strava data (optional)</strong></p>
+    <ul>
+      <li>Activity history (name, duration, type, date)</li>
+      <li>Training load metrics (suffer score, moving time)</li>
+    </ul>
+    <p>Strava connection is optional. If connected, we fetch your recent activities via the Strava API to calculate training load and acute:chronic ratio. You can disconnect Strava at any time from your profile.</p>
+
+    <p><strong style="color:#E8EAF0">Account data</strong></p>
+    <ul>
+      <li>Email address (for sign-in)</li>
+      <li>Display name (optional)</li>
+      <li>Profile preferences: age, biological sex, height, weight, training frequency, primary goal</li>
+    </ul>
+    <p>Profile data is stored on our secure servers (Supabase) solely to personalise your readiness context and coaching recommendations.</p>
+
+    <p><strong style="color:#E8EAF0">Usage data</strong></p>
+    <p>We may collect anonymous crash reports and performance metrics to improve app stability. This data cannot be linked back to you personally.</p>
+
+    <h2>2. How We Use Your Data</h2>
+    <ul>
+      <li>Calculate your daily readiness score</li>
+      <li>Detect training load trends, overtraining signals, and recovery patterns</li>
+      <li>Personalise coaching recommendations and daily briefings</li>
+      <li>Send morning notification digests (only if you enable them)</li>
+      <li>Improve app performance and fix bugs</li>
+    </ul>
+    <p>We do <strong style="color:#E8EAF0">not</strong> use your data for advertising, profiling, or any purpose unrelated to providing the Readiness app service.</p>
+
+    <h2>3. Data Storage &amp; Security</h2>
+    <p>Account and score data is stored on Supabase servers in the EU. All data in transit is encrypted via TLS. Health data is processed on your device where possible and is never stored in plain text on our servers.</p>
+    <p>We retain your data for as long as your account is active. You can request deletion at any time (see Section 6).</p>
+
+    <h2>4. Third-Party Services</h2>
+    <ul>
+      <li><strong style="color:#E8EAF0">Apple HealthKit</strong> — data read locally on your device, governed by Apple's HealthKit policies</li>
+      <li><strong style="color:#E8EAF0">Strava API</strong> — only if you connect; governed by <a href="https://www.strava.com/legal/privacy" target="_blank">Strava's Privacy Policy</a></li>
+      <li><strong style="color:#E8EAF0">Supabase</strong> — backend database and authentication; <a href="https://supabase.com/privacy" target="_blank">Supabase Privacy Policy</a></li>
+      <li><strong style="color:#E8EAF0">RevenueCat</strong> — subscription management; <a href="https://www.revenuecat.com/privacy" target="_blank">RevenueCat Privacy Policy</a></li>
+    </ul>
+
+    <h2>5. Children's Privacy</h2>
+    <p>Readiness is not intended for children under 13. We do not knowingly collect personal data from children under 13. If you believe we have inadvertently collected such data, please contact us immediately.</p>
+
+    <h2>6. Your Rights &amp; Data Deletion</h2>
+    <p>You have the right to access, correct, or delete your personal data at any time.</p>
+    <ul>
+      <li><strong style="color:#E8EAF0">Delete account:</strong> Go to Profile → Delete account. This permanently removes your account and all associated data from our servers within 30 days.</li>
+      <li><strong style="color:#E8EAF0">Export or access your data:</strong> Contact us at <a href="mailto:boban.ilik08@gmail.com">boban.ilik08@gmail.com</a></li>
+      <li><strong style="color:#E8EAF0">Disconnect Strava:</strong> Profile → Strava → Disconnect</li>
+      <li><strong style="color:#E8EAF0">Revoke HealthKit access:</strong> iOS Settings → Privacy &amp; Security → Health → Readiness</li>
+    </ul>
+
+    <h2>7. Changes to This Policy</h2>
+    <p>We may update this policy from time to time. Significant changes will be communicated via in-app notification or email. Continued use of the app after changes constitutes acceptance of the updated policy.</p>
+
+    <h2>8. Contact</h2>
+    <p>If you have any questions about this privacy policy or how we handle your data, please contact us:</p>
+    <p><a href="mailto:boban.ilik08@gmail.com">boban.ilik08@gmail.com</a></p>
+
+    <footer>
+      <p>© 2026 Readiness. All rights reserved.</p>
+    </footer>
+  </div>
+</body>
+</html>

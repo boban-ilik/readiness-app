@@ -19,9 +19,19 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.bobanilikj.readiness",
       "buildNumber": "1",
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+          }
+        ]
+      },
       "infoPlist": {
         "NSHealthShareUsageDescription": "Readiness reads your Apple Watch health data (HRV, resting heart rate, sleep) to calculate your daily readiness score.",
         "NSHealthUpdateUsageDescription": "Readiness does not write any health data.",
+        "NSCameraUsageDescription": "Readiness uses your camera to take a profile photo.",
+        "NSPhotoLibraryUsageDescription": "Readiness uses your photo library to set a profile picture.",
         "UIBackgroundModes": [
           "fetch"
         ]
