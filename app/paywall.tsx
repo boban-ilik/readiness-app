@@ -87,7 +87,7 @@ const MOCK_PACKAGES: Record<BillingCycle, DisplayPackage> = {
     priceLabel: '$49.99 / year',
     perMonth:   '$4.17',
     total:      'billed annually',
-    badge:      'SAVE 40%',
+    badge:      '−40%',
     rcPackage:  null,
   },
   monthly: {
@@ -100,7 +100,7 @@ const MOCK_PACKAGES: Record<BillingCycle, DisplayPackage> = {
     cycle:      'lifetime',
     priceLabel: '$99.99 once',
     perMonth:   'Pay once, own forever',
-    badge:      'BEST VALUE',
+    badge:      'BEST',
     rcPackage:  null,
   },
 };
@@ -111,13 +111,15 @@ function FeatureRow({
   icon,
   title,
   body,
+  isFirst,
 }: {
-  icon:  React.ComponentProps<typeof Ionicons>['name'];
-  title: string;
-  body:  string;
+  icon:    React.ComponentProps<typeof Ionicons>['name'];
+  title:   string;
+  body:    string;
+  isFirst?: boolean;
 }) {
   return (
-    <View style={styles.featureRow}>
+    <View style={[styles.featureRow, isFirst && styles.featureRowFirst]}>
       <View style={styles.featureIconWrap}>
         <Ionicons name={icon} size={22} color={colors.amber[400]} />
       </View>
@@ -159,8 +161,10 @@ function BillingToggle({
               {CYCLE_LABELS[cycle]}
             </Text>
             {badge && (
-              <View style={styles.saveBadge}>
-                <Text style={styles.saveBadgeText}>{badge}</Text>
+              <View style={[styles.saveBadge, selected !== cycle && styles.saveBadgeInactive]}>
+                <Text style={[styles.saveBadgeText, selected !== cycle && styles.saveBadgeTextInactive]}>
+                  {badge}
+                </Text>
               </View>
             )}
           </TouchableOpacity>
@@ -210,7 +214,7 @@ export default function PaywallScreen() {
               priceLabel: `${price} / year`,
               perMonth:   monthly,
               total:      'billed annually',
-              badge:      'SAVE 40%',
+              badge:      '−40%',
               rcPackage:  pkg,
             };
           } else if (isLifetime) {
@@ -218,7 +222,7 @@ export default function PaywallScreen() {
               cycle:      'lifetime',
               priceLabel: `${price} once`,
               perMonth:   'Pay once, own forever',
-              badge:      'BEST VALUE',
+              badge:      'BEST',
               rcPackage:  pkg,
             };
           } else if (isMonthly) {
@@ -334,8 +338,8 @@ export default function PaywallScreen() {
 
         {/* ── Feature list ── */}
         <View style={styles.featureList}>
-          {FEATURES.map(f => (
-            <FeatureRow key={f.title} {...f} />
+          {FEATURES.map((f, i) => (
+            <FeatureRow key={f.title} {...f} isFirst={i === 0} />
           ))}
         </View>
 
@@ -488,6 +492,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border.subtle,
   },
+  featureRowFirst: {
+    borderTopWidth: 0,
+  },
   featureIconWrap: {
     width: 44,
     height: 44,
@@ -523,14 +530,16 @@ const styles = StyleSheet.create({
     borderColor: colors.border.subtle,
     overflow: 'hidden',
     marginBottom: spacing[4],
+    height: 52,
   },
   toggleBtn: {
     flex: 1,
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing[2],
-    gap: spacing[1],
+    paddingVertical: spacing[1],
+    paddingHorizontal: 4,
+    gap: 3,
   },
   toggleBtnActive: {
     backgroundColor: colors.amber[400],
@@ -544,16 +553,24 @@ const styles = StyleSheet.create({
     color: colors.text.inverse,
   },
   saveBadge: {
-    backgroundColor: 'rgba(0,0,0,0.20)',
-    borderRadius: radius.xs,
-    paddingHorizontal: spacing[1.5],
-    paddingVertical: 2,
+    backgroundColor: 'rgba(0,0,0,0.22)',
+    borderRadius: 3,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+  },
+  saveBadgeInactive: {
+    backgroundColor: colors.amber[400] + '22',
+    borderWidth: 1,
+    borderColor: colors.amber[500] + '55',
   },
   saveBadgeText: {
     color: '#fff',
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: fontWeight.bold,
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
+  },
+  saveBadgeTextInactive: {
+    color: colors.amber[400],
   },
 
   // ── Price display ────────────────────────────────────────────────────────────
