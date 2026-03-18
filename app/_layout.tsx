@@ -2,23 +2,35 @@ import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Alert, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider, useAuth } from '@contexts/AuthContext';
 import { SubscriptionProvider } from '@contexts/SubscriptionContext';
 import { colors } from '@constants/theme';
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // ─── Global fatal error catcher ───────────────────────────────────────────────
-// Intercepts fatal JS exceptions before they crash the app so we can read the
-// actual error message in the device console.
+// In production this shows an Alert with the error text so we can read it
+// off the screen without needing Xcode connected.
 const _prevHandler = (global as any).ErrorUtils?.getGlobalHandler?.();
 (global as any).ErrorUtils?.setGlobalHandler?.((error: Error, isFatal?: boolean) => {
-  console.error('[READINESS FATAL]', isFatal ? 'FATAL' : 'non-fatal', error?.message);
+  const msg = error?.message ?? '(no message)';
+  const stack = (error?.stack ?? '').slice(0, 400);
+  console.error('[READINESS FATAL]', isFatal ? 'FATAL' : 'non-fatal', msg);
   console.error('[READINESS STACK]', error?.stack);
-  // Still call the previous handler so React Native can do cleanup
-  _prevHandler?.(error, isFatal);
+
+  // Show an alert so we can read the crash reason without Xcode.
+  // Remove this block once the production crash is identified and fixed.
+  try {
+    Alert.alert(
+      isFatal ? '💥 Fatal Error' : '⚠️ Error',
+      `${msg}\n\n${stack}`,
+      [{ text: 'OK', onPress: () => _prevHandler?.(error, isFatal) }],
+    );
+  } catch {
+    _prevHandler?.(error, isFatal);
+  }
 });
 
 // ─── Global unhandled rejection handler ──────────────────────────────────────
