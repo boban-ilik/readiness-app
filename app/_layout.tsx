@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { ActivityIndicator, Alert, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider, useAuth } from '@contexts/AuthContext';
 import { SubscriptionProvider } from '@contexts/SubscriptionContext';
@@ -11,26 +11,12 @@ import { colors } from '@constants/theme';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // ─── Global fatal error catcher ───────────────────────────────────────────────
-// In production this shows an Alert with the error text so we can read it
-// off the screen without needing Xcode connected.
+// Logs the error before letting React Native's default fatal handler run.
 const _prevHandler = (global as any).ErrorUtils?.getGlobalHandler?.();
 (global as any).ErrorUtils?.setGlobalHandler?.((error: Error, isFatal?: boolean) => {
-  const msg = error?.message ?? '(no message)';
-  const stack = (error?.stack ?? '').slice(0, 400);
-  console.error('[READINESS FATAL]', isFatal ? 'FATAL' : 'non-fatal', msg);
+  console.error('[READINESS FATAL]', isFatal ? 'FATAL' : 'non-fatal', error?.message);
   console.error('[READINESS STACK]', error?.stack);
-
-  // Show an alert so we can read the crash reason without Xcode.
-  // Remove this block once the production crash is identified and fixed.
-  try {
-    Alert.alert(
-      isFatal ? '💥 Fatal Error' : '⚠️ Error',
-      `${msg}\n\n${stack}`,
-      [{ text: 'OK', onPress: () => _prevHandler?.(error, isFatal) }],
-    );
-  } catch {
-    _prevHandler?.(error, isFatal);
-  }
+  _prevHandler?.(error, isFatal);
 });
 
 // ─── Global unhandled rejection handler ──────────────────────────────────────
