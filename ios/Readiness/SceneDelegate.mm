@@ -1,23 +1,10 @@
 #import "SceneDelegate.h"
-#import "AppDelegate.h"
 
 @implementation SceneDelegate
 
-- (void)scene:(UIScene *)scene
-    willConnectToSession:(UISceneSession *)session
-                 options:(UISceneConnectionOptions *)connectionOptions
-{
-  // The AppDelegate (RCTAppDelegate subclass) owns the React instance and bridge.
-  // We delegate window creation back to it so nothing in the RN pipeline changes.
-  AppDelegate *appDelegate = (AppDelegate *)[UIApplication sharedApplication].delegate;
-
-  UIWindowScene *windowScene = (UIWindowScene *)scene;
-  self.window = [[UIWindow alloc] initWithWindowScene:windowScene];
-
-  // Hand the window to the AppDelegate so RCTAppDelegate can attach the RootView
-  appDelegate.window = self.window;
-  [self.window makeKeyAndVisible];
-}
+// This class is NOT used as the scene delegate (AppDelegate handles UIScene via EXAppDelegateWrapper).
+// UISceneDelegateClassName in Info.plist points to AppDelegate, not SceneDelegate.
+// This file is kept only as a stub so the Xcode project compiles without errors.
 
 - (void)sceneDidDisconnect:(UIScene *)scene {}
 - (void)sceneDidBecomeActive:(UIScene *)scene {}
