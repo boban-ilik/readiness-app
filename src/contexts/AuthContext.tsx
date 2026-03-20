@@ -25,30 +25,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
+    // Nuclear fallback — if Supabase never resolves (edge case on first cold
+    // launch in production), force isLoading=false after 6 seconds so the
+    // splash screen always hides and the user is never stuck on a black screen.
+    const loadingTimeout = setTimeout(() => {
+      if (!cancelled) {
+        console.warn('[Auth] isLoading timeout — forcing false after 6s');
+        setIsLoading(false);
+      }
+    }, 6000);
+
     // Load existing session on mount.
     // Always catch — if the token refresh network call fails (e.g. momentary
     // offline) we just treat it as signed-out rather than crashing the app.
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
+        if (cancelled) return;
+        clearTimeout(loadingTimeout);
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
       })
       .catch((err) => {
-        if (__DEV__) console.warn('[Auth] getSession failed (network?):', err?.message ?? err);
+        // Log in all builds — this is a silent killer in production
+        console.warn('[Auth] getSession failed (network?):', err?.message ?? err);
+        if (cancelled) return;
+        clearTimeout(loadingTimeout);
         setIsLoading(false);
       });
 
     // Listen for auth state changes (login, logout, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
+        if (cancelled) return;
+        clearTimeout(loadingTimeout);
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      clearTimeout(loadingTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string): Promise<void> => {
