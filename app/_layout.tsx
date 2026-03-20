@@ -53,6 +53,17 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       .catch(() => setOnboardingDone(false));
   }, []);
 
+  // Hide the splash screen as soon as auth + onboarding state are known.
+  // This is intentionally separate from the navigation effect below so that
+  // SplashScreen.hideAsync() is not blocked by the segments guard — in Expo
+  // Router v3, useSegments() starts as [] and only populates after the first
+  // navigation, which would otherwise create a deadlock.
+  useEffect(() => {
+    if (!isLoading && onboardingDone !== null) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [isLoading, onboardingDone]);
+
   useEffect(() => {
     // Wait until both auth and onboarding state are resolved
     if (isLoading || onboardingDone === null) return;
@@ -62,8 +73,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     // prevents a spurious router.replace('/onboarding') that would remount
     // the screen and reset step back to 0.
     if (!segments.length) return;
-
-    SplashScreen.hideAsync();
 
     const inAuth       = segments[0] === '(auth)';
     const inOnboarding = segments[0] === 'onboarding';
