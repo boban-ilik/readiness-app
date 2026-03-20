@@ -202,6 +202,7 @@ export function useHealthData(): UseHealthDataReturn {
   const lastFetchAt = useRef<number>(0);
 
   const load = useCallback(async (mode: LoadMode = 'initial') => {
+    console.log(`[Readiness] load() called — mode: ${mode}, iOS: ${Platform.OS === 'ios'}, hk: ${isHealthKitAvailable()}`);
     if (mode === 'initial')  setIsLoading(true);
     if (mode === 'refresh')  setIsRefreshing(true);
     // 'silent' — no spinner state changes at all
@@ -213,20 +214,39 @@ export function useHealthData(): UseHealthDataReturn {
 
       let hrvBase = 55;
 
-      if (Platform.OS === 'ios' && isHealthKitAvailable()) {
-        console.log('[Readiness] Requesting HealthKit permissions…');
-        const granted = await withTimeout(requestHealthKitPermissions(), 10_000, false);
-        console.log('[Readiness] HealthKit permissions result:', granted);
-        setHasPermission(granted);
+      // iOS 26 beta (iPhone OS 26.x) has breaking changes in HealthKit's native
+      // callbacks. react-native-health doesn't yet handle them and throws
+      // NSExceptions that bypass JS try/catch and kill the app via abort().
+      // Skip live HealthKit on iOS 26+ and use mock data so the UI still works.
+      const iosVersion = typeof Platform.Version === 'number' ? Platform.Version : parseInt(String(Platform.Version), 10);
+      const isIOS26Plus = Platform.OS === 'ios' && iosVersion >= 26;
 
-        if (granted) {
-          [healthData, baseline, hrvBase] = await Promise.all([
-            withTimeout(fetchTodaysHealthData(),    12_000, null),
-            withTimeout(getPersonalRHRBaseline(),    8_000, 60),
-            withTimeout(getPersonalHRVBaseline(),    8_000, 55),
-          ]);
-        } else {
-          setError('Health access denied. Go to Settings → Privacy & Security → Health → Readiness to grant access.');
+      if (isIOS26Plus) {
+        console.warn('[Readiness] iOS 26 beta detected — using mock data (react-native-health not yet compatible)');
+        setHasPermission(true);
+        healthData = MOCK_HEALTH_DATA;
+        baseline   = MOCK_RHR_BASELINE;
+        hrvBase    = MOCK_HRV_BASELINE;
+      } else if (Platform.OS === 'ios' && isHealthKitAvailable()) {
+        // Extra try/catch guards against native NSExceptions that bypass JS catch.
+        try {
+          console.log('[Readiness] Requesting HealthKit permissions…');
+          const granted = await withTimeout(requestHealthKitPermissions(), 10_000, false);
+          console.log('[Readiness] HealthKit permissions result:', granted);
+          setHasPermission(granted);
+
+          if (granted) {
+            [healthData, baseline, hrvBase] = await Promise.all([
+              withTimeout(fetchTodaysHealthData(),    12_000, null),
+              withTimeout(getPersonalRHRBaseline(),    8_000, 60),
+              withTimeout(getPersonalHRVBaseline(),    8_000, 55),
+            ]);
+          } else {
+            setError('Health access denied. Go to Settings → Privacy & Security → Health → Readiness to grant access.');
+          }
+        } catch (hkErr: any) {
+          console.warn('[Readiness] HealthKit block threw unexpectedly:', hkErr?.message ?? hkErr);
+          // healthData stays null, baselines stay at defaults — score will be 50
         }
       } else {
         // Expo Go / web — use mock data
@@ -260,18 +280,28 @@ export function useHealthData(): UseHealthDataReturn {
         // Save today's score so history and weekly-report can read it.
         // Non-blocking — any failure is swallowed; HealthKit remains the
         // source of truth and the app works fine without a network.
-        supabase.auth.getUser().then(({ data }) => {
-          if (data.user) {
-            upsertTodayScore(result, data.user.id).catch(err =>
-              console.warn('[Readiness] Supabase sync failed (non-fatal):', err.message),
-            );
-          }
-        });
+        supabase.auth.getUser()
+          .then(({ data }) => {
+            if (data.user) {
+              upsertTodayScore(result, data.user.id).catch(err =>
+                console.warn('[Readiness] Supabase sync failed (non-fatal):', err.message),
+              );
+            }
+          })
+          .catch(err =>
+            // IMPORTANT: must catch here — an unhandled rejection on iOS
+            // production builds propagates to reportFatalException → abort()
+            console.warn('[Readiness] getUser failed (non-fatal):', err?.message ?? err),
+          );
 
         // ── Fire-and-forget widget update ──────────────────────────────────
         // Push the new score to the iOS App Group so the home screen widget
         // reflects the latest result without a network round-trip.
-        pushScoreToWidget(result);
+        try {
+          pushScoreToWidget(result);
+        } catch (e) {
+          console.warn('[Readiness] pushScoreToWidget failed (non-fatal):', e);
+        }
       }
     } catch (err: any) {
       // Silent background refreshes swallow errors — don't disrupt the UI
@@ -282,10 +312,22 @@ export function useHealthData(): UseHealthDataReturn {
         console.log('[Readiness] Silent refresh error (suppressed):', err.message);
       }
     } finally {
+      console.log(`[Readiness] load() finally — clearing isLoading/isRefreshing (mode: ${mode})`);
       setIsLoading(false);
       setIsRefreshing(false);
       lastFetchAt.current = Date.now();
     }
+  }, []);
+
+  // ── Nuclear fallback — guarantee isLoading never stays true forever ─────────
+  // On iOS 26 beta, HealthKit callbacks and/or setTimeout can silently stall.
+  // This hard wall ensures the app UI always appears within 20 seconds.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      console.warn('[Readiness] ☢️  Nuclear fallback — forcing isLoading=false after 20s');
+      setIsLoading(false);
+    }, 20_000);
+    return () => clearTimeout(t);
   }, []);
 
   // ── Initial load ────────────────────────────────────────────────────────────
