@@ -1,35 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { useEffect } from 'react';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { ActivityIndicator, View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider, useAuth } from '@contexts/AuthContext';
 import { SubscriptionProvider } from '@contexts/SubscriptionContext';
 import { colors } from '@constants/theme';
 
-// Nuclear splash-screen fallback — fires regardless of auth/onboarding state.
-// Guards against any condition where hideAsync() is never called (e.g. Supabase
-// hanging on cold launch in production). 8 seconds is generous enough to let
-// normal auth resolve first, but short enough that the user never stares at a
-// black screen indefinitely.
-function useSplashFallback() {
-  useEffect(() => {
-    const t = setTimeout(() => {
-      console.warn('[SplashScreen] Nuclear fallback — forcing hideAsync after 8s');
-      SplashScreen.hideAsync().catch(() => {});
-    }, 8000);
-    return () => clearTimeout(t);
-  }, []);
-}
-
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // ─── Global unhandled rejection handler ──────────────────────────────────────
-// In dev mode React Native turns unhandled promise rejections into the red
-// error overlay. Network errors (Supabase auth refresh, fetch timeouts) are
-// transient and non-fatal — demote them to console.warn so the overlay doesn't
-// interrupt the UX during development.
+// Demote transient network errors from the red overlay in dev builds so they
+// don't interrupt the UX during development.
 if (__DEV__) {
   const _prev = (global as any).onunhandledrejection;
   (global as any).onunhandledrejection = (event: any) => {
@@ -48,141 +29,54 @@ if (__DEV__) {
   };
 }
 
-const ONBOARDING_KEY = '@readiness/onboarding_complete';
+// ─── Splash Screen Singleton ──────────────────────────────────────────────────
+// Module-level flag: ensures SplashScreen.hideAsync() is called AT MOST ONCE
+// per JS runtime, no matter how many times this component tree re-mounts.
+//
+// Root cause of the iOS 26 black screen / login-redirect loop:
+//   On iOS 26 beta, calling hideAsync() triggers an async native side-effect
+//   that resets the expo-router navigation tree ~3-5 s later. If hideAsync()
+//   is called a second time (because the reset causes re-mounting and another
+//   component calls it again), the cycle compounds indefinitely.
+//
+// Fix: SplashHider lives inside AuthProvider so it can wait for auth to resolve
+// before hiding the splash. The module-level flag ensures that even if
+// SplashHider remounts (due to the first iOS 26 reset), it never calls
+// hideAsync() again — breaking the cascade.
+let _splashHiddenOnce = false;
 
-// ─── Auth + Onboarding Gate ───────────────────────────────────────────────────
-// Watches auth state AND onboarding completion, then redirects to the
-// right destination. Lives inside AuthProvider so it can call useAuth.
+function SplashHider() {
+  const { isLoading } = useAuth();
 
-function AuthGate({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
-  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
-  const segments = useSegments();
-  const router   = useRouter();
-  // Prevent navigating more than once per resolved auth state
-  const hasNavigated = useRef(false);
-
-  // Read onboarding flag once on mount
   useEffect(() => {
-    console.log('[AuthGate] reading AsyncStorage onboarding key');
-    AsyncStorage.getItem(ONBOARDING_KEY)
-      .then(v  => {
-        console.log('[AuthGate] onboardingDone =', v);
-        setOnboardingDone(v === 'true');
-      })
-      .catch((e) => {
-        console.warn('[AuthGate] AsyncStorage error:', e);
-        setOnboardingDone(false);
-      });
-  }, []);
+    if (isLoading) return;           // wait until auth has resolved
+    if (_splashHiddenOnce) return;   // already called once — don't repeat
+    _splashHiddenOnce = true;
+    console.log('[SplashScreen] Auth resolved — hiding splash');
+    SplashScreen.hideAsync().catch(e =>
+      console.warn('[SplashScreen] hideAsync failed:', e),
+    );
+  }, [isLoading]);
 
-  // Log every state change
-  console.log('[AuthGate] render — isLoading:', isLoading, 'user:', !!user, 'onboardingDone:', onboardingDone, 'segments:', segments);
-
-  // Hide splash as soon as we know where the user is going
-  useEffect(() => {
-    if (!isLoading && onboardingDone !== null) {
-      console.log('[AuthGate] hiding splash screen');
-      SplashScreen.hideAsync().catch(() => {});
-    }
-  }, [isLoading, onboardingDone]);
-
-  // ── Initial navigation — runs once when auth + onboarding are both known ──
-  useEffect(() => {
-    console.log('[AuthGate] nav effect — isLoading:', isLoading, 'onboardingDone:', onboardingDone, 'user:', !!user, 'hasNavigated:', hasNavigated.current);
-    if (isLoading || onboardingDone === null) return;
-    if (hasNavigated.current) return;
-    hasNavigated.current = true;
-
-    if (!user) {
-      console.log('[AuthGate] → replacing to /(auth)/login');
-      router.replace('/(auth)/login');
-    } else if (!onboardingDone) {
-      console.log('[AuthGate] → replacing to /onboarding');
-      router.replace('/onboarding');
-    } else {
-      console.log('[AuthGate] → replacing to /(tabs)');
-      router.replace('/(tabs)');
-    }
-  }, [isLoading, onboardingDone, user]);
-
-  // ── Re-navigation guard for mid-session state changes ─────────────────────
-  // Handles: login → tabs, logout → login, onboarding complete → tabs
-  useEffect(() => {
-    if (isLoading || onboardingDone === null) return;
-    if (!segments.length) return; // router not settled yet, skip
-
-    const inAuth       = segments[0] === '(auth)';
-    const inOnboarding = segments[0] === 'onboarding';
-    const inIndex      = segments[0] === 'index' || segments[0] === '';
-
-    // If we're still on the blank index screen after initial nav resolved,
-    // do a corrective navigate (handles edge cases in router timing)
-    if (inIndex) {
-      if (!user) router.replace('/(auth)/login');
-      else if (!onboardingDone) router.replace('/onboarding');
-      else router.replace('/(tabs)');
-      return;
-    }
-
-    if (!user && !inAuth) {
-      router.replace('/(auth)/login');
-      return;
-    }
-
-    if (user && inAuth) {
-      router.replace(onboardingDone ? '/(tabs)' : '/onboarding');
-      return;
-    }
-
-    if (user && !onboardingDone && !inOnboarding) {
-      router.replace('/onboarding');
-    }
-  }, [user, isLoading, onboardingDone, segments]);
-
-  // ── Refresh onboardingDone when leaving the onboarding screen ─────────────
-  useEffect(() => {
-    if (!segments.length || segments[0] === 'onboarding' || onboardingDone === true) return;
-    AsyncStorage.getItem(ONBOARDING_KEY)
-      .then(v => { if (v === 'true') setOnboardingDone(true); })
-      .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [segments]);
-
-  // Overlay spinner while auth resolves — Stack always renders underneath
-  // so Expo Router can process routes and populate segments
-  const showSpinner = isLoading || onboardingDone === null;
-
-  return (
-    <>
-      {children}
-      {showSpinner && (
-        <View style={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: colors.bg.primary,
-          justifyContent: 'center', alignItems: 'center',
-        }}>
-          <ActivityIndicator color={colors.amber[400]} />
-        </View>
-      )}
-    </>
-  );
+  return null;
 }
 
 // ─── Root Layout ──────────────────────────────────────────────────────────────
+// Intentionally minimal — navigation decisions live in app/index.tsx.
+// SplashHider (above) owns SplashScreen.hideAsync() so it is always called
+// exactly once, from the layout level, before any route-level navigation.
 
 export default function RootLayout() {
-  useSplashFallback();
   return (
     <AuthProvider>
       <SubscriptionProvider>
-      <StatusBar style="light" />
-      <AuthGate>
+        <SplashHider />
+        <StatusBar style="light" />
         <Stack
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: colors.bg.primary },
-            animation: 'fade',
+            animation: 'none',
           }}
         >
           <Stack.Screen name="index" />
@@ -191,7 +85,7 @@ export default function RootLayout() {
           {/* gestureEnabled:false prevents swipe-back mid-onboarding */}
           <Stack.Screen
             name="onboarding"
-            options={{ gestureEnabled: false, animation: 'fade' }}
+            options={{ gestureEnabled: false, animation: 'none' }}
           />
           {/* Paywall — slides up from bottom like a native sheet */}
           <Stack.Screen
@@ -200,7 +94,6 @@ export default function RootLayout() {
           />
           <Stack.Screen name="+not-found" />
         </Stack>
-      </AuthGate>
       </SubscriptionProvider>
     </AuthProvider>
   );
