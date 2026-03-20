@@ -2,38 +2,13 @@ import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { ActivityIndicator, View, Text, ScrollView } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider, useAuth } from '@contexts/AuthContext';
 import { SubscriptionProvider } from '@contexts/SubscriptionContext';
 import { colors } from '@constants/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
-
-// ─── Diagnostic fatal error capture ──────────────────────────────────────────
-// Instead of forwarding fatal JS errors to RCTFatal (which calls abort()), we
-// capture them and render an error screen so we can READ the actual message.
-// Remove this diagnostic block once the root cause is identified and fixed.
-interface CapturedError { message: string; stack: string }
-let _capturedFatal: CapturedError | null = null;
-let _setFatalError: ((e: CapturedError) => void) | null = null;
-
-const _prevHandler = (global as any).ErrorUtils?.getGlobalHandler?.();
-(global as any).ErrorUtils?.setGlobalHandler?.((error: Error, isFatal?: boolean) => {
-  const msg = error?.message ?? String(error);
-  const stk = error?.stack ?? '(no stack)';
-  console.error('[READINESS ERROR]', isFatal ? 'FATAL' : 'non-fatal', msg);
-  console.error('[READINESS STACK]', stk);
-
-  if (isFatal) {
-    // Swallow the fatal error — do NOT call _prevHandler, which would trigger
-    // RCTFatal → abort(). Instead surface the message in the UI below.
-    _capturedFatal = { message: msg, stack: stk };
-    _setFatalError?.(_capturedFatal);
-  } else {
-    _prevHandler?.(error, isFatal);
-  }
-});
 
 // ─── Global unhandled rejection handler ──────────────────────────────────────
 // In dev mode React Native turns unhandled promise rejections into the red
@@ -154,35 +129,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 // ─── Root Layout ──────────────────────────────────────────────────────────────
 
 export default function RootLayout() {
-  // Initialise with any error that already fired before this component mounted.
-  const [fatalError, setFatalError] = useState<CapturedError | null>(_capturedFatal);
-
-  useEffect(() => {
-    // Wire up the module-level setter so errors that fire after mount are shown.
-    _setFatalError = setFatalError;
-    return () => { _setFatalError = null; };
-  }, [setFatalError]);
-
-  // ── Diagnostic crash screen ─────────────────────────────────────────────────
-  if (fatalError) {
-    SplashScreen.hideAsync().catch(() => {});
-    return (
-      <View style={{ flex: 1, backgroundColor: '#0D0F14', paddingTop: 60, paddingHorizontal: 20 }}>
-        <Text style={{ color: '#F5A623', fontSize: 20, fontWeight: 'bold', marginBottom: 12 }}>
-          🔴 Crash Diagnostic
-        </Text>
-        <Text style={{ color: '#ff6b6b', fontSize: 15, marginBottom: 16 }}>
-          {fatalError.message}
-        </Text>
-        <ScrollView style={{ flex: 1 }}>
-          <Text style={{ color: '#aaa', fontSize: 11, fontFamily: 'Courier' }}>
-            {fatalError.stack}
-          </Text>
-        </ScrollView>
-      </View>
-    );
-  }
-
   return (
     <AuthProvider>
       <SubscriptionProvider>
