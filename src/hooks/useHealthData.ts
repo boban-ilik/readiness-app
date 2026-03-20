@@ -169,6 +169,24 @@ const MOCK_HRV_BASELINE = 62; // slightly above the mock HRV of 58 — normal he
 // Silent AppState refreshes are suppressed if data was fetched within this window.
 const MIN_SILENT_REFETCH_MS = 5 * 60 * 1000; // 5 minutes
 
+// ─── Timeout race helper ──────────────────────────────────────────────────────
+// HealthKit callbacks can silently hang (permission edge-cases, simulator quirks,
+// background-app-refresh disabled, etc.). Wrap any async HealthKit call so we
+// always get a fallback value rather than leaving isLoading=true forever.
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>(resolve => {
+      const id = setTimeout(() => {
+        console.warn(`[Readiness] HealthKit query timed out after ${ms}ms — using fallback:`, fallback);
+        resolve(fallback);
+      }, ms);
+      // If the real promise wins, clear the timeout to avoid a dangling timer
+      promise.then(() => clearTimeout(id)).catch(() => clearTimeout(id));
+    }),
+  ]);
+}
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useHealthData(): UseHealthDataReturn {
@@ -196,14 +214,16 @@ export function useHealthData(): UseHealthDataReturn {
       let hrvBase = 55;
 
       if (Platform.OS === 'ios' && isHealthKitAvailable()) {
-        const granted = await requestHealthKitPermissions();
+        console.log('[Readiness] Requesting HealthKit permissions…');
+        const granted = await withTimeout(requestHealthKitPermissions(), 10_000, false);
+        console.log('[Readiness] HealthKit permissions result:', granted);
         setHasPermission(granted);
 
         if (granted) {
           [healthData, baseline, hrvBase] = await Promise.all([
-            fetchTodaysHealthData(),
-            getPersonalRHRBaseline(),
-            getPersonalHRVBaseline(),
+            withTimeout(fetchTodaysHealthData(),    12_000, null),
+            withTimeout(getPersonalRHRBaseline(),    8_000, 60),
+            withTimeout(getPersonalHRVBaseline(),    8_000, 55),
           ]);
         } else {
           setError('Health access denied. Go to Settings → Privacy & Security → Health → Readiness to grant access.');

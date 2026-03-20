@@ -8,7 +8,18 @@ import { AuthProvider, useAuth } from '@contexts/AuthContext';
 import { SubscriptionProvider } from '@contexts/SubscriptionContext';
 import { colors } from '@constants/theme';
 
-SplashScreen.preventAutoHideAsync().catch(() => {});
+SplashScreen.preventAutoHideAsync();
+
+// ─── Global fatal error catcher ───────────────────────────────────────────────
+// Intercepts fatal JS exceptions before they crash the app so we can read the
+// actual error message in the device console.
+const _prevHandler = (global as any).ErrorUtils?.getGlobalHandler?.();
+(global as any).ErrorUtils?.setGlobalHandler?.((error: Error, isFatal?: boolean) => {
+  console.error('[READINESS FATAL]', isFatal ? 'FATAL' : 'non-fatal', error?.message);
+  console.error('[READINESS STACK]', error?.stack);
+  // Still call the previous handler so React Native can do cleanup
+  _prevHandler?.(error, isFatal);
+});
 
 // ─── Global unhandled rejection handler ──────────────────────────────────────
 // In dev mode React Native turns unhandled promise rejections into the red
@@ -53,17 +64,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       .catch(() => setOnboardingDone(false));
   }, []);
 
-  // Hide the splash screen as soon as auth + onboarding state are known.
-  // This is intentionally separate from the navigation effect below so that
-  // SplashScreen.hideAsync() is not blocked by the segments guard — in Expo
-  // Router v3, useSegments() starts as [] and only populates after the first
-  // navigation, which would otherwise create a deadlock.
-  useEffect(() => {
-    if (!isLoading && onboardingDone !== null) {
-      SplashScreen.hideAsync().catch(() => {});
-    }
-  }, [isLoading, onboardingDone]);
-
   useEffect(() => {
     // Wait until both auth and onboarding state are resolved
     if (isLoading || onboardingDone === null) return;
@@ -73,6 +73,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     // prevents a spurious router.replace('/onboarding') that would remount
     // the screen and reset step back to 0.
     if (!segments.length) return;
+
+    SplashScreen.hideAsync();
 
     const inAuth       = segments[0] === '(auth)';
     const inOnboarding = segments[0] === 'onboarding';
