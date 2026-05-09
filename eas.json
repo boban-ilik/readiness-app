@@ -8,7 +8,12 @@
       "autoIncrement": true,
       "ios": {
         "resourceClass": "m-medium",
-        "image": "macos-sequoia-15.3-xcode-16.2"
+        "image": "latest"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://vgvrmhqkcqdimgwzbbhc.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_znsX6n2piaoqrvdP66txMw_-kykAHNk",
+        "EXPO_PUBLIC_FORCE_MOCK_HEALTHKIT_ON_IOS26": "false"
       }
     }
   }

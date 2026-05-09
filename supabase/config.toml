@@ -1,5 +1,8 @@
 [functions.strava-token-exchange]
 verify_jwt = false
 
+[functions.weekly-report]
+verify_jwt = false
+
 [functions.delete-account]
 verify_jwt = false

@@ -10,6 +10,8 @@ interface AuthContextType {
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  confirmEmailCode: (email: string, token: string) => Promise<void>;
+  resendSignupCode: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -85,8 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: {
         // Supabase sends a confirmation email by default.
-        // For development, you can disable this in the Supabase dashboard.
-        emailRedirectTo: 'readiness://auth/callback',
+        // Redirect back into the native app so the email confirmation
+        // can finish on-device instead of falling back to a web URL.
+        emailRedirectTo: 'readiness://callback',
       },
     });
     if (error) throw error;
@@ -97,8 +100,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   };
 
+  const confirmEmailCode = async (email: string, token: string): Promise<void> => {
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email',
+    });
+    if (error) throw error;
+  };
+
+  const resendSignupCode = async (email: string): Promise<void> => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: 'readiness://callback',
+      },
+    });
+    if (error) throw error;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        isLoading,
+        signIn,
+        signUp,
+        confirmEmailCode,
+        resendSignupCode,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

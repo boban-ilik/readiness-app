@@ -8,7 +8,7 @@
  */
 
 import { clamp } from '@utils/index';
-import type { HealthData, ReadinessScore } from '@types/index';
+import type { HealthData, ReadinessScore } from '@/types/index';
 
 // ─── Baseline defaults (used when no personal baseline is established yet) ────
 

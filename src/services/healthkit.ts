@@ -11,7 +11,7 @@
  */
 
 import { Platform } from 'react-native';
-import type { HealthData } from '@types/index';
+import type { HealthData } from '@/types/index';
 
 // react-native-health is only available on iOS native builds.
 // We lazy-import to prevent crashes on web/Android/Expo Go.
@@ -481,23 +481,41 @@ function fetchStepsDeduped(start: Date, end: Date, label: string): Promise<numbe
         const entries = Object.entries(bySource);
         if (!entries.length) return resolve(null);
 
-        // Prefer Garmin Connect; otherwise take the single highest-count source
-        // (avoids double-counting when both iPhone and Garmin write to HealthKit).
-        const garminEntry = entries.find(([src]) =>
-          src.toLowerCase().includes('garmin') || src.toLowerCase().includes('connect'),
+        const dedupCandidate = (() => {
+          const garminEntry = entries.find(([src]) =>
+            src.toLowerCase().includes('garmin') || src.toLowerCase().includes('connect'),
+          );
+
+          if (garminEntry) {
+            console.log(`[Readiness] ${label} → Garmin "${garminEntry[0]}": ${Math.round(garminEntry[1])}`);
+            return garminEntry[1];
+          }
+
+          const sorted = [...entries].sort((a, b) => b[1] - a[1]);
+          console.log(`[Readiness] ${label} → best source "${sorted[0][0]}": ${Math.round(sorted[0][1])}`);
+          return sorted[0][1];
+        })();
+
+        // Let Apple Health's own aggregate win when it reports a higher total.
+        // In practice this tracks the Health app better for mixed-source step
+        // data (iPhone + Garmin + watch sync) than our source-picking heuristic.
+        AppleHealthKit.getStepCount(
+          { date: start.toISOString() },
+          (aggregateErr: any, aggregateResult: any) => {
+            const aggregateTotal =
+              aggregateErr || aggregateResult?.value == null
+                ? null
+                : Math.round(aggregateResult.value);
+
+            if (aggregateTotal != null && aggregateTotal > Math.round(dedupCandidate)) {
+              console.log(`[Readiness] ${label} → using Health aggregate: ${aggregateTotal}`);
+              resolve(aggregateTotal);
+              return;
+            }
+
+            resolve(Math.round(dedupCandidate));
+          },
         );
-
-        let total: number;
-        if (garminEntry) {
-          total = garminEntry[1];
-          console.log(`[Readiness] ${label} → Garmin "${garminEntry[0]}": ${Math.round(total)}`);
-        } else {
-          entries.sort((a, b) => b[1] - a[1]);
-          total = entries[0][1];
-          console.log(`[Readiness] ${label} → best source "${entries[0][0]}": ${Math.round(total)}`);
-        }
-
-        resolve(Math.round(total));
       },
     );
   });

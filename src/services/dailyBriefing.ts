@@ -10,7 +10,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@services/supabase';
 import type { ReadinessResult } from '@utils/readiness';
-import type { HealthData } from '@types/index';
+import type { HealthData } from '@/types/index';
 import { getScoreLabel } from '@constants/theme';
 import type { PatternInsight } from '@services/patternAnalysis';
 import type { WorkloadResult } from '@services/workloadAnalysis';

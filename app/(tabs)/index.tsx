@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { captureRef } from 'react-native-view-shot';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ScoreRing from '@components/score/ScoreRing';
 import ScoreBreakdownCard from '@components/score/ScoreBreakdownCard';
@@ -40,7 +41,7 @@ import { analyzeWorkload } from '@services/workloadAnalysis';
 import { computeForecast, type ReadinessForecast } from '@services/readinessForecast';
 import { fetchRecentEvents, type LifeEvent } from '@services/lifeEvents';
 import { supabase } from '@services/supabase';
-import type { HealthData } from '@types/index';
+import type { HealthData } from '@/types/index';
 import { NAME_KEY } from '../onboarding';
 
 // ─── Greeting helper ──────────────────────────────────────────────────────────
@@ -153,6 +154,7 @@ function buildSleepDetail(h: HealthData | null): string | undefined {
 }
 
 export default function HomeScreen() {
+  const router = useRouter();
   const { readiness, isLoading, isRefreshing, error, refresh, rhrBaseline, hrvBaseline, setManualHRV } = useHealthData();
   const { isPro, presentPaywall } = useSubscription();
   const calibration = useCalibrationStatus();
@@ -361,8 +363,8 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.centered}>
-        <ActivityIndicator color={colors.amber[400]} size="large" />
-        <Text style={styles.loadingText}>Reading your data…</Text>
+        <ActivityIndicator color="#fff" size="large" />
+        <Text style={styles.loadingText}>Loading...</Text>
       </SafeAreaView>
     );
   }
@@ -526,7 +528,7 @@ export default function HomeScreen() {
                 icon="💓"
                 detail={buildRecoveryDetail(readiness?.healthData ?? null, rhrBaseline)}
                 isLocked={!isPro}
-                onPress={() => isPro ? setSelectedCard('recovery') : presentPaywall()}
+                onPress={() => isPro ? setSelectedCard('recovery') : router.push('/paywall')}
               />
             </Animated.View>
 
@@ -538,7 +540,7 @@ export default function HomeScreen() {
                 icon="🌙"
                 detail={buildSleepDetail(readiness?.healthData ?? null)}
                 isLocked={!isPro}
-                onPress={() => isPro ? setSelectedCard('sleep') : presentPaywall()}
+                onPress={() => isPro ? setSelectedCard('sleep') : router.push('/paywall')}
               />
             </Animated.View>
 
@@ -550,7 +552,7 @@ export default function HomeScreen() {
                 icon="🧠"
                 detail={buildStressDetail(readiness?.healthData ?? null, rhrBaseline, hrvBaseline)}
                 isLocked={!isPro}
-                onPress={() => isPro ? setSelectedCard('stress') : presentPaywall()}
+                onPress={() => isPro ? setSelectedCard('stress') : router.push('/paywall')}
               />
             </Animated.View>
 

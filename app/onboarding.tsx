@@ -102,52 +102,61 @@ function StepWelcome({
   const inputRef   = useRef<TextInput>(null);
 
   return (
-    <ScrollView
+    <KeyboardAvoidingView
       style={styles.scrollStep}
-      contentContainerStyle={styles.stepContent}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={12}
     >
-      {/* Animated ring */}
-      <View style={styles.ringWrap}>
-        <ScoreRing score={DEMO_SCORE} color={scoreColor} size={180} strokeWidth={10} />
-        <View style={styles.ringOverlay} pointerEvents="none">
-          <Text style={[styles.ringScore, { color: scoreColor }]}>{DEMO_SCORE}</Text>
-          <Text style={styles.ringLabel}>{getScoreLabel(DEMO_SCORE)}</Text>
-        </View>
-      </View>
-
-      <Text style={styles.appName}>Readiness</Text>
-      <Text style={styles.tagline}>Know before you go.</Text>
-      <Text style={styles.welcomeBody}>
-        Your daily readiness score — built from heart rate, sleep, and recovery data synced from your wearable to Apple Health.
-      </Text>
-
-      {/* Name input */}
-      <View style={styles.nameBlock}>
-        <Text style={styles.nameLabel}>What should we call you?</Text>
-        <TextInput
-          ref={inputRef}
-          style={styles.nameInput}
-          placeholder="Your first name"
-          placeholderTextColor={colors.text.tertiary}
-          value={name}
-          onChangeText={setName}
-          autoCapitalize="words"
-          returnKeyType="done"
-          maxLength={30}
-          onSubmitEditing={Keyboard.dismiss}
-        />
-      </View>
-
-      <TouchableOpacity
-        style={styles.primaryBtn}
-        onPress={() => { Keyboard.dismiss(); onNext(); }}
-        activeOpacity={0.85}
+      <ScrollView
+        style={styles.scrollStep}
+        contentContainerStyle={styles.stepContentWelcome}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.primaryBtnText}>Get Started</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        {/* Animated ring */}
+        <View style={styles.ringWrap}>
+          <ScoreRing score={DEMO_SCORE} color={scoreColor} size={180} strokeWidth={10} />
+          <View style={styles.ringOverlay} pointerEvents="none">
+            <Text style={[styles.ringScore, { color: scoreColor }]}>{DEMO_SCORE}</Text>
+            <Text style={styles.ringLabel}>{getScoreLabel(DEMO_SCORE)}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.appName}>Readiness</Text>
+        <Text style={styles.tagline}>Know before you go.</Text>
+        <Text style={styles.welcomeBody}>
+          Your daily readiness score — built from heart rate, sleep, and recovery data synced from your wearable to Apple Health.
+        </Text>
+
+        {/* Name input */}
+        <View style={styles.nameBlock}>
+          <Text style={styles.nameLabel}>What should we call you?</Text>
+          <TextInput
+            ref={inputRef}
+            style={styles.nameInput}
+            placeholder="Your first name"
+            placeholderTextColor={colors.text.tertiary}
+            selectionColor={colors.amber[400]}
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="words"
+            autoCorrect={false}
+            keyboardAppearance="dark"
+            returnKeyType="done"
+            maxLength={30}
+            onSubmitEditing={Keyboard.dismiss}
+          />
+        </View>
+
+        <TouchableOpacity
+          style={styles.primaryBtn}
+          onPress={() => { Keyboard.dismiss(); onNext(); }}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.primaryBtnText}>Get Started</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -993,6 +1002,14 @@ const styles = StyleSheet.create({
     gap: spacing[4],
     justifyContent: 'flex-end',
   },
+  stepContentWelcome: {
+    flexGrow: 1,
+    paddingHorizontal: spacing[6],
+    paddingBottom: spacing[8],
+    paddingTop: spacing[4],
+    gap: spacing[4],
+    justifyContent: 'center',
+  },
 
   // ── Step 0: Welcome ────────────────────────────────────────────────────────
   ringWrap: {
@@ -1057,6 +1074,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontSize: fontSize.base,
     textAlign: 'center',
+    minHeight: 52,
   },
 
   // ── Shared titles ──────────────────────────────────────────────────────────

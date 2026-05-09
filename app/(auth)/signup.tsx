@@ -46,8 +46,14 @@ export default function SignupScreen() {
       // Show a message and redirect to login.
       Alert.alert(
         'Check your inbox',
-        'We sent a confirmation email. Tap the link to activate your account, then sign in.',
-        [{ text: 'Got it', onPress: () => router.replace('/(auth)/login') }]
+        'We sent a 6-digit confirmation code by email. Enter it in the next screen to activate your account.',
+        [{
+          text: 'Enter code',
+          onPress: () => router.replace({
+            pathname: '/(auth)/confirm-email',
+            params: { email: email.trim().toLowerCase() },
+          }),
+        }]
       );
     } catch (error: any) {
       Alert.alert('Sign up failed', error.message ?? 'Something went wrong. Try again.');

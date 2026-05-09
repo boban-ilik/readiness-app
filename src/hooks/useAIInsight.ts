@@ -14,7 +14,7 @@
 
 import { useState, useEffect } from 'react';
 import { fetchAIInsight, type AiInsight, type InsightComponent } from '@services/claude';
-import type { HealthData } from '@types/index';
+import type { HealthData } from '@/types/index';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 

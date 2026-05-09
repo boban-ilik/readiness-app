@@ -11,7 +11,7 @@
  */
 
 import type { ReadinessResult } from '@utils/readiness';
-import type { HealthData }       from '@types/index';
+import type { HealthData }       from '@/types/index';
 
 // ─── Output type ──────────────────────────────────────────────────────────────
 

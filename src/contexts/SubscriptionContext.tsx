@@ -35,7 +35,7 @@ import {
 } from 'react';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import type { CustomerInfo, PurchasesStatic } from 'react-native-purchases';
 
 // ─── RevenueCat API Key ────────────────────────────────────────────────────────
@@ -134,7 +134,6 @@ async function getRevenueCatUI(): Promise<{ default: { presentPaywall: (p: objec
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
-  const router                           = useRouter();
   const [isPro,      setIsPro]      = useState(false);
   const [isLoading,  setIsLoading]  = useState(true);
   const [rcReady,    setRcReady]    = useState(false);

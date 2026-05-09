@@ -7,7 +7,7 @@
 
 import { supabase } from '@services/supabase';
 import type { ReadinessResult } from '@utils/readiness';
-import type { HealthData } from '@types/index';
+import type { HealthData } from '@/types/index';
 import type { PatternInsight } from '@services/patternAnalysis';
 import type { WorkloadResult } from '@services/workloadAnalysis';
 import type { LifeEvent } from '@services/lifeEvents';

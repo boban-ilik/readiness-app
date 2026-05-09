@@ -36,6 +36,10 @@ export const STRAVA_CONFIG = {
   scope:       'read,activity:read',
 };
 
+function pause(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 // ─── Edge Function proxy ──────────────────────────────────────────────────────
 
 /**
@@ -54,6 +58,10 @@ async function stravaTokenViaEdgeFunction(
 ): Promise<Record<string, unknown>> {
   const EDGE_URL = `${SUPABASE_URL}/functions/v1/strava-token-exchange`;
 
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error('[Strava] Supabase is not configured');
+  }
+
   async function attempt(jwt: string): Promise<Response> {
     return fetch(EDGE_URL, {
       method:  'POST',
@@ -70,13 +78,36 @@ async function stravaTokenViaEdgeFunction(
   let { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('[Strava] Not signed in');
 
-  let res = await attempt(session.access_token);
+  let res: Response | null = null;
+
+  for (const delayMs of [0, 350, 1000]) {
+    if (delayMs > 0) await pause(delayMs);
+    try {
+      res = await attempt(session.access_token);
+      break;
+    } catch (error) {
+      console.warn('[Strava] Edge Function request failed, retrying:', EDGE_URL, error);
+    }
+  }
+
+  if (!res) {
+    throw new Error(
+      '[Strava] Could not reach the token exchange service. Check that your device has internet access and the Supabase function is reachable.',
+    );
+  }
 
   // Stale JWT — force a Supabase session refresh and retry once
   if (res.status === 401) {
     const { data: refreshed } = await supabase.auth.refreshSession();
     if (!refreshed.session) throw new Error('[Strava] Session expired — please sign in again');
-    res = await attempt(refreshed.session.access_token);
+    try {
+      res = await attempt(refreshed.session.access_token);
+    } catch (error) {
+      console.warn('[Strava] Edge Function retry after session refresh failed:', EDGE_URL, error);
+      throw new Error(
+        '[Strava] Could not reach the token exchange service after refreshing your session.',
+      );
+    }
   }
 
   // Parse body regardless of status so we can surface the real error message
@@ -180,6 +211,7 @@ async function exchangeCodeForToken(code: string): Promise<StravaToken | null> {
     const data = await stravaTokenViaEdgeFunction({
       grant_type: 'authorization_code',
       code,
+      redirect_uri: STRAVA_CONFIG.redirectUri,
     });
 
     const token: StravaToken = {
@@ -198,6 +230,10 @@ async function exchangeCodeForToken(code: string): Promise<StravaToken | null> {
     console.error('[Strava] Token exchange failed:', err);
     return null;
   }
+}
+
+export async function exchangeStravaCode(code: string): Promise<StravaToken | null> {
+  return exchangeCodeForToken(code);
 }
 
 // ─── Token management ─────────────────────────────────────────────────────────

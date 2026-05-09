@@ -18,7 +18,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { HealthData } from '@types/index';
+import type { HealthData } from '@/types/index';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 

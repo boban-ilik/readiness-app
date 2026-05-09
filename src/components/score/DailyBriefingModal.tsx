@@ -16,26 +16,17 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { fetchDailyBriefing, saveBriefingFeedback, type DailyBriefing } from '@services/dailyBriefing';
 import { analyzePatterns, type PatternInsight } from '@services/patternAnalysis';
 import { analyzeWorkload, type WorkloadResult } from '@services/workloadAnalysis';
-import { askCoach, type ChatMessage } from '@services/coachChat';
-import {
-  loadChatHistory,
-  saveChatHistory,
-  clearChatHistory,
-  CONTEXT_WINDOW,
-} from '@services/chatMemory';
 import { fetchRecentEvents, type LifeEvent } from '@services/lifeEvents';
-import { loadUserProfile, type UserProfile } from '@services/userProfile';
+import { setCoachSession } from '@services/coachSession';
 import type { ReadinessResult } from '@utils/readiness';
-import type { HealthData } from '@types/index';
+import type { HealthData } from '@/types/index';
 import { supabase } from '@services/supabase';
 import {
   colors,
@@ -140,96 +131,6 @@ function ComponentPill({ label, score }: { label: string; score: number }) {
   );
 }
 
-// ─── Markdown renderer ────────────────────────────────────────────────────────
-// Handles **bold**, *italic*, and newline-separated paragraphs.
-// Pure React Native <Text> nesting — no extra dependency needed.
-
-function parseInline(text: string): React.ReactNode[] {
-  // Split on **bold** and *italic* tokens, keeping the delimiters
-  const tokens = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
-  return tokens.map((token, i) => {
-    if (token.startsWith('**') && token.endsWith('**')) {
-      return (
-        <Text key={i} style={{ fontWeight: fontWeight.bold, color: 'inherit' as any }}>
-          {token.slice(2, -2)}
-        </Text>
-      );
-    }
-    if (token.startsWith('*') && token.endsWith('*')) {
-      return (
-        <Text key={i} style={{ fontStyle: 'italic' }}>
-          {token.slice(1, -1)}
-        </Text>
-      );
-    }
-    return token;
-  });
-}
-
-function MarkdownText({
-  text,
-  style,
-}: {
-  text: string;
-  style?: object;
-}) {
-  const paragraphs = text.split('\n').filter(p => p.trim().length > 0);
-  return (
-    <View style={{ gap: 6 }}>
-      {paragraphs.map((para, i) => (
-        <Text key={i} style={style}>
-          {parseInline(para)}
-        </Text>
-      ))}
-    </View>
-  );
-}
-
-// ─── Typing indicator ─────────────────────────────────────────────────────────
-// Three dots that pulse in sequence — matches the coach bubble structure so
-// the layout doesn't jump when the real response arrives.
-
-function TypingDots() {
-  const dots = [
-    useRef(new Animated.Value(0.3)).current,
-    useRef(new Animated.Value(0.3)).current,
-    useRef(new Animated.Value(0.3)).current,
-  ];
-
-  useEffect(() => {
-    const animations = dots.map((dot, i) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(i * 160),
-          Animated.timing(dot, { toValue: 1,   duration: 280, useNativeDriver: true }),
-          Animated.timing(dot, { toValue: 0.3, duration: 280, useNativeDriver: true }),
-          Animated.delay(480 - i * 160),
-        ]),
-      ),
-    );
-    animations.forEach(a => a.start());
-    return () => animations.forEach(a => a.stop());
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingVertical: 2 }}>
-      {dots.map((opacity, i) => (
-        <Animated.View
-          key={i}
-          style={{
-            width:           7,
-            height:          7,
-            borderRadius:    4,
-            backgroundColor: colors.text.secondary,
-            opacity,
-          }}
-        />
-      ))}
-    </View>
-  );
-}
-
 // ─── Briefing feedback row ────────────────────────────────────────────────────
 // Shows "Was this helpful?" with 👍 / 👎 thumbs. On tap, saves to AsyncStorage
 // and shows a one-line acknowledgement. Feedback is sent to the edge function
@@ -280,27 +181,6 @@ function BriefingFeedbackRow({ date }: { date: string }) {
   );
 }
 
-// ─── Chat bubble ──────────────────────────────────────────────────────────────
-
-function ChatBubble({ msg }: { msg: ChatMessage }) {
-  const isUser = msg.role === 'user';
-  return (
-    <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleCoach]}>
-      {!isUser && <Text style={styles.bubbleLabel}>COACH</Text>}
-      {isUser ? (
-        <Text style={[styles.bubbleText, styles.bubbleTextUser]}>
-          {msg.content}
-        </Text>
-      ) : (
-        <MarkdownText
-          text={msg.content}
-          style={styles.bubbleText}
-        />
-      )}
-    </View>
-  );
-}
-
 // ─── Main modal ───────────────────────────────────────────────────────────────
 
 export default function DailyBriefingModal({
@@ -311,22 +191,14 @@ export default function DailyBriefingModal({
   rhrBaseline,
   hrvBaseline,
 }: DailyBriefingModalProps) {
+  const router = useRouter();
   const [briefing,     setBriefing]     = useState<DailyBriefing | null>(null);
   const [isLoading,    setIsLoading]    = useState(false);
   const [error,        setError]        = useState<string | null>(null);
 
-  // Coach chat state
-  const [chatHistory,         setChatHistory]         = useState<ChatMessage[]>([]);
-  const [chatInput,           setChatInput]           = useState('');
-  const [chatLoading,         setChatLoading]         = useState(false);
-  const [chatError,           setChatError]           = useState<string | null>(null);
-  const [hasRestoredHistory,  setHasRestoredHistory]  = useState(false);
-
   const patternsRef   = useRef<PatternInsight[]>([]);
   const workloadRef   = useRef<WorkloadResult | null>(null);
   const lifeEventsRef = useRef<LifeEvent[]>([]);
-  const profileRef    = useRef<UserProfile>({});
-  const scrollRef     = useRef<ScrollView>(null);
 
   const score      = readiness ? Math.round(readiness.score) : 0;
   const scoreColor = getScoreColor(score);
@@ -336,13 +208,6 @@ export default function DailyBriefingModal({
   // Load on open
   useEffect(() => {
     if (!visible || !readiness || !healthData) return;
-    setChatError(null);
-
-    // Restore persisted chat history so conversation continues across opens
-    loadChatHistory().then(history => {
-      setChatHistory(history);
-      setHasRestoredHistory(history.length > 0);
-    });
 
     // Pre-load patterns + workload + life events in parallel
     supabase.auth.getUser().then(({ data }) => {
@@ -357,9 +222,6 @@ export default function DailyBriefingModal({
       .catch(() => {});
     fetchRecentEvents(7)
       .then(e => { lifeEventsRef.current = e; })
-      .catch(() => {});
-    loadUserProfile()
-      .then(p => { profileRef.current = p; })
       .catch(() => {});
     load();
   }, [visible]);
@@ -394,67 +256,29 @@ export default function DailyBriefingModal({
     }
   }
 
-  async function handleSend() {
-    const q = chatInput.trim();
-    if (!q || chatLoading || !readiness || !healthData) return;
-
-    const userMsg: ChatMessage = { role: 'user', content: q };
-    setChatInput('');
-    // Save immediately when user sends — fire and forget inside updater
-    setChatHistory(prev => {
-      const updated = [...prev, userMsg];
-      saveChatHistory(updated);
-      return updated;
+  function handleOpenCoach() {
+    if (!readiness || !healthData) return;
+    setCoachSession({
+      readiness,
+      healthData,
+      rhrBaseline,
+      hrvBaseline,
+      patterns: patternsRef.current,
+      workload: workloadRef.current,
+      lifeEvents: lifeEventsRef.current,
     });
-    setChatLoading(true);
-    setChatError(null);
-
-    // Scroll to bottom after user message renders
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-
-    try {
-      // Cap history sent to the API to avoid token bloat — display shows full history
-      const contextHistory = chatHistory.slice(-CONTEXT_WINDOW);
-      const answer = await askCoach(
-        q,
-        readiness,
-        healthData,
-        rhrBaseline,
-        hrvBaseline,
-        patternsRef.current,
-        workloadRef.current,
-        lifeEventsRef.current,
-        contextHistory,
-        profileRef.current,
-      );
-      const assistantMsg: ChatMessage = { role: 'assistant', content: answer };
-      // Save after assistant responds too
-      setChatHistory(prev => {
-        const updated = [...prev, assistantMsg];
-        saveChatHistory(updated);
-        return updated;
-      });
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-    } catch (err) {
-      setChatError('Couldn\'t reach your coach. Try again.');
-    } finally {
-      setChatLoading(false);
-    }
+    onClose();
+    router.push('/coach-chat');
   }
 
   return (
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
-      >
-        <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
 
           {/* ── Score header ── */}
           <View style={styles.header}>
@@ -488,7 +312,6 @@ export default function DailyBriefingModal({
 
           {/* ── Scrollable body ── */}
           <ScrollView
-            ref={scrollRef}
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
@@ -574,105 +397,24 @@ export default function DailyBriefingModal({
                 <View style={styles.chatHeader}>
                   <View style={styles.chatHeaderTop}>
                     <Text style={styles.chatTitle}>Ask your coach</Text>
-                    {chatHistory.length > 0 && (
-                      <TouchableOpacity
-                        onPress={async () => {
-                          await clearChatHistory();
-                          setChatHistory([]);
-                          setHasRestoredHistory(false);
-                        }}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Text style={styles.clearBtn}>Clear</Text>
-                      </TouchableOpacity>
-                    )}
                   </View>
-                  <Text style={styles.chatSub}>Questions answered with your actual data</Text>
+                  <Text style={styles.chatSub}>Open a dedicated chat screen for questions answered with your actual data.</Text>
                 </View>
-
-                {/* Session continuity separator */}
-                {hasRestoredHistory && (
-                  <View style={styles.sessionSeparator}>
-                    <View style={styles.sessionLine} />
-                    <Text style={styles.sessionLabel}>previous session</Text>
-                    <View style={styles.sessionLine} />
-                  </View>
-                )}
-
-                {/* Suggestion chips when chat is empty */}
-                {chatHistory.length === 0 && (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.suggestionsRow}
-                  >
-                    {[
-                      'Why is my score low?',
-                      'Can I train hard today?',
-                      'What should I focus on this week?',
-                      'Is this normal for me?',
-                    ].map(q => (
-                      <TouchableOpacity
-                        key={q}
-                        style={styles.suggestionChip}
-                        onPress={() => { setChatInput(q); }}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.suggestionText}>{q}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                )}
-
-                {/* Message history */}
-                {chatHistory.map((msg, i) => (
-                  <ChatBubble key={i} msg={msg} />
-                ))}
-
-                {/* Typing indicator — same bubble structure as ChatBubble to prevent layout jump */}
-                {chatLoading && (
-                  <View style={[styles.bubble, styles.bubbleCoach]}>
-                    <Text style={styles.bubbleLabel}>COACH</Text>
-                    <TypingDots />
-                  </View>
-                )}
-
-                {chatError && (
-                  <Text style={styles.chatError}>{chatError}</Text>
-                )}
+                <View style={styles.chatPreviewCard}>
+                  <Text style={styles.chatPreviewTitle}>Coach chat works better full screen</Text>
+                  <Text style={styles.chatPreviewBody}>
+                    Ask follow-up questions, keep the latest reply visible, and type without the keyboard crushing the layout.
+                  </Text>
+                  <TouchableOpacity style={styles.chatOpenBtn} onPress={handleOpenCoach} activeOpacity={0.8}>
+                    <Text style={styles.chatOpenBtnText}>Open coach chat</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
 
             <View style={{ height: spacing[4] }} />
           </ScrollView>
-
-          {/* ── Chat input (sticky at bottom) ── */}
-          {!isLoading && briefing && (
-            <View style={styles.inputBar}>
-              <TextInput
-                style={styles.input}
-                value={chatInput}
-                onChangeText={setChatInput}
-                placeholder="Ask anything about your data…"
-                placeholderTextColor={colors.text.tertiary}
-                returnKeyType="send"
-                onSubmitEditing={handleSend}
-                editable={!chatLoading}
-                multiline={false}
-              />
-              <TouchableOpacity
-                style={[styles.sendBtn, (!chatInput.trim() || chatLoading) && styles.sendBtnDisabled]}
-                onPress={handleSend}
-                disabled={!chatInput.trim() || chatLoading}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.sendBtnText}>↑</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-        </SafeAreaView>
-      </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -980,6 +722,36 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     color:    colors.text.tertiary,
   },
+  chatPreviewCard: {
+    backgroundColor: colors.bg.secondary,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    borderRadius: radius.lg,
+    padding: spacing[4],
+    gap: spacing[3],
+  },
+  chatPreviewTitle: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semiBold,
+    color: colors.text.primary,
+  },
+  chatPreviewBody: {
+    fontSize: fontSize.sm,
+    lineHeight: 20,
+    color: colors.text.secondary,
+  },
+  chatOpenBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.amber[400],
+    borderRadius: radius.full,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2.5],
+  },
+  chatOpenBtnText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    color: colors.bg.primary,
+  },
   sessionSeparator: {
     flexDirection:  'row',
     alignItems:     'center',
@@ -1058,6 +830,10 @@ const styles = StyleSheet.create({
 
   // Input bar
   inputBar: {
+    position:          'absolute',
+    left:              0,
+    right:             0,
+    bottom:            0,
     flexDirection:     'row',
     alignItems:        'center',
     gap:               spacing[2],

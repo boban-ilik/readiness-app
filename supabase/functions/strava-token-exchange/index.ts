@@ -21,7 +21,7 @@
  *   Content-Type: application/json
  *
  *   // Code exchange
- *   { "grant_type": "authorization_code", "code": "abc123" }
+ *   { "grant_type": "authorization_code", "code": "abc123", "redirect_uri": "readiness://strava-callback" }
  *
  *   // Token refresh
  *   { "grant_type": "refresh_token", "refresh_token": "xyz..." }
@@ -101,9 +101,12 @@ serve(async (req: Request) => {
   };
 
   if (grant_type === 'authorization_code') {
-    const { code } = body;
+    const { code, redirect_uri } = body;
     if (!code) return json({ error: 'code is required for authorization_code grant' }, 400);
     stravaPayload.code = code;
+    if (redirect_uri) {
+      stravaPayload.redirect_uri = redirect_uri;
+    }
   } else {
     const { refresh_token } = body;
     if (!refresh_token) return json({ error: 'refresh_token is required for refresh_token grant' }, 400);
@@ -112,17 +115,25 @@ serve(async (req: Request) => {
 
   // ── Call Strava token endpoint ──────────────────────────────────────────────
   try {
+    const encoded = new URLSearchParams(stravaPayload).toString();
+
     const res = await fetch('https://www.strava.com/oauth/token', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(stravaPayload),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    encoded,
     });
 
     const data = await res.json();
 
     if (!res.ok) {
       console.error('[strava-token-exchange] Strava error:', res.status, data);
-      return json({ error: data.message ?? `Strava returned ${res.status}` }, res.status);
+      const detail =
+        data?.message ??
+        data?.errors?.map((e: { resource?: string; field?: string; code?: string }) =>
+          [e.resource, e.field, e.code].filter(Boolean).join('.'),
+        ).filter(Boolean).join(', ') ??
+        `Strava returned ${res.status}`;
+      return json({ error: detail }, res.status);
     }
 
     // Return only what the client needs — strip anything sensitive

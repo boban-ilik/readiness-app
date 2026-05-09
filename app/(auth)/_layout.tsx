@@ -1,14 +1,5 @@
-import { Stack } from 'expo-router';
-import { colors } from '@constants/theme';
+import { Slot } from 'expo-router';
 
 export default function AuthLayout() {
-  return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.bg.primary },
-        animation: 'slide_from_right',
-      }}
-    />
-  );
+  return <Slot />;
 }

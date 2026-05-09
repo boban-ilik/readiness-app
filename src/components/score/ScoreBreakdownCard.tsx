@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import { useEffect, useRef } from 'react';
-import { useRouter } from 'expo-router';
+import { useSubscription } from '@contexts/SubscriptionContext';
 import { colors, fontSize, fontWeight, spacing, radius, shadow } from '@constants/theme';
 
 interface ScoreBreakdownCardProps {
@@ -22,7 +22,7 @@ export default function ScoreBreakdownCard({
   isLocked = false,
   onPress,
 }: ScoreBreakdownCardProps) {
-  const router   = useRouter();
+  const { presentPaywall } = useSubscription();
   const barColor = getBarColor(score);
   const tappable = !!onPress;  // always tappable — locked cards go to paywall
 
@@ -112,7 +112,7 @@ export default function ScoreBreakdownCard({
     return (
       <TouchableOpacity
         style={[styles.card, cardShadow]}
-        onPress={() => router.push('/paywall')}
+        onPress={presentPaywall}
         activeOpacity={0.75}
       >
         {cardContent}

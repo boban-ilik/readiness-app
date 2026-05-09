@@ -16,7 +16,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { getNutritionRecommendation } from '@utils/nutrition';
 import type { ReadinessResult } from '@utils/readiness';
-import type { HealthData }      from '@types/index';
+import type { HealthData }      from '@/types/index';
 import {
   colors,
   fontSize,

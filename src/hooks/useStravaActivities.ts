@@ -9,11 +9,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Linking }          from 'react-native';
 import {
   getStravaToken,
   fetchStravaActivities,
-  handleStravaCallback,
   disconnectStrava,
   type StravaActivity,
 } from '@services/strava';
@@ -44,28 +42,6 @@ export function useStravaActivities(daysBack = 7): StravaState {
       }
       setIsLoading(false);
     })();
-  }, []);
-
-  // Listen for the OAuth deep-link callback
-  useEffect(() => {
-    const sub = Linking.addEventListener('url', async ({ url }) => {
-      if (!url.startsWith('readiness://strava-callback')) return;
-
-      setIsLoading(true);
-      try {
-        const token = await handleStravaCallback(url);
-        if (token) {
-          setIsConnected(true);
-          setAthleteName(token.athleteName);
-          await loadActivities();
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    });
-
-    return () => sub.remove();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load activities when connected state flips true

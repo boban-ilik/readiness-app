@@ -10,7 +10,7 @@ import {
 } from '@services/healthkit';
 import { calculateReadiness, type ReadinessResult } from '@utils/readiness';
 import { computeRHRBaseline, computeHRVBaseline } from '@utils/index';
-import type { HealthData } from '@types/index';
+import type { HealthData } from '../types';
 import { supabase } from '@services/supabase';
 import { upsertTodayScore } from '@services/scoreSync';
 import { pushScoreToWidget } from '@services/widgetBridge';
@@ -164,6 +164,8 @@ const MOCK_HEALTH_DATA: HealthData = {
 
 const MOCK_RHR_BASELINE = 54;
 const MOCK_HRV_BASELINE = 62; // slightly above the mock HRV of 58 — normal healthy state
+const FORCE_MOCK_HEALTHKIT_ON_IOS26 =
+  (process.env.EXPO_PUBLIC_FORCE_MOCK_HEALTHKIT_ON_IOS26 ?? 'false').toLowerCase() === 'true';
 
 // ─── Throttle ─────────────────────────────────────────────────────────────────
 // Silent AppState refreshes are suppressed if data was fetched within this window.
@@ -214,15 +216,15 @@ export function useHealthData(): UseHealthDataReturn {
 
       let hrvBase = 55;
 
-      // iOS 26 beta (iPhone OS 26.x) has breaking changes in HealthKit's native
-      // callbacks. react-native-health doesn't yet handle them and throws
-      // NSExceptions that bypass JS try/catch and kill the app via abort().
-      // Skip live HealthKit on iOS 26+ and use mock data so the UI still works.
+      // iOS 26 was previously forced onto mock data because early beta builds
+      // caused HealthKit native callback instability. Keep a kill switch so we
+      // can force the old behavior if needed, but allow production/TestFlight
+      // builds to exercise real HealthKit again.
       const iosVersion = typeof Platform.Version === 'number' ? Platform.Version : parseInt(String(Platform.Version), 10);
       const isIOS26Plus = Platform.OS === 'ios' && iosVersion >= 26;
 
-      if (isIOS26Plus) {
-        console.warn('[Readiness] iOS 26 beta detected — using mock data (react-native-health not yet compatible)');
+      if (isIOS26Plus && FORCE_MOCK_HEALTHKIT_ON_IOS26) {
+        console.warn('[Readiness] iOS 26 mock-mode enabled via env — using mock data');
         setHasPermission(true);
         healthData = MOCK_HEALTH_DATA;
         baseline   = MOCK_RHR_BASELINE;

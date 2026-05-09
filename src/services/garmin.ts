@@ -6,7 +6,7 @@
  * Reads: HRV, resting HR, sleep, stress score, body battery
  */
 
-import type { HealthData } from '@types/index';
+import type { HealthData } from '@/types/index';
 
 // TODO: Set up Garmin OAuth flow and API client
 // Docs: https://developer.garmin.com/health-api/

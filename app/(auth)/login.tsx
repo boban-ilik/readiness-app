@@ -5,8 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -40,10 +38,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <View style={styles.container}>
       <View style={styles.inner}>
 
         {/* Header */}
@@ -120,7 +115,7 @@ export default function LoginScreen() {
         </View>
 
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

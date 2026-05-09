@@ -9,7 +9,7 @@ import { getPersonalRHRBaseline } from '@hooks/useHealthData';
 import { calculateReadiness } from '@utils/readiness';
 import { supabase } from '@services/supabase';
 import { fetchHistoryFromSupabase } from '@services/scoreSync';
-import type { HealthData } from '@types/index';
+import type { HealthData } from '@/types/index';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
