@@ -9,9 +9,8 @@
  *
  * ── Products expected in RevenueCat "default" Offering ──────────────────────
  *   Package ID   │ Product ID   │ Type
- *   $rc_monthly  │ monthly      │ Auto-renewable subscription ($6.99/mo)
- *   $rc_annual   │ yearly       │ Auto-renewable subscription ($49.99/yr, 7-day trial)
- *   lifetime     │ lifetime     │ Non-consumable one-time purchase
+ *   $rc_monthly  │ monthly      │ Auto-renewable subscription ($9.99/mo)
+ *   $rc_annual   │ yearly       │ Auto-renewable subscription ($69.99/yr, 7-day trial)
  *
  * ── Entitlement ─────────────────────────────────────────────────────────────
  *   Identifier: "pro"  — attach all three products to this entitlement.

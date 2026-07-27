@@ -894,7 +894,7 @@ export default function ProfileScreen() {
             activeOpacity={0.85}
             onPress={presentPaywall}
           >
-            <Text style={styles.upgradeText}>Upgrade to Pro · $6.99/mo</Text>
+            <Text style={styles.upgradeText}>Upgrade to Pro · $9.99/mo</Text>
           </TouchableOpacity>
         )}
 

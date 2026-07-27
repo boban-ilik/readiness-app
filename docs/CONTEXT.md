@@ -20,7 +20,7 @@ enthusiasts using Apple Watch and/or Garmin.
 
 ## Monetization
 - Free: Score number only, no explanation
-- Pro: $4.99/month or $49.99/year — full AI explanation + tip + 
+- Pro: $9.99/month or $69.99/year (7-day trial) — full AI explanation + tip + 
   weekly report + history
 
 ## Tech Stack

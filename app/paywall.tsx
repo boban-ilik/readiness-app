@@ -9,9 +9,8 @@
  *
  * ── RevenueCat entitlement: "pro" ───────────────────────────────────────────
  * Expected packages in the "default" Offering:
- *   $rc_monthly → monthly   ($6.99/mo)
- *   $rc_annual  → yearly    ($49.99/yr, 7-day free trial)
- *   lifetime    → lifetime  (one-time purchase, non-consumable)
+ *   $rc_monthly → monthly   ($9.99/mo)
+ *   $rc_annual  → yearly    ($69.99/yr, 7-day free trial)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -39,12 +38,12 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type BillingCycle = 'monthly' | 'annual' | 'lifetime';
+type BillingCycle = 'monthly' | 'annual';
 
 interface DisplayPackage {
   cycle:       BillingCycle;
-  priceLabel:  string;   // e.g. "$49.99 / year"
-  perMonth:    string;   // e.g. "$4.17"  (for lifetime: "$0" — no monthly charge)
+  priceLabel:  string;   // e.g. "$69.99 / year"
+  perMonth:    string;   // e.g. "$5.83"
   total?:      string;   // e.g. "billed annually"
   badge?:      string;   // optional pill label, e.g. "SAVE 40%"
   rcPackage:   unknown;  // PurchasesPackage | null (null = mock)
@@ -84,23 +83,16 @@ const FEATURES: Array<{
 const MOCK_PACKAGES: Record<BillingCycle, DisplayPackage> = {
   annual: {
     cycle:      'annual',
-    priceLabel: '$49.99 / year',
-    perMonth:   '$4.17',
+    priceLabel: '$69.99 / year',
+    perMonth:   '$5.83',
     total:      'billed annually',
-    badge:      '-40%',
+    badge:      '-42%',
     rcPackage:  null,
   },
   monthly: {
     cycle:      'monthly',
-    priceLabel: '$6.99 / month',
-    perMonth:   '$6.99',
-    rcPackage:  null,
-  },
-  lifetime: {
-    cycle:      'lifetime',
-    priceLabel: '$99.99 once',
-    perMonth:   'Pay once, own forever',
-    badge:      'BEST',
+    priceLabel: '$9.99 / month',
+    perMonth:   '$9.99',
     rcPackage:  null,
   },
 };
@@ -134,7 +126,6 @@ function FeatureRow({
 const CYCLE_LABELS: Record<BillingCycle, string> = {
   monthly:  'Monthly',
   annual:   'Annual',
-  lifetime: 'Lifetime',
 };
 
 function BillingToggle({
@@ -148,7 +139,7 @@ function BillingToggle({
 }) {
   return (
     <View style={styles.toggleWrap}>
-      {(['monthly', 'annual', 'lifetime'] as BillingCycle[]).map(cycle => {
+      {(['monthly', 'annual'] as BillingCycle[]).map(cycle => {
         const badge = packages[cycle].badge;
         return (
           <TouchableOpacity
@@ -205,7 +196,6 @@ export default function PaywallScreen() {
 
           const isAnnual   = pkg.packageType === 'ANNUAL'   || productId === 'yearly'   || productId.includes('annual')   || productId.includes('yearly');
           const isMonthly  = pkg.packageType === 'MONTHLY'  || productId === 'monthly'  || productId.includes('monthly');
-          const isLifetime = pkg.packageType === 'LIFETIME' || productId === 'lifetime' || productId.includes('lifetime');
 
           if (isAnnual) {
             const monthly = `$${(pkg.product.price / 12).toFixed(2)}`;
@@ -214,15 +204,7 @@ export default function PaywallScreen() {
               priceLabel: `${price} / year`,
               perMonth:   monthly,
               total:      'billed annually',
-              badge:      '-40%',
-              rcPackage:  pkg,
-            };
-          } else if (isLifetime) {
-            updated.lifetime = {
-              cycle:      'lifetime',
-              priceLabel: `${price} once`,
-              perMonth:   'Pay once, own forever',
-              badge:      'BEST',
+              badge:      '-42%',
               rcPackage:  pkg,
             };
           } else if (isMonthly) {
@@ -358,9 +340,6 @@ export default function PaywallScreen() {
               Just {selectedPkg.perMonth}/mo — {selectedPkg.total}
             </Text>
           )}
-          {cycle === 'lifetime' && (
-            <Text style={styles.priceNote}>{selectedPkg.perMonth}</Text>
-          )}
         </View>
 
         {/* ── Trial badge (annual only) ── */}
@@ -381,9 +360,7 @@ export default function PaywallScreen() {
           {busy
             ? <ActivityIndicator color={colors.text.inverse} />
             : <Text style={styles.ctaText}>
-                {cycle === 'annual'   ? 'Start Free Trial'    :
-                 cycle === 'lifetime' ? 'Buy Lifetime Access' :
-                                       'Subscribe Monthly'}
+                {cycle === 'annual' ? 'Start Free Trial' : 'Subscribe Monthly'}
               </Text>
           }
         </TouchableOpacity>
@@ -391,8 +368,6 @@ export default function PaywallScreen() {
         <Text style={styles.ctaNote}>
           {cycle === 'annual'
             ? 'No charge for 7 days · Cancel anytime in App Store'
-            : cycle === 'lifetime'
-            ? 'One-time purchase · No recurring charges'
             : 'Billed monthly · Cancel anytime in App Store'}
         </Text>
 
