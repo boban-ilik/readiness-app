@@ -10,7 +10,7 @@
  * ── RevenueCat entitlement: "pro" ───────────────────────────────────────────
  * Expected packages in the "default" Offering:
  *   $rc_monthly → monthly   ($9.99/mo)
- *   $rc_annual  → yearly    ($69.99/yr, 7-day free trial)
+ *   $rc_annual  → yearly    ($69.99/yr, 14-day free trial)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -346,7 +346,7 @@ export default function PaywallScreen() {
         {cycle === 'annual' && (
           <View style={styles.trialBadge}>
             <Text style={styles.trialBadgeIcon}>🎁</Text>
-            <Text style={styles.trialBadgeText}>7-day free trial included</Text>
+            <Text style={styles.trialBadgeText}>14-day free trial included</Text>
           </View>
         )}
 
@@ -367,7 +367,7 @@ export default function PaywallScreen() {
 
         <Text style={styles.ctaNote}>
           {cycle === 'annual'
-            ? 'No charge for 7 days · Cancel anytime in App Store'
+            ? 'No charge for 14 days · Cancel anytime in App Store'
             : 'Billed monthly · Cancel anytime in App Store'}
         </Text>
 

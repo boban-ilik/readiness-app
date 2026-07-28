@@ -152,7 +152,7 @@ export function ProGate({ feature, description, children, style }: ProGateProps)
         </TouchableOpacity>
 
         <Text style={styles.footerNote}>
-          7-day free trial · Cancel anytime
+          14-day free trial · Cancel anytime
         </Text>
 
       </View>
