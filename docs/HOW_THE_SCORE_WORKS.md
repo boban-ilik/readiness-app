@@ -41,18 +41,26 @@ other.
 
 ## Sleep (40%)
 
-We look at up to four things, and average whichever ones your device recorded:
+Four things, weighted rather than treated as equals:
 
-- **Duration**, measured against an 8-hour target. Eight hours or more scores
-  full marks; less scales down proportionally.
-- **Deep sleep**, as a share of total sleep, against a 20% target.
-- **REM sleep**, as a share of total sleep, against a 25% target.
-- **Sleep efficiency** — time asleep versus time in bed — against an 85% target.
+| Signal | Share of sleep score | Target |
+|---|---|---|
+| **Duration** | 50% | 8 hours |
+| **Deep sleep** | 20% | 20% of total sleep |
+| **REM sleep** | 20% | 25% of total sleep |
+| **Efficiency** | 10% | 85% of time in bed |
+
+**Duration carries half the weight on purpose.** Sleep stages are interesting,
+but total time asleep is both the stronger signal and the one you can actually
+do something about tonight. A short night with a flattering deep-sleep
+percentage is still a short night, and your score reflects that.
 
 Deep sleep, REM, and efficiency are scored so that hitting the target earns a
-strong score rather than a perfect one; exceeding it can earn the remainder.
-If your device only reports total sleep time, your sleep score is based on
-duration alone.
+strong result rather than a perfect one; exceeding it earns the remainder.
+
+If your device only reports total sleep time, we don't penalise you for the
+stages it can't measure — the remaining weights are rebalanced across whatever
+it did record, so a duration-only device can still reach a full sleep score.
 
 ## Stress (15%)
 

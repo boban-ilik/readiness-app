@@ -66,34 +66,45 @@ function scoreSleep(
 ): number {
   if (duration === null) return 50;
 
-  // Duration score (50% of sleep component)
+  // Sub-scores are weighted, not averaged: duration is the dominant term and
+  // the one users can most directly act on. Weights are renormalised over
+  // whatever the device actually reported, so a watch that only tracks total
+  // sleep time isn't penalised for the stages it can't measure.
+  const parts: Array<{ score: number; weight: number }> = [];
+
+  // Duration — 50% of the sleep component
   const durationScore = duration >= DEFAULTS.OPTIMAL_SLEEP
     ? 100
     : clamp((duration / DEFAULTS.OPTIMAL_SLEEP) * 100, 0, 100);
+  parts.push({ score: durationScore, weight: 0.5 });
 
-  const subScores = [durationScore];
-
-  // Deep sleep score (20% of sleep component)
+  // Deep sleep — 20%
   if (deep !== null && duration > 0) {
     const deepPct = deep / duration;
-    const deepScore = clamp((deepPct / DEFAULTS.OPTIMAL_DEEP_PCT) * 80, 0, 100);
-    subScores.push(deepScore);
+    parts.push({
+      score:  clamp((deepPct / DEFAULTS.OPTIMAL_DEEP_PCT) * 80, 0, 100),
+      weight: 0.2,
+    });
   }
 
-  // REM score (20% of sleep component)
+  // REM — 20%
   if (rem !== null && duration > 0) {
     const remPct = rem / duration;
-    const remScore = clamp((remPct / DEFAULTS.OPTIMAL_REM_PCT) * 80, 0, 100);
-    subScores.push(remScore);
+    parts.push({
+      score:  clamp((remPct / DEFAULTS.OPTIMAL_REM_PCT) * 80, 0, 100),
+      weight: 0.2,
+    });
   }
 
-  // Efficiency score (10% of sleep component)
+  // Efficiency — 10%
   if (efficiency !== null) {
-    const effScore = clamp((efficiency / 85) * 80, 0, 100);
-    subScores.push(effScore);
+    parts.push({ score: clamp((efficiency / 85) * 80, 0, 100), weight: 0.1 });
   }
 
-  return clamp(subScores.reduce((a, b) => a + b, 0) / subScores.length, 0, 100);
+  const totalWeight = parts.reduce((sum, p) => sum + p.weight, 0);
+  const weighted    = parts.reduce((sum, p) => sum + p.score * p.weight, 0);
+
+  return clamp(weighted / totalWeight, 0, 100);
 }
 
 // ─── Stress component (15%) ───────────────────────────────────────────────────

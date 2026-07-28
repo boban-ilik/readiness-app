@@ -116,6 +116,45 @@ describe('calculateReadiness', () => {
     }
   });
 
+  describe('sleep component weighting', () => {
+    // Duration 480 → 100, deep 20% → 80, REM 25% → 80, efficiency 85% → 80.
+    // Weighted 50/20/20/10 gives 90; a flat average of the same four
+    // sub-scores would give 85, so this pins the weighting itself.
+    it('weights duration at 50% rather than averaging the sub-scores', () => {
+      const { components } = calculateReadiness(
+        makeHealthData({
+          sleepDuration: 480,
+          deepSleep: 96,
+          remSleep: 120,
+          sleepEfficiency: 85,
+        })
+      );
+      expect(components.sleep).toBe(90);
+    });
+
+    it('renormalises the weights when only duration is available', () => {
+      const full = calculateReadiness(makeHealthData({ sleepDuration: 480 }));
+      expect(full.components.sleep).toBe(100);
+
+      const half = calculateReadiness(makeHealthData({ sleepDuration: 240 }));
+      expect(half.components.sleep).toBe(50);
+    });
+
+    it('lets poor duration outweigh excellent sleep stages', () => {
+      // 4h sleep (duration 50) with perfect stage percentages and efficiency.
+      const { components } = calculateReadiness(
+        makeHealthData({
+          sleepDuration: 240,
+          deepSleep: 48,      // 20% — on target
+          remSleep: 60,       // 25% — on target
+          sleepEfficiency: 85,
+        })
+      );
+      // Weighted: 50*0.5 + 80*0.2 + 80*0.2 + 80*0.1 = 65
+      expect(components.sleep).toBe(65);
+    });
+  });
+
   describe('stress component tiers', () => {
     it('tier 1: inverts the Garmin stress score', () => {
       const calm = calculateReadiness(makeHealthData({ stressScore: 10 }));
