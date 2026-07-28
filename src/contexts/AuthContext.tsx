@@ -12,6 +12,12 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<void>;
   confirmEmailCode: (email: string, token: string) => Promise<void>;
   resendSignupCode: (email: string) => Promise<void>;
+  sendPasswordResetCode: (email: string) => Promise<void>;
+  resetPasswordWithCode: (
+    email: string,
+    token: string,
+    newPassword: string,
+  ) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -109,6 +115,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   };
 
+  /**
+   * Sends the "Reset password" email. That template is configured in Supabase
+   * to deliver a 6-digit {{ .Token }} rather than a link, matching the signup
+   * confirmation flow — no deep link required.
+   */
+  const sendPasswordResetCode = async (email: string): Promise<void> => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw error;
+  };
+
+  /**
+   * Verifies the emailed recovery code, which returns a short-lived session,
+   * then sets the new password on that session.
+   */
+  const resetPasswordWithCode = async (
+    email: string,
+    token: string,
+    newPassword: string,
+  ): Promise<void> => {
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'recovery',
+    });
+    if (verifyError) throw verifyError;
+
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    if (updateError) throw updateError;
+  };
+
   const resendSignupCode = async (email: string): Promise<void> => {
     const { error } = await supabase.auth.resend({
       type: 'signup',
@@ -128,6 +166,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         signIn,
         signUp,
+        sendPasswordResetCode,
+        resetPasswordWithCode,
         confirmEmailCode,
         resendSignupCode,
         signOut,

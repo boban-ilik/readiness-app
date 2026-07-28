@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
 import { useAuth } from '@contexts/AuthContext';
 
@@ -85,7 +85,16 @@ export default function LoginScreen() {
           </View>
 
           {/* Forgot password */}
-          <TouchableOpacity style={styles.forgotContainer}>
+          <TouchableOpacity
+            style={styles.forgotContainer}
+            onPress={() =>
+              router.push({
+                pathname: '/(auth)/forgot-password',
+                params: email.trim() ? { email: email.trim() } : undefined,
+              })
+            }
+            activeOpacity={0.7}
+          >
             <Text style={styles.forgotText}>Forgot password?</Text>
           </TouchableOpacity>
 
