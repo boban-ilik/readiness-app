@@ -46,7 +46,6 @@ export interface UserProfile {
   email: string;
   displayName?: string;
   avatarUrl?: string;
-  deviceType: 'apple_watch' | 'garmin' | 'both';
   subscriptionTier: 'free' | 'pro';
   createdAt: string;
 }
