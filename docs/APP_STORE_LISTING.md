@@ -106,8 +106,16 @@ Welcome to the coaching layer your data has been missing.
 **Data Used to Track You:** None
 
 **Data Linked to You:**
-- Health & Fitness: Heart rate, HRV, sleep data, steps (read from HealthKit — processed to generate your coaching, not shared with advertisers)
+- Health & Fitness: Heart rate, HRV, sleep data, steps (read from HealthKit). Used for App Functionality — generating your score and coaching. Not used for advertising or tracking.
+- Health & Fitness: Life events you log (e.g. alcohol, illness, travel) — used to explain changes in your score
 - Identifiers: User ID (Supabase auth)
+- User Content: Coach chat messages
+
+**Third-party processing to declare:** health metrics, logged life events, your
+first name, and coach chat messages are sent to Anthropic (Claude) to generate
+insights, briefings, weekly reports, and chat replies. Anthropic processes them
+solely to produce that text; under Anthropic's API terms this data is excluded
+from model training. Email addresses and account identifiers are never sent.
 
 **Data Not Linked to You:** None
 
