@@ -186,7 +186,20 @@ export default function PaywallScreen() {
         const Purchases = (require('react-native-purchases') as { default: import('react-native-purchases').PurchasesStatic }).default;
         const offerings = await Purchases.getOfferings();
         const current   = offerings.current;
-        if (!current) return;
+        if (!current) {
+          console.warn(
+            '[Paywall] RevenueCat returned no current offering. ' +
+            `all=${JSON.stringify(Object.keys(offerings.all ?? {}))}`,
+          );
+          return;
+        }
+
+        if (current.availablePackages.length === 0) {
+          console.warn(
+            `[Paywall] Offering "${current.identifier}" has no available packages — ` +
+            'App Store is not serving products for these identifiers.',
+          );
+        }
 
         const updated: Record<BillingCycle, DisplayPackage> = { ...MOCK_PACKAGES };
 
@@ -219,8 +232,14 @@ export default function PaywallScreen() {
 
         setPackages(updated);
         setRcLoaded(true);
-      } catch {
-        // RevenueCat not linked yet (Expo Go) — mock packages remain
+      } catch (e: any) {
+        // Expected in Expo Go, where the native module isn't linked. Anywhere
+        // else this is the reason the paywall shows fallback prices and can't
+        // sell anything, so don't swallow it silently.
+        console.warn(
+          '[Paywall] Could not load RevenueCat offerings — showing fallback prices. ' +
+          `code=${e?.code ?? 'n/a'} message=${e?.message ?? String(e)}`,
+        );
       }
     }
 
