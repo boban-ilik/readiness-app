@@ -272,6 +272,23 @@ export default function PaywallScreen() {
 
   const selectedPkg = packages[cycle];
 
+  // How much annual saves versus paying monthly for a year. Derived from the
+  // live prices when RevenueCat has loaded, so it can't drift from what the
+  // App Store actually charges; falls back to the offering's badge otherwise.
+  const annualSaving = (() => {
+    const m = packages.monthly.rcPackage as { product?: { price?: number } } | null;
+    const a = packages.annual.rcPackage  as { product?: { price?: number } } | null;
+    const monthlyPrice = m?.product?.price;
+    const annualPrice  = a?.product?.price;
+
+    if (monthlyPrice && annualPrice) {
+      const yearOfMonthly = monthlyPrice * 12;
+      if (annualPrice >= yearOfMonthly) return null;  // no saving to claim
+      return `${Math.round((1 - annualPrice / yearOfMonthly) * 100)}%`;
+    }
+    return packages.annual.badge?.replace('-', '') ?? null;
+  })();
+
   // ── Purchase handler ────────────────────────────────────────────────────────
   async function handleSubscribe() {
     if (busy) return;
@@ -403,12 +420,26 @@ export default function PaywallScreen() {
           )}
         </View>
 
-        {/* ── Trial badge (annual only) ── */}
+        {/* ── Trial badge (annual only — monthly has no introductory offer) ── */}
         {cycle === 'annual' && (
           <View style={styles.trialBadge}>
             <Text style={styles.trialBadgeIcon}>🎁</Text>
             <Text style={styles.trialBadgeText}>14-day free trial included</Text>
           </View>
+        )}
+
+        {/* ── Annual advantage (shown on monthly, where the trial is invisible) ── */}
+        {cycle === 'monthly' && (
+          <TouchableOpacity
+            style={styles.switchPrompt}
+            onPress={() => setCycle('annual')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.switchPromptText}>
+              Go annual for a <Text style={styles.switchPromptStrong}>14-day free trial</Text>
+              {annualSaving ? <> and save {annualSaving}</> : null}
+            </Text>
+          </TouchableOpacity>
         )}
 
         {/* ── CTA ── */}
@@ -647,6 +678,27 @@ const styles = StyleSheet.create({
     color: colors.amber[400],
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+  },
+
+  // ── Annual advantage prompt (monthly only) ──────────────────────────────────
+  switchPrompt: {
+    alignSelf: 'center',
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    backgroundColor: colors.bg.secondary,
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[4],
+    marginBottom: spacing[5],
+  },
+  switchPromptText: {
+    color: colors.text.secondary,
+    fontSize: fontSize.sm,
+    textAlign: 'center',
+  },
+  switchPromptStrong: {
+    color: colors.amber[400],
+    fontWeight: fontWeight.semiBold,
   },
 
   // ── CTA ─────────────────────────────────────────────────────────────────────
