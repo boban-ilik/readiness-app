@@ -23,6 +23,7 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -77,6 +78,14 @@ const FEATURES: Array<{
     body:  'CSV export, pattern correlations, and a shareable weekly summary card.',
   },
 ];
+
+// ─── Legal links ──────────────────────────────────────────────────────────────
+// App Review guideline 3.1.2 requires a screen selling an auto-renewable
+// subscription to link to both a privacy policy and terms of use. These must
+// resolve — dead links are a routine rejection.
+const PRIVACY_URL = 'https://thereadiness.app/privacy';
+// Apple's standard EULA, which apps may use in place of bespoke terms.
+const TERMS_URL   = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
 
 // ─── Fallback pricing (shown when RevenueCat packages haven't loaded) ─────────
 
@@ -469,11 +478,17 @@ export default function PaywallScreen() {
             <Text style={styles.footerLink}>Restore Purchases</Text>
           </TouchableOpacity>
           <Text style={styles.footerDot}>·</Text>
-          <TouchableOpacity activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})}
+            activeOpacity={0.7}
+          >
             <Text style={styles.footerLink}>Privacy</Text>
           </TouchableOpacity>
           <Text style={styles.footerDot}>·</Text>
-          <TouchableOpacity activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={() => Linking.openURL(TERMS_URL).catch(() => {})}
+            activeOpacity={0.7}
+          >
             <Text style={styles.footerLink}>Terms</Text>
           </TouchableOpacity>
         </View>
