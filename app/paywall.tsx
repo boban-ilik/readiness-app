@@ -250,11 +250,21 @@ export default function PaywallScreen() {
         } else {
           Alert.alert('Purchase Issue', 'Payment completed but Pro entitlement was not activated. Please restore purchases or contact support.');
         }
-      } else {
+      } else if (__DEV__) {
         // ── Mock purchase (dev / Expo Go) ─────────────────────────────────────
         await new Promise<void>(r => setTimeout(r, 1000));
         await debugSetPro(true);
         router.back();
+      } else {
+        // No RevenueCat package — StoreKit returned no products. Most often the
+        // Paid Applications Agreement isn't active yet, but it can also be a
+        // transient App Store outage. Never close silently: a subscribe button
+        // that appears to do nothing reads as a broken app (and is an App
+        // Review guideline 2.1 risk).
+        Alert.alert(
+          'Purchases unavailable',
+          'We couldn\'t reach the App Store just now. Please try again shortly.',
+        );
       }
     } catch (e: any) {
       // User cancelled (errorCode 1) — don't show an alert
