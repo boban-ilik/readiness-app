@@ -36,6 +36,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import type { CustomerInfo, PurchasesStatic } from 'react-native-purchases';
+import { useAuth } from '@contexts/AuthContext';
 
 // ─── RevenueCat API Key ────────────────────────────────────────────────────────
 const REVENUECAT_API_KEY_IOS = 'appl_nHqlgLzhlUlmYeuMxNqThGAuPlJ';
@@ -155,6 +156,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [isLoading,  setIsLoading]  = useState(true);
   const [rcReady,    setRcReady]    = useState(false);
 
+  // Supabase user id, or null when signed out. SubscriptionProvider is nested
+  // inside AuthProvider in app/_layout.tsx, so this is always available.
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+
   // ── Bootstrap ──────────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
@@ -204,6 +210,48 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     init();
     return () => { cancelled = true; };
   }, []);
+
+  // ── Identity ───────────────────────────────────────────────────────────────
+  /**
+   * Ties the RevenueCat customer to the signed-in Supabase user.
+   *
+   * Without this, RevenueCat identifies buyers by a per-install anonymous ID,
+   * so a subscription belongs to the device rather than the account — someone
+   * who subscribes and then signs in on a new phone would appear un-subscribed
+   * until they tapped "Restore Purchases".
+   *
+   * Runs after configure() (rcReady) and re-runs whenever the user changes.
+   */
+  useEffect(() => {
+    if (!rcReady) return;
+    let cancelled = false;
+
+    async function syncIdentity() {
+      const Purchases = await getPurchases();
+      if (!Purchases) return;
+
+      try {
+        if (userId) {
+          const { customerInfo } = await Purchases.logIn(userId);
+          if (!cancelled) {
+            setIsPro(!!customerInfo.entitlements.active[ENTITLEMENT_PRO]);
+          }
+        } else {
+          // logOut() rejects when the current user is already anonymous —
+          // that's an expected no-op, swallowed by the catch below.
+          const customerInfo = await Purchases.logOut();
+          if (!cancelled) {
+            setIsPro(!!customerInfo.entitlements.active[ENTITLEMENT_PRO]);
+          }
+        }
+      } catch (e) {
+        console.warn('[Subscription] RevenueCat identity sync failed (non-fatal):', e);
+      }
+    }
+
+    syncIdentity();
+    return () => { cancelled = true; };
+  }, [rcReady, userId]);
 
   // ── Refresh entitlements ───────────────────────────────────────────────────
   const refreshEntitlements = useCallback(async () => {
