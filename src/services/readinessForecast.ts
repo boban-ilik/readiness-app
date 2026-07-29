@@ -22,7 +22,8 @@ export type ForecastConfidence = 'high' | 'medium' | 'low';
 
 export interface DayForecast {
   label:       string;              // "Tomorrow", "In 2 days", "In 3 days"
-  dateLabel:   string;              // "Tue", "Wed", "Thu"
+  dateLabel:   string;              // "Tue", "Wed", "Thu" — compact card headers
+  dateLabelLong: string;            // "Tuesday", "Wednesday" — for prose
   score:       number;              // point estimate
   range:       [number, number];    // [low, high] shown as a band
   trend:       ForecastTrend;
@@ -96,7 +97,8 @@ function buildDayForecast(
   const date = new Date();
   date.setDate(date.getDate() + daysAhead);
 
-  const dateLabel = date.toLocaleDateString('en-US', { weekday: 'short' });
+  const dateLabel     = date.toLocaleDateString('en-US', { weekday: 'short' });
+  const dateLabelLong = date.toLocaleDateString('en-US', { weekday: 'long' });
   const label     = daysAhead === 1 ? 'Tomorrow'
                   : daysAhead === 2 ? 'In 2 days'
                   : 'In 3 days';
@@ -115,7 +117,7 @@ function buildDayForecast(
 
   const keyFactor = deriveKeyFactor(daysAhead, score, diff, patterns, workload);
 
-  return { label, dateLabel, score, range, trend, confidence, keyFactor };
+  return { label, dateLabel, dateLabelLong, score, range, trend, confidence, keyFactor };
 }
 
 // ─── Key factor copy ──────────────────────────────────────────────────────────

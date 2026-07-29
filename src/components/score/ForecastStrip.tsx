@@ -203,11 +203,11 @@ export default function ForecastStrip({ forecast }: Props) {
         <View style={styles.summaryHeader}>
           <Text style={styles.summaryEyebrow}>Best window</Text>
           <Text style={styles.summaryTitle}>
-            {bestDay.dateLabel} looks strongest at {bestDay.score}
+            {bestDay.dateLabelLong} looks strongest at {bestDay.score}
           </Text>
         </View>
         <Text style={styles.summaryBody}>
-          Plan your hardest work around {bestDay.label.toLowerCase()}, and keep {easiestDay.dateLabel} more conservative if you need a lighter day.
+          Plan your hardest work around {bestDay.label.toLowerCase()}, and keep {easiestDay.dateLabelLong} more conservative if you need a lighter day.
         </Text>
       </View>
       <Text style={styles.sectionNote}>
