@@ -83,7 +83,22 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     }
 
     if (user && !onboardingDone && !inOnboarding) {
-      router.replace('/onboarding');
+      // `onboardingDone` is read once on mount. The onboarding screen writes
+      // the flag straight to AsyncStorage and then navigates to /(tabs), so
+      // this state is stale for exactly one render — long enough to bounce the
+      // user back into the onboarding they just finished. Confirm against
+      // storage before redirecting.
+      let cancelled = false;
+      AsyncStorage.getItem(ONBOARDING_KEY)
+        .then(v => {
+          if (cancelled) return;
+          if (v === 'true') setOnboardingDone(true);
+          else router.replace('/onboarding');
+        })
+        .catch(() => {
+          if (!cancelled) router.replace('/onboarding');
+        });
+      return () => { cancelled = true; };
     }
   }, [user, isLoading, onboardingDone, segments, router]);
 
