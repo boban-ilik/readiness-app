@@ -293,6 +293,14 @@ export default function PaywallScreen() {
         } else {
           Alert.alert('No Previous Purchase', 'We couldn\'t find an active Pro subscription linked to your Apple ID.');
         }
+      } else {
+        // RevenueCat never loaded — without this the button would do nothing
+        // at all. App Review checks restore on a fresh install, and a silent
+        // no-op reads as a broken app.
+        Alert.alert(
+          'Restore unavailable',
+          'We couldn\'t reach the App Store just now. Please try again shortly.',
+        );
       }
     } catch (e: any) {
       Alert.alert('Restore Failed', e?.message ?? 'Could not restore purchases.');
