@@ -125,4 +125,56 @@ Welcome to the coaching layer your data has been missing.
 
 ---
 
+## App Review Notes *(paste into App Store Connect → App Review Information)*
+
+> Fill in the two credential lines before submitting. Create the account in the
+> app, confirm the email, and complete onboarding so the reviewer lands on a
+> working home screen rather than a setup flow.
+
+```
+DEMO ACCOUNT
+Email: <fill in>
+Password: <fill in>
+
+This account is already confirmed and onboarded — no email verification
+is needed to sign in.
+
+ABOUT THE HEALTH DATA
+Readiness reads HRV, resting heart rate and sleep from Apple Health. On a
+test device with no paired Apple Watch and no Health history, the app works
+as designed but shows a low-confidence score built from population averages,
+with an on-screen notice saying HRV was not detected and that baselines are
+still calibrating. This is expected behaviour, not an error state.
+
+The score, breakdown, forecast, history and coach chat are all fully
+functional without wearable data.
+
+SUBSCRIPTIONS
+Readiness Pro is offered monthly ($9.99) and annually ($69.99). The annual
+plan includes a 14-day free trial; the monthly plan does not, which is why
+the trial is only advertised on the annual option.
+
+Pro features can be reviewed without purchasing by signing in with the demo
+account above, which has Pro access enabled.
+
+HOME SCREEN WIDGET
+The app includes a home screen widget showing the current readiness score.
+It populates after the app has been opened once and a score has been
+calculated.
+
+CONTACT
+<support email>
+```
+
+### Before you submit — checklist
+
+- [ ] Demo account created, email confirmed, onboarding completed
+- [ ] Demo account signed into on a clean install to confirm it works
+- [ ] Pro access granted to the demo account (RevenueCat promotional entitlement)
+- [ ] Privacy Policy URL live and reachable
+- [ ] Support URL live and reachable
+- [ ] Credentials pasted into the notes above
+
+---
+
 *Last updated: March 2026 — v1.0 launch*
