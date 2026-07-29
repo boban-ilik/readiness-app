@@ -203,15 +203,39 @@ export default function PaywallScreen() {
 
         const updated: Record<BillingCycle, DisplayPackage> = { ...MOCK_PACKAGES };
 
-        for (const pkg of current.availablePackages) {
-          const productId = pkg.product.productIdentifier;
-          const price     = pkg.product.priceString;  // e.g. "$6.99"
+        // RevenueCat can return packages whose StoreKit product failed to
+        // resolve, leaving product fields undefined. Log the real shape so a
+        // mismatch is diagnosable rather than guesswork.
+        console.log(
+          '[Paywall] offering packages:',
+          JSON.stringify(
+            current.availablePackages.map(p => ({
+              id:      p.identifier,
+              type:    p.packageType,
+              product: p.product?.productIdentifier ?? null,
+              price:   p.product?.priceString ?? null,
+            })),
+          ),
+        );
 
-          const isAnnual   = pkg.packageType === 'ANNUAL'   || productId === 'yearly'   || productId.includes('annual')   || productId.includes('yearly');
-          const isMonthly  = pkg.packageType === 'MONTHLY'  || productId === 'monthly'  || productId.includes('monthly');
+        for (const pkg of current.availablePackages) {
+          // Every access here is guarded. Reading .includes() on an undefined
+          // productIdentifier previously threw and aborted the whole load, so
+          // one hollow package silently downgraded the paywall to fallback
+          // prices and made purchases impossible.
+          const productId = pkg.product?.productIdentifier ?? '';
+          const price     = pkg.product?.priceString ?? '';
+          const pkgId     = pkg.identifier ?? '';
+
+          const isAnnual   = pkg.packageType === 'ANNUAL'  || pkgId === '$rc_annual'
+                          || productId === 'yearly'  || productId.includes('annual') || productId.includes('yearly');
+          const isMonthly  = pkg.packageType === 'MONTHLY' || pkgId === '$rc_monthly'
+                          || productId === 'monthly' || productId.includes('monthly');
 
           if (isAnnual) {
-            const monthly = `$${(pkg.product.price / 12).toFixed(2)}`;
+            const monthly = pkg.product?.price
+              ? `$${(pkg.product.price / 12).toFixed(2)}`
+              : MOCK_PACKAGES.annual.perMonth;
             updated.annual = {
               cycle:      'annual',
               priceLabel: `${price} / year`,
