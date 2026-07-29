@@ -30,6 +30,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   ReactNode,
 } from 'react';
 import { Platform } from 'react-native';
@@ -161,18 +162,25 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
+  // __DEV__-only Pro override. Held in a ref so every place that derives isPro
+  // from RevenueCat can OR it in — otherwise a real "not subscribed" response
+  // would immediately switch the dev toggle back off.
+  const devProRef = useRef(false);
+
   // ── Bootstrap ──────────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
     async function init() {
-      // 1. Check dev override first (instant, no network)
+      // 1. Dev override — reflect Pro immediately, but do NOT skip SDK setup.
+      //    This used to return early, which left Purchases unconfigured for the
+      //    whole session. The paywall calls Purchases.getOfferings() directly,
+      //    so it then failed with "There is no singleton instance" and could
+      //    never sell anything until the toggle was switched back off.
       if (__DEV__) {
         const devVal = await AsyncStorage.getItem(DEV_OVERRIDE_KEY).catch(() => null);
-        if (devVal === 'true') {
-          if (!cancelled) { setIsPro(true); setIsLoading(false); }
-          return;
-        }
+        devProRef.current = devVal === 'true';
+        if (devProRef.current && !cancelled) setIsPro(true);
       }
 
       // 2. Only on iOS native builds — not Expo Go / web
@@ -192,11 +200,15 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         Purchases.configure({ apiKey: REVENUECAT_API_KEY_IOS });
 
         const info = await Purchases.getCustomerInfo();
-        if (!cancelled) setIsPro(!!info.entitlements.active[ENTITLEMENT_PRO]);
+        if (!cancelled) {
+          setIsPro(devProRef.current || !!info.entitlements.active[ENTITLEMENT_PRO]);
+        }
 
         // Real-time updates: fires after purchase, restore, or subscription change
         Purchases.addCustomerInfoUpdateListener((updatedInfo: CustomerInfo) => {
-          if (!cancelled) setIsPro(!!updatedInfo.entitlements.active[ENTITLEMENT_PRO]);
+          if (!cancelled) {
+            setIsPro(devProRef.current || !!updatedInfo.entitlements.active[ENTITLEMENT_PRO]);
+          }
         });
 
         if (!cancelled) setRcReady(true);
@@ -234,14 +246,14 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         if (userId) {
           const { customerInfo } = await Purchases.logIn(userId);
           if (!cancelled) {
-            setIsPro(!!customerInfo.entitlements.active[ENTITLEMENT_PRO]);
+            setIsPro(devProRef.current || !!customerInfo.entitlements.active[ENTITLEMENT_PRO]);
           }
         } else {
           // logOut() rejects when the current user is already anonymous —
           // that's an expected no-op, swallowed by the catch below.
           const customerInfo = await Purchases.logOut();
           if (!cancelled) {
-            setIsPro(!!customerInfo.entitlements.active[ENTITLEMENT_PRO]);
+            setIsPro(devProRef.current || !!customerInfo.entitlements.active[ENTITLEMENT_PRO]);
           }
         }
       } catch (e) {
@@ -260,7 +272,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       const Purchases = await getPurchases();
       if (!Purchases) return;
       const info = await Purchases.getCustomerInfo();
-      setIsPro(!!info.entitlements.active[ENTITLEMENT_PRO]);
+      setIsPro(devProRef.current || !!info.entitlements.active[ENTITLEMENT_PRO]);
     } catch (e) {
       console.warn('[Subscription] refreshEntitlements failed:', e);
     }
@@ -322,6 +334,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const debugSetPro = useCallback(async (value: boolean) => {
     if (!__DEV__) return;
     await AsyncStorage.setItem(DEV_OVERRIDE_KEY, value ? 'true' : 'false');
+    devProRef.current = value;
     setIsPro(value);
   }, []);
 
