@@ -47,6 +47,24 @@ const ENTITLEMENT_PRO = 'pro';
 const PAYWALL_PURCHASED = 'PURCHASED';
 const PAYWALL_RESTORED  = 'RESTORED';
 
+/**
+ * Whether to present RevenueCat's own paywall sheet instead of the in-app
+ * /paywall screen.
+ *
+ * Currently OFF. RevenueCatUI.presentPaywall() requires a paywall to be
+ * designed against the offering in the RevenueCat dashboard; the "default"
+ * offering has none, so the sheet opens empty and shows RevenueCat's native
+ * "Error 23: There is an issue with your configuration" alert. That alert is
+ * rendered inside the sheet, so it appears before our own error handling can
+ * fall back — the user just sees a broken paywall.
+ *
+ * The in-app /paywall screen loads the same offering and calls
+ * Purchases.purchasePackage(), so purchases work identically.
+ *
+ * Flip this to true once a paywall is published in the RC dashboard.
+ */
+const USE_REVENUECAT_PAYWALL_UI = false;
+
 // ─── Keys ─────────────────────────────────────────────────────────────────────
 const DEV_OVERRIDE_KEY = '@readiness/dev_is_pro';
 
@@ -208,7 +226,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
    * 2. If not linked (Expo Go / before pod install) → push to /paywall.
    */
   const presentPaywall = useCallback(async () => {
-    if (rcReady) {
+    if (rcReady && USE_REVENUECAT_PAYWALL_UI) {
       try {
         const RCUI = await getRevenueCatUI();
         if (RCUI) {
