@@ -490,7 +490,7 @@ export default function HomeScreen() {
         {score > 0 && readiness?.dataQuality?.confidence !== 'high' &&
           readiness?.dataQuality?.warningMessage && (
           <View style={styles.confidenceBanner}>
-            <Text style={styles.confidenceIcon}>⚠</Text>
+            <Text style={styles.confidenceIcon}>⌚</Text>
             <Text style={styles.confidenceText}>{readiness.dataQuality.warningMessage}</Text>
           </View>
         )}
@@ -799,21 +799,22 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   // Subtle amber strip shown when Apple Watch data quality is medium or low
+  // Neutral, not amber: missing wearable data is a setup step, not a fault.
+  // Alarm styling here made a normal first run look like an error state.
   confidenceBanner: {
     flexDirection:  'row',
     alignItems:     'flex-start',
     gap:            spacing[2],
-    backgroundColor: 'rgba(251, 191, 36, 0.10)',
+    backgroundColor: colors.bg.secondary,
     borderRadius:   radius.md,
     borderWidth:    1,
-    borderColor:    'rgba(251, 191, 36, 0.25)',
+    borderColor:    colors.border.subtle,
     paddingHorizontal: spacing[3],
     paddingVertical:   spacing[2],
     marginBottom:   spacing[4],
   },
   confidenceIcon: {
     fontSize:   13,
-    color:      colors.amber[400],
     lineHeight: 18,
   },
   confidenceText: {

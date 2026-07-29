@@ -194,7 +194,7 @@ describe('calculateReadiness', () => {
     it('is medium confidence with only partial signals', () => {
       const sleepOnly = calculateReadiness(makeHealthData({ sleepDuration: 480 }));
       expect(sleepOnly.dataQuality.confidence).toBe('medium');
-      expect(sleepOnly.dataQuality.warningMessage).toContain('no heart rate data');
+      expect(sleepOnly.dataQuality.warningMessage).toContain('heart rate');
 
       const hrOnly = calculateReadiness(makeHealthData({ hrv: 55, restingHeartRate: 60 }));
       expect(hrOnly.dataQuality.confidence).toBe('medium');
@@ -209,7 +209,7 @@ describe('calculateReadiness', () => {
         'resting heart rate',
         'sleep',
       ]);
-      expect(result.dataQuality.warningMessage).toContain('estimated');
+      expect(result.dataQuality.warningMessage).toContain('estimate');
     });
   });
 });

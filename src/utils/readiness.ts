@@ -182,16 +182,19 @@ function assessDataQuality(data: HealthData): DataQuality {
     confidence = 'low';
   }
 
+  // Phrased as the next step rather than a fault. Missing wearable data is the
+  // normal state on day one, and reading it as an error makes a working app
+  // look broken to new users.
   let warningMessage: string | null = null;
   if (confidence === 'low') {
-    warningMessage = 'No Apple Watch data detected — score is estimated. Wear your watch overnight for accurate results.';
+    warningMessage = 'Today\'s score is an estimate from typical values. Wear your Apple Watch overnight and tomorrow\'s will be yours.';
   } else if (confidence === 'medium') {
     if (!hasHRV && !hasRHR) {
-      warningMessage = 'Sleep detected, but no heart rate data — wear your Apple Watch snugly overnight for HRV tracking.';
+      warningMessage = 'Sleep is tracked. Wear your Apple Watch snugly overnight to add heart rate and HRV.';
     } else if (!hasSleep) {
-      warningMessage = 'Heart rate tracked, but sleep wasn\'t detected — wearing your watch to bed improves accuracy.';
+      warningMessage = 'Heart rate is tracked. Wear your watch to bed to add sleep, the largest part of your score.';
     } else if (!hasHRV) {
-      warningMessage = 'HRV not detected — ensure your Apple Watch fits snugly and is worn during sleep.';
+      warningMessage = 'Wear your Apple Watch snugly overnight to add HRV — the strongest recovery signal we read.';
     }
   }
 
