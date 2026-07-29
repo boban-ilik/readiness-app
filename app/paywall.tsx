@@ -83,7 +83,10 @@ const FEATURES: Array<{
 // App Review guideline 3.1.2 requires a screen selling an auto-renewable
 // subscription to link to both a privacy policy and terms of use. These must
 // resolve — dead links are a routine rejection.
-const PRIVACY_URL = 'https://thereadiness.app/privacy';
+// Served by GitHub Pages from the repo root on main. Switch to
+// https://thereadiness.app/privacy once that domain is hosting the policy —
+// this link must resolve, so don't point it at a domain before it's live.
+const PRIVACY_URL = 'https://boban-ilik.github.io/readiness-app/privacy-policy.html';
 // Apple's standard EULA, which apps may use in place of bespoke terms.
 const TERMS_URL   = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
 
