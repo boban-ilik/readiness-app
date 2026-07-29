@@ -139,7 +139,7 @@ export function ProGate({ feature, description, children, style }: ProGateProps)
 
         {/* Price pill */}
         <View style={styles.pricePill}>
-          <Text style={styles.priceText}>Readiness Pro · $6.99 / month</Text>
+          <Text style={styles.priceText}>Readiness Pro · $9.99 / month</Text>
         </View>
 
         {/* CTA */}
