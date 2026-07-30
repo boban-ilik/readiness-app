@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@services/supabase';
+import { syncDataOwner } from '@services/userScopedStorage';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,9 +50,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Always catch — if the token refresh network call fails (e.g. momentary
     // offline) we just treat it as signed-out rather than crashing the app.
     supabase.auth.getSession()
-      .then(({ data: { session } }) => {
+      .then(async ({ data: { session } }) => {
         if (cancelled) return;
         clearTimeout(loadingTimeout);
+        // Wipe device-local personal data if it belongs to another account.
+        await syncDataOwner(session?.user?.id ?? null).catch(() => {});
+        if (cancelled) return;
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
@@ -69,9 +73,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (_event, session) => {
         if (cancelled) return;
         clearTimeout(loadingTimeout);
-        setSession(session);
-        setUser(session?.user ?? null);
-        setIsLoading(false);
+        // Runs on sign-in as well as refresh, so a different account signing
+        // in on this device never inherits the previous user's data.
+        syncDataOwner(session?.user?.id ?? null)
+          .catch(() => {})
+          .finally(() => {
+            if (cancelled) return;
+            setSession(session);
+            setUser(session?.user ?? null);
+            setIsLoading(false);
+          });
       }
     );
 

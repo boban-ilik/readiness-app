@@ -37,11 +37,15 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const hasNavigated = useRef(false);
 
+  // Re-read whenever the signed-in user changes. AuthContext wipes device-local
+  // data before publishing the new user, so a different account signing in has
+  // an empty flag here and is correctly sent through onboarding — rather than
+  // inheriting the previous user's "already onboarded" state.
   useEffect(() => {
     AsyncStorage.getItem(ONBOARDING_KEY)
       .then(v => setOnboardingDone(v === 'true'))
       .catch(() => setOnboardingDone(false));
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     if (isLoading || onboardingDone === null) return;
