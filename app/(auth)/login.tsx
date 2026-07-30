@@ -11,6 +11,7 @@ import {
 import { Link, router } from 'expo-router';
 import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
 import { useAuth } from '@contexts/AuthContext';
+import PasswordInput from '@components/common/PasswordInput';
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -69,7 +70,7 @@ export default function LoginScreen() {
 
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>PASSWORD</Text>
-            <TextInput
+            <PasswordInput
               style={[styles.input, passwordFocused && styles.inputFocused]}
               placeholder="••••••••"
               placeholderTextColor={colors.text.tertiary}
@@ -77,7 +78,6 @@ export default function LoginScreen() {
               onChangeText={setPassword}
               onFocus={() => setPasswordFocused(true)}
               onBlur={() => setPasswordFocused(false)}
-              secureTextEntry
               returnKeyType="done"
               onSubmitEditing={handleSignIn}
               keyboardAppearance="dark"

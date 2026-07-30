@@ -13,6 +13,7 @@ import {
 import { useLocalSearchParams, router } from 'expo-router';
 import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
 import { useAuth } from '@contexts/AuthContext';
+import PasswordInput from '@components/common/PasswordInput';
 
 const MIN_PASSWORD_LENGTH = 6;
 
@@ -107,15 +108,12 @@ export default function ResetPasswordScreen() {
           />
 
           <Text style={styles.label}>NEW PASSWORD</Text>
-          <TextInput
+          <PasswordInput
             value={password}
             onChangeText={setPassword}
             style={styles.input}
             placeholder="At least 6 characters"
             placeholderTextColor={colors.text.tertiary}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
             returnKeyType="done"
             onSubmitEditing={handleReset}
             keyboardAppearance="dark"
