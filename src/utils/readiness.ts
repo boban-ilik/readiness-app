@@ -185,16 +185,19 @@ function assessDataQuality(data: HealthData): DataQuality {
   // Phrased as the next step rather than a fault. Missing wearable data is the
   // normal state on day one, and reading it as an error makes a working app
   // look broken to new users.
+  // Deliberately device-agnostic. Garmin, Whoop, Polar and Oura don't write
+  // HRV to Apple Health, so telling those users to wear an Apple Watch is
+  // advice they can't act on — they can enter HRV by hand instead.
   let warningMessage: string | null = null;
   if (confidence === 'low') {
-    warningMessage = 'Today\'s score is an estimate from typical values. Wear your Apple Watch overnight and tomorrow\'s will be yours.';
+    warningMessage = 'Today\'s score is an estimate from typical values. Wear your watch overnight and tomorrow\'s will be yours.';
   } else if (confidence === 'medium') {
     if (!hasHRV && !hasRHR) {
-      warningMessage = 'Sleep is tracked. Wear your Apple Watch snugly overnight to add heart rate and HRV.';
+      warningMessage = 'Sleep is tracked. Wear your watch snugly overnight to add heart rate, or tap to enter HRV yourself.';
     } else if (!hasSleep) {
       warningMessage = 'Heart rate is tracked. Wear your watch to bed to add sleep, the largest part of your score.';
     } else if (!hasHRV) {
-      warningMessage = 'Wear your Apple Watch snugly overnight to add HRV — the strongest recovery signal we read.';
+      warningMessage = 'Add your overnight HRV to sharpen this score — it\'s the strongest recovery signal we read. Tap to enter it.';
     }
   }
 
