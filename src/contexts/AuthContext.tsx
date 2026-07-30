@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { Session, User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@services/supabase';
 import { syncDataOwner } from '@services/userScopedStorage';
+import { pullProfile } from '@services/profileSync';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,8 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(async ({ data: { session } }) => {
         if (cancelled) return;
         clearTimeout(loadingTimeout);
-        // Wipe device-local personal data if it belongs to another account.
+        // Wipe device-local personal data if it belongs to another account,
+        // then restore this account's profile if the device has none.
         await syncDataOwner(session?.user?.id ?? null).catch(() => {});
+        if (session?.user) await pullProfile().catch(() => {});
         if (cancelled) return;
         setSession(session);
         setUser(session?.user ?? null);
@@ -76,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Runs on sign-in as well as refresh, so a different account signing
         // in on this device never inherits the previous user's data.
         syncDataOwner(session?.user?.id ?? null)
+          .then(() => (session?.user ? pullProfile() : null))
           .catch(() => {})
           .finally(() => {
             if (cancelled) return;

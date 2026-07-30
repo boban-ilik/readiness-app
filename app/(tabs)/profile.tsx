@@ -3,7 +3,7 @@ import {
   Alert, ScrollView, Image, Platform, Linking,
 } from 'react-native';
 import { SafeAreaView }              from 'react-native-safe-area-context';
-import { useEffect, useState }       from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AsyncStorage                  from '@react-native-async-storage/async-storage';
 import Constants                     from 'expo-constants';
 import { useRouter }                 from 'expo-router';
@@ -17,6 +17,7 @@ import { useStravaActivities }       from '@hooks/useStravaActivities';
 import { ProGate }                   from '@components/common/ProGate';
 import { Ionicons }                  from '@expo/vector-icons';
 import { NAME_KEY, FREQ_KEY, JOINED_AT_KEY } from '../onboarding';
+import { pushProfile }               from '@services/profileSync';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
@@ -464,6 +465,20 @@ export default function ProfileScreen() {
 
   // ── Strava connection ────────────────────────────────────────────────────────
   const strava = useStravaActivities(7);
+
+  // ── Mirror profile edits to Supabase ────────────────────────────────────────
+  // Each field saves to AsyncStorage independently, so rather than pushing from
+  // nine handlers this watches the values and syncs once they settle. Debounced
+  // because sliders fire continuously while dragging.
+  const hasHydrated = useRef(false);
+  useEffect(() => {
+    if (!hasHydrated.current) {
+      hasHydrated.current = true;   // skip the initial load, nothing changed yet
+      return;
+    }
+    const t = setTimeout(() => { pushProfile().catch(() => {}); }, 1500);
+    return () => clearTimeout(t);
+  }, [userName, trainingFreq, age, sex, height, weight, goal]);
 
   // ── Load saved data ─────────────────────────────────────────────────────────
   useEffect(() => {

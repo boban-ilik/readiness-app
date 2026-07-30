@@ -33,6 +33,7 @@ import {
   isHealthKitAvailable,
 } from '@services/healthkit';
 import { getPersonalRHRBaseline } from '@hooks/useHealthData';
+import { pushProfile } from '@services/profileSync';
 import {
   colors,
   fontSize,
@@ -808,6 +809,9 @@ function StepSetup({
       if (weight.trim()) pairs.push([PROFILE_WEIGHT_KEY, weight.trim()]);
 
       await AsyncStorage.multiSet(pairs);
+      // Mirror to Supabase so the profile survives a reinstall and follows the
+      // account to another device. Non-blocking — never hold up onboarding.
+      pushProfile().catch(() => {});
       await pause(400);
       onComplete();
     }
