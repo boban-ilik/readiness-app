@@ -20,6 +20,57 @@
 
 ## Description *(4000 chars max)*
 
+> Written without em dashes or hyphen bullets. Claims are limited to features
+> that exist in the shipping app: there is no direct Garmin integration, and the
+> privacy section matches the published policy, which discloses that AI features
+> send metrics to Anthropic.
+
+Readiness helps athletes and fitness enthusiasts train smarter by tracking daily recovery from Heart Rate Variability (HRV), resting heart rate, sleep, and activity in Apple Health.
+
+KNOW WHEN TO PUSH. KNOW WHEN TO REST.
+Every morning, Readiness calculates your recovery score and tells you how ready your body is to train. Stop guessing. Stop overtraining. Start listening to your body.
+
+WHAT READINESS TRACKS
+• HRV, the strongest recovery signal available
+• Resting heart rate, a key indicator of nervous system stress
+• Sleep duration, stages, and efficiency
+• Steps and daily activity
+• Training load from your workouts
+
+WORKS WITH THE GEAR YOU ALREADY OWN
+Readiness reads from Apple Health, so it works with virtually any device that writes there: Apple Watch, Garmin, Polar, Fitbit, Whoop, Samsung Galaxy Watch, Oura Ring and more. One coach for all your data, whatever you wear. If your watch does not share HRV with Apple Health, you can enter it yourself in a couple of taps.
+
+YOUR DAILY BRIEFING
+A personalised morning summary written by an AI coach that knows your numbers. It explains why your score is what it is, and whether today calls for a hard session or active recovery.
+
+ASK YOUR COACH ANYTHING
+"Should I do my long run tomorrow?" "Why is my HRV low on Thursdays?" Your coach has your full history and answers in plain English rather than charts.
+
+SEE THREE DAYS AHEAD
+A readiness forecast for the days ahead, so you can move your key session before fatigue arrives instead of after.
+
+CATCH OVERTRAINING EARLY
+Readiness watches for the patterns that precede burnout and tells you before you dig a hole you have to climb out of.
+
+TAG WHAT AFFECTS YOU
+Log alcohol, illness, travel, stress, or a late night, and watch your coach connect them to what your body did next.
+
+ON YOUR HOME SCREEN
+A widget keeps today's score one glance away, so you know before you go.
+
+ALSO INCLUDED
+• Weekly report on your trends and training load
+• Cycle tracking that factors into your score
+• Streaks to keep you consistent
+• CSV export of your own data
+
+YOUR PRIVACY
+Your readiness score is calculated on your device. The AI features send the relevant metrics to Anthropic's Claude to write your briefing and chat replies, and nothing more. Your data is never sold and never shared with advertisers. Our privacy policy sets out exactly what is sent and what is not.
+
+---
+
+### Previous draft *(kept for reference)*
+
 Know exactly how hard to push today — before you lace up.
 
 Readiness connects to Apple Health and turns your health data into a daily readiness score from 0–100, a personalised AI briefing, and a 3-day training forecast. No extra hardware, no subscription device — works with the watch and gear you already own.
