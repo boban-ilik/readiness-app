@@ -18,7 +18,7 @@ import {
   Animated,
 } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { fetchDailyBriefing, saveBriefingFeedback, type DailyBriefing } from '@services/dailyBriefing';
 import { analyzePatterns, type PatternInsight } from '@services/patternAnalysis';
@@ -278,6 +278,11 @@ export default function DailyBriefingModal({
       presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
+      {/* A Modal renders in its own native view hierarchy, outside the app's
+          SafeAreaProvider, so SafeAreaView here resolved a top inset of zero
+          and drew the score straight under the status bar and notch. Seeding a
+          provider with the window metrics restores the real insets. */}
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
 
           {/* ── Score header ── */}
@@ -415,6 +420,7 @@ export default function DailyBriefingModal({
             <View style={{ height: spacing[4] }} />
           </ScrollView>
       </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }
