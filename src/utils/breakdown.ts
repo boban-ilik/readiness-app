@@ -38,11 +38,16 @@ export interface BreakdownDetail {
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
-/** "Last night · Mon, Mar 9" — used by overnight metrics (Recovery, Sleep). */
+/**
+ * "Last night" — used by overnight metrics (Recovery, Sleep).
+ *
+ * Deliberately undated. This used to print the previous calendar day, so a
+ * Friday morning read "Last night · Thursday, Jul 30" while History filed the
+ * same night's sleep under Friday. Both conventions are defensible; showing
+ * both in one app is not, and "last night" needs no date to be understood.
+ */
 function lastNightContext(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return `Last night · ${d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`;
+  return 'Last night';
 }
 
 /** "Today · Tue, Mar 10" — used by real-time metrics (Stress). */

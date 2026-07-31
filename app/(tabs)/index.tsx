@@ -454,6 +454,23 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
+        {/* Today's training — the answer to "what do I do today?", so it sits
+            directly under the score rather than below four analytics cards. */}
+        {score > 0 && (
+          <View style={styles.trainingSection}>
+            <Text style={styles.sectionTitle}>TODAY'S TRAINING</Text>
+            <ProGate
+              feature="Training Load Recommendations"
+              description="Get a daily training prescription — zone, duration, and RPE — tailored to how recovered you actually are."
+            >
+              <TrainingLoadCard
+                score={score}
+                components={readiness?.components ?? { recovery: 50, sleep: 50, stress: 50 }}
+              />
+            </ProGate>
+          </View>
+        )}
+
         {/* Streak banner */}
         <StreakBanner score={score} />
 
@@ -593,22 +610,6 @@ export default function HomeScreen() {
                 />
               </ProGate>
             </Animated.View>
-          </View>
-        )}
-
-        {/* Training Load — Pro feature */}
-        {score > 0 && (
-          <View style={styles.trainingSection}>
-            <Text style={styles.sectionTitle}>TODAY'S TRAINING</Text>
-            <ProGate
-              feature="Training Load Recommendations"
-              description="Get a daily training prescription — zone, duration, and RPE — tailored to how recovered you actually are."
-            >
-              <TrainingLoadCard
-                score={score}
-                components={readiness?.components ?? { recovery: 50, sleep: 50, stress: 50 }}
-              />
-            </ProGate>
           </View>
         )}
 
