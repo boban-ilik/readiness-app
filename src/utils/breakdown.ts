@@ -371,11 +371,21 @@ function buildSleep(score: number, h: HealthData | null): BreakdownDetail {
   // ── Interpretation ──────────────────────────────────────────────────────────
   const parts: string[] = [];
 
+  // A composite score can land in a healthy band while duration was well short:
+  // strong efficiency and stage percentages offset a night that was simply too
+  // brief. Calling that "a good night's sleep" contradicts the metrics listed
+  // directly above it, so short nights get their own honest framing.
+  const shortNight = sleepDuration != null && sleepDuration < 420;   // under 7h
+
   // Lead with what the score means
-  if (score >= 80) {
+  if (score >= 80 && !shortNight) {
     parts.push(`Your sleep score of ${Math.round(score)} is excellent — last night gave your body and brain everything they need to perform and recover well today.`);
+  } else if (score >= 65 && shortNight) {
+    parts.push(`Your sleep score of ${Math.round(score)} holds up on quality — efficiency and stage balance were reasonable — but you were short on time. A brief night limits total recovery no matter how well you slept while you were down.`);
   } else if (score >= 65) {
     parts.push(`Your sleep score of ${Math.round(score)} is solid. Last night was a good night's sleep, though there's a little room at the margin — you'll feel capable but not at your absolute peak.`);
+  } else if (score >= 80) {
+    parts.push(`Your sleep score of ${Math.round(score)} is strong on quality, though the night was shorter than ideal.`);
   } else if (score >= 50) {
     parts.push(`Your sleep score of ${Math.round(score)} is moderate. Last night's sleep was functional but incomplete — you'll likely feel the effects in focus, mood, or energy at some point today.`);
   } else if (score >= 35) {
@@ -507,15 +517,24 @@ function buildStress(score: number, h: HealthData | null, rhrBaseline: number, h
 
   // ── Metric 4: Overall Stress Signal ─────────────────────────────────────────
   // Synthesised view combining all available signals
-  if (stressScore != null || hrv != null) {
-    const stressOk  = stressScore == null || stressScore <= 50;
-    const hrvOk     = hrv == null || (hrv - hrvBaseline) >= -5;
-    const bothOk    = stressOk && hrvOk;
-    const neitherOk = !stressOk && !hrvOk;
-    const sub       = bothOk
+  if (stressScore != null || hrv != null || daytimeAvgHR != null) {
+    // Only judge signals we actually have. Treating an absent signal as a
+    // healthy one produced "one indicator is elevated while another is within
+    // range" for a Garmin user with no stress score at all — while both
+    // metrics on screen were flagged red. Daytime heart rate was displayed as
+    // a metric but never counted here either.
+    const signals: boolean[] = [];   // true = elevated
+    if (stressScore  != null) signals.push(stressScore > 50);
+    if (hrv          != null) signals.push((hrv - hrvBaseline) < -5);
+    if (daytimeAvgHR != null) signals.push((daytimeAvgHR - rhrBaseline) > 10);
+
+    const elevated = signals.filter(Boolean).length;
+    const sub      = elevated === 0
       ? 'All available stress signals point toward a calm, manageable state'
-      : neitherOk
-      ? 'Multiple stress signals are elevated — your nervous system is under meaningful load from training, poor sleep, or daily stressors'
+      : elevated === signals.length
+      ? (signals.length === 1
+          ? 'Your one available stress signal is elevated — your nervous system is under meaningful load from training, poor sleep, or daily stressors'
+          : 'Multiple stress signals are elevated — your nervous system is under meaningful load from training, poor sleep, or daily stressors')
       : 'Mixed signals — one stress indicator is elevated while another is within range';
     metrics.push({
       label:  'Overall Stress Signal',
@@ -692,16 +711,22 @@ function buildActivity(score: number, h: HealthData | null): BreakdownDetail {
 
   // ── Metric 4: Overall Activity Signal ────────────────────────────────────────
   if (steps != null || exerciseMinutes != null) {
-    const stepsOk = steps == null || steps >= 7_500;
-    const exOk    = exerciseMinutes == null || exerciseMinutes >= 20;
-    const sub     = stepsOk && exOk
+    // Judge only the signals present. Counting an absent one as on-target made
+    // a 5,389-step day with no exercise data read "Mixed — the other looks
+    // good" and rate itself Moderate, directly under a Reduced badge.
+    const signals: boolean[] = [];   // true = met target
+    if (steps           != null) signals.push(steps >= 7_500);
+    if (exerciseMinutes != null) signals.push(exerciseMinutes >= 20);
+
+    const met = signals.filter(Boolean).length;
+    const sub = met === signals.length
       ? 'Good movement volume — activity load from yesterday is a positive context signal for today\'s recovery'
-      : !stepsOk && !exOk
+      : met === 0
       ? 'Low movement day — a sedentary pattern can gradually reduce baseline fitness and slow recovery adaptation'
       : 'Mixed — one aspect of yesterday\'s activity is below target, but the other looks good';
     metrics.push({
       label:  'Overall Activity',
-      value:  stepsOk && exOk ? 'Active' : stepsOk || exOk ? 'Moderate' : 'Low',
+      value:  met === signals.length ? 'Active' : met > 0 ? 'Moderate' : 'Low',
       sub,
       status: score >= 65 ? 'good' : score >= 40 ? 'ok' : 'poor',
     });
