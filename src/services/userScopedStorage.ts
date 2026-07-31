@@ -69,10 +69,21 @@ const USER_SCOPED_KEYS = [
   '@readiness/notif_trend_decline_last_date',
   '@readiness/notif_last_score',
   '@readiness/notif_score_history',
+
+  // Coach conversation — contains health details and whatever the user typed
+  '@readiness/coach_chat_v1',
 ];
 
-/** Manually entered HRV is stored per-date, so those keys need a prefix sweep. */
-const USER_SCOPED_PREFIXES = ['@readiness/manual_hrv_'];
+/**
+ * Keys suffixed with a date, so they need a prefix sweep rather than an exact
+ * match. The briefing cache and its feedback both hold personal health detail:
+ * the cached briefing quotes the user's HRV, sleep and heart rate directly.
+ */
+const USER_SCOPED_PREFIXES = [
+  '@readiness/manual_hrv_',
+  '@readiness/daily_briefing_v1_',
+  '@readiness/briefing_feedback_v1_',
+];
 
 async function clearUserScopedData(): Promise<void> {
   const all     = await AsyncStorage.getAllKeys();
