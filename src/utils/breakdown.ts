@@ -26,7 +26,8 @@ export interface MetricRow {
 export interface BreakdownDetail {
   icon:            string;
   label:           string;
-  weight:          string;      // "45%", "40%", "15%", "Context · not scored"
+  weight:          string;      // "45% of readiness score", or for Activity:
+                                // "Context · doesn't affect your score"
   dateContext?:    string;      // e.g. "Yesterday · Monday, Mar 9" — shown in modal header
   score:           number;
   statusLabel:     string;      // "Optimal", "Good", "Moderate", "Reduced", "Low"
@@ -788,7 +789,7 @@ function buildActivity(score: number, h: HealthData | null): BreakdownDetail {
   });
 
   return {
-    icon: '🏃', label: 'Activity', weight: 'Context · not scored',
+    icon: '🏃', label: 'Activity', weight: 'Context · doesn\'t affect your score',
     dateContext: `Yesterday · ${yesterdayLabel}`,
     score, statusLabel, statusColor,
     metrics, interpretation: parts.join(' '), advice,
