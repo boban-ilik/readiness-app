@@ -110,7 +110,7 @@ function SkeletonContent() {
       <SkeletonLine /><View style={{ height: spacing[1] }} />
       <SkeletonLine width="60%" />
       <View style={{ height: spacing[5] }} />
-      <Text style={styles.sectionLabel}>TODAY'S FOCUS</Text>
+      <Text style={styles.sectionLabel}>DO TODAY</Text>
       <View style={{ height: spacing[2] }} />
       <SkeletonLine width="90%" /><View style={{ height: spacing[1] }} />
       <SkeletonLine width="80%" /><View style={{ height: spacing[1] }} />
@@ -349,23 +349,15 @@ export default function DailyBriefingModal({
                   <Text style={styles.body}>{briefing.overview}</Text>
                 </View>
 
-                {/* Focus areas */}
+                {/* What to do today */}
                 <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>TODAY'S FOCUS</Text>
-                  {briefing.focusAreas.map((item, i) => (
+                  <Text style={styles.sectionLabel}>DO TODAY</Text>
+                  {briefing.doToday.map((item, i) => (
                     <View key={i} style={styles.bulletRow}>
                       <Text style={[styles.bullet, { color: scoreColor }]}>●</Text>
                       <Text style={styles.bulletText}>{item}</Text>
                     </View>
                   ))}
-                </View>
-
-                {/* Action plan */}
-                <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>ACTION PLAN</Text>
-                  <View style={[styles.actionBox, { borderLeftColor: scoreColor }]}>
-                    <Text style={styles.body}>{briefing.actionPlan}</Text>
-                  </View>
                 </View>
 
                 {/* ── Recovery Protocol (low score only) ── */}
@@ -549,16 +541,20 @@ const styles = StyleSheet.create({
   },
 
   section:      { gap: spacing[2] },
+  // text.tertiary on the near-black canvas measures ~3.2:1, under the 4.5:1
+  // WCAG AA floor for small text — and these labels are the reading scaffold.
   sectionLabel: {
     fontSize:      fontSize.xs,
     fontWeight:    fontWeight.semiBold,
-    color:         colors.text.tertiary,
+    color:         colors.text.secondary,
     letterSpacing: 0.8,
   },
+  // Paragraph text sits at base, not sm: this is prose read every morning,
+  // not a metric label.
   body: {
-    fontSize:   fontSize.sm,
+    fontSize:   fontSize.base,
     color:      colors.text.secondary,
-    lineHeight: 20,
+    lineHeight: 23,
   },
 
   bulletRow: {
@@ -568,18 +564,13 @@ const styles = StyleSheet.create({
   },
   bullet: {
     fontSize:  8,
-    marginTop: 6,
+    marginTop: 8,
   },
   bulletText: {
     flex:       1,
-    fontSize:   fontSize.sm,
+    fontSize:   fontSize.base,
     color:      colors.text.secondary,
-    lineHeight: 20,
-  },
-
-  actionBox: {
-    borderLeftWidth: 3,
-    paddingLeft:     spacing[3],
+    lineHeight: 23,
   },
 
   disclaimer: {

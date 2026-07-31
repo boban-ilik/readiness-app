@@ -22,10 +22,9 @@ const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface DailyBriefing {
-  headline:   string;
-  overview:   string;
-  focusAreas: string[];
-  actionPlan: string;
+  headline: string;
+  overview: string;
+  doToday:  string[];
 }
 
 // ─── Feedback ─────────────────────────────────────────────────────────────────
@@ -113,6 +112,10 @@ async function getCached(fingerprint: string): Promise<DailyBriefing | null> {
     // Entries written before fingerprinting existed have no fingerprint —
     // discard them rather than risk showing stale numbers.
     if (!('fingerprint' in parsed) || !('briefing' in parsed)) return null;
+
+    // Entries written before the focus/action merge carry the old four-field
+    // shape, which would render an empty action list. Discard and regenerate.
+    if (!Array.isArray(parsed.briefing?.doToday)) return null;
 
     return parsed.fingerprint === fingerprint ? parsed.briefing : null;
   } catch { return null; }
