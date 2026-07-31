@@ -66,9 +66,12 @@ function getRecoveryProtocol(
 
   // Pick the most actionable items based on which component is lowest
   if (recovery < sleep && recovery < stress) {
-    items.push('Skip caffeine until at least 10am — your body is still processing overnight stress hormones');
-    items.push('If you train today, keep it Zone 1–2 only (conversational pace, 30–40 min max)');
-    items.push('Aim for 20g of protein within 30 minutes of waking to kickstart muscle repair');
+    // No heart-rate zones or protein amounts here: the app knows neither this
+    // user's zones nor what they eat, and the nutrition card already sets a
+    // protein target scaled to their bodyweight. A fixed "20 g" contradicted it.
+    items.push('Skip caffeine until at least 10am, while your body is still processing overnight stress hormones');
+    items.push('If you train today, keep it easy enough to hold a conversation, and cap it around 30 to 40 minutes');
+    items.push('Eat a protein-rich breakfast within an hour of waking rather than delaying your first meal');
   } else if (sleep < recovery && sleep < stress) {
     items.push('Prioritise a consistent wind-down tonight — screens off by 9:30pm if possible');
     items.push('A 10–20 min nap before 2pm can partially offset last night\'s deficit without disrupting tonight');
@@ -360,6 +363,13 @@ export default function DailyBriefingModal({
                   ))}
                 </View>
 
+                {/* Sits above the Recovery Protocol, which is rules-based, not
+                    generated. Below it, the notice read as if it covered the
+                    protocol too. */}
+                <Text style={styles.disclaimer}>
+                  AI-generated · Based on your biometrics and personal baselines
+                </Text>
+
                 {/* ── Recovery Protocol (low score only) ── */}
                 {protocol && (
                   <View style={styles.protocolCard}>
@@ -378,10 +388,6 @@ export default function DailyBriefingModal({
                     ))}
                   </View>
                 )}
-
-                <Text style={styles.disclaimer}>
-                  AI-generated · Based on your biometrics and personal baselines
-                </Text>
 
                 {/* ── Briefing feedback ── */}
                 <BriefingFeedbackRow date={healthData?.date ?? ''} />

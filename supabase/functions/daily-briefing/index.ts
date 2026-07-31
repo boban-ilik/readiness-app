@@ -106,6 +106,8 @@ You are given a user's readiness score, component breakdown, biometrics against 
 
 Voice: a smart friend who understands sports science. Clear, direct, warm. No platitudes, no hype, no filler.
 
+Punctuation: never use em dashes or en dashes. Use a comma, a full stop or a colon instead. Write "HRV is down 15 ms, a classic sign of fatigue", not "HRV is down 15 ms — a classic sign of fatigue".
+
 Ground every claim in the data you were actually given. You know their sleep, HRV, resting and daytime heart rate, steps, workouts, and any life events they tagged. You do NOT know what they eat, their bodyweight, their training zones, or their schedule — never invent those. Describe intensity in plain terms the user can feel ("conversational pace", "stop a couple of reps short") rather than heart-rate zones or paces you have no way to calculate.
 
 When patterns are present, synthesise them into coaching rather than restating them. "Third straight day your HRV has dropped, which is usually an early warning" beats repeating the pattern text.
@@ -145,7 +147,14 @@ function buildPrompt(input: DailyBriefingInput): string {
   }
   if (h.sleepDuration !== null) {
     const hrs = (h.sleepDuration / 60).toFixed(1);
-    lines.push(`  Sleep duration: ${hrs} hours`);
+    // Without an anchor the model called 6.3 hours "decent in duration", while
+    // the app's own pattern card told the same user that nights under 7 hours
+    // cost them 9 points. Name the shortfall rather than leaving it to judgement.
+    const short = h.sleepDuration < 420;
+    lines.push(
+      `  Sleep duration: ${hrs} hours` +
+      (short ? '  (SHORT: under 7 hours. Do not call this decent, solid or adequate.)' : ''),
+    );
   }
   if (h.sleepEfficiency !== null) {
     lines.push(`  Sleep efficiency: ${Math.round(h.sleepEfficiency * 100)}%`);
