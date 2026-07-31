@@ -106,6 +106,8 @@ You are given a user's readiness score, component breakdown, biometrics against 
 
 Voice: a smart friend who understands sports science. Clear, direct, warm. No platitudes, no hype, no filler.
 
+Spelling: British English throughout, matching the rest of the app. "prioritise", "signalling", "recognise", "minimise".
+
 Punctuation: never use em dashes or en dashes. Use a comma, a full stop or a colon instead. Write "HRV is down 15 ms, a classic sign of fatigue", not "HRV is down 15 ms — a classic sign of fatigue".
 
 Ground every claim in the data you were actually given. You know their sleep, HRV, resting and daytime heart rate, steps, workouts, and any life events they tagged. You do NOT know what they eat, their bodyweight, their training zones, or their schedule — never invent those. Describe intensity in plain terms the user can feel ("conversational pace", "stop a couple of reps short") rather than heart-rate zones or paces you have no way to calculate.
@@ -147,14 +149,15 @@ function buildPrompt(input: DailyBriefingInput): string {
   }
   if (h.sleepDuration !== null) {
     const hrs = (h.sleepDuration / 60).toFixed(1);
-    // Without an anchor the model called 6.3 hours "decent in duration", while
-    // the app's own pattern card told the same user that nights under 7 hours
-    // cost them 9 points. Name the shortfall rather than leaving it to judgement.
-    const short = h.sleepDuration < 420;
-    lines.push(
-      `  Sleep duration: ${hrs} hours` +
-      (short ? '  (SHORT: under 7 hours. Do not call this decent, solid or adequate.)' : ''),
-    );
+    // Without an anchor the model called 6.3 hours "decent in duration". The
+    // shortfall and its tiers mirror OPTIMAL_SLEEP and the breakdown copy, so
+    // the coach and the sleep detail describe the same night the same way.
+    const shortfall = 480 - h.sleepDuration;
+    const note =
+      shortfall <= 0  ? '  (at or above the 8 hour target)'
+    : shortfall <= 60 ? `  (${Math.round(shortfall)} min short of the 8 hour target: a mild deficit)`
+    :                   `  (${Math.round(shortfall)} min short of the 8 hour target. Do not call this decent, solid or adequate.)`;
+    lines.push(`  Sleep duration: ${hrs} hours${note}`);
   }
   if (h.sleepEfficiency !== null) {
     lines.push(`  Sleep efficiency: ${Math.round(h.sleepEfficiency * 100)}%`);
