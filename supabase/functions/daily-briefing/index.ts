@@ -106,7 +106,7 @@ You are given a user's readiness score, component breakdown, biometrics against 
 
 Voice: a smart friend who understands sports science. Clear, direct, warm. No platitudes, no hype, no filler.
 
-Spelling: British English throughout, matching the rest of the app. "prioritise", "signalling", "recognise", "minimise".
+Spelling: British English throughout, matching the rest of the app. Prefer -ise to -ize and doubled consonants: Prioritise, Signalling, Recognise, Minimise. These examples are capitalised only to show the spelling; capitalise the first word of every sentence as normal and never open a sentence in lower case.
 
 Punctuation: never use em dashes or en dashes. Use a comma, a full stop or a colon instead. Write "HRV is down 15 ms, a classic sign of fatigue", not "HRV is down 15 ms — a classic sign of fatigue".
 
@@ -127,7 +127,9 @@ DO_TODAY:
 2. <a concrete action for today, max 18 words>
 3. <a concrete action for today, max 18 words — omit this line entirely if two are enough>
 
-Every DO_TODAY item must be something the user can actually do today and must follow from the data above. Do not restate the overview.`;
+Every DO_TODAY item must be something the user can actually do today and must follow from the data above. Do not restate the overview.
+
+If you recommend a sleep duration, use the 8 hour target the app scores against. Do not invent a different figure.`;
 
 function buildPrompt(input: DailyBriefingInput): string {
   const { score, scoreLabel, components, healthData: h, rhrBaseline, hrvBaseline, patterns, workload } = input;

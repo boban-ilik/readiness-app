@@ -73,13 +73,13 @@ function getRecoveryProtocol(
     items.push('If you train today, keep it easy enough to hold a conversation, and cap it around 30 to 40 minutes');
     items.push('Eat a protein-rich breakfast within an hour of waking rather than delaying your first meal');
   } else if (sleep < recovery && sleep < stress) {
-    items.push('Prioritise a consistent wind-down tonight — screens off by 9:30pm if possible');
-    items.push('A 10–20 min nap before 2pm can partially offset last night\'s deficit without disrupting tonight');
-    items.push('Avoid alcohol today — even one drink will suppress the deep sleep you need to recover');
+    items.push('Prioritise a consistent wind-down tonight, with screens off by 9:30pm if possible');
+    items.push('A 10 to 20 min nap before 2pm can partially offset last night\'s deficit without disrupting tonight');
+    items.push('Avoid alcohol today: even one drink will suppress the deep sleep you need to recover');
   } else {
     items.push('Try 5 minutes of box breathing (4s in, 4s hold, 4s out, 4s hold) before your first task');
-    items.push('Block at least one 30-min window with zero notifications today — your nervous system needs quiet');
-    items.push('Move, but gently — a 20-min walk lowers cortisol more effectively than skipping activity entirely');
+    items.push('Block at least one 30-min window with zero notifications today, so your nervous system gets some quiet');
+    items.push('Move, but gently: a 20-min walk lowers cortisol more effectively than skipping activity entirely');
   }
 
   return items;
