@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { Platform } from 'react-native';
 import {
   isHealthKitAvailable,
@@ -106,7 +107,11 @@ export function useHistoryData(days: 7 | 28 = 7): {
   const [isLoading, setIsLoading] = useState(true);
   const [error,     setError]     = useState<string | null>(null);
 
-  useEffect(() => {
+  // Refetch on focus, not once per mount. Tab screens stay mounted, so keying
+  // this to [days] alone meant History kept showing whatever it computed when
+  // the app launched: Today read 63 from live data including a manual HRV
+  // entry, while History still showed the 66 it had calculated at startup.
+  useFocusEffect(useCallback(() => {
     let cancelled = false;
 
     async function load() {
@@ -226,7 +231,7 @@ export function useHistoryData(days: 7 | 28 = 7): {
 
     load();
     return () => { cancelled = true; };
-  }, [days]);
+  }, [days]));
 
   return { history, isLoading, error };
 }
