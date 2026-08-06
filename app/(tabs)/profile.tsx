@@ -1087,10 +1087,19 @@ export default function ProfileScreen() {
         {/* ── Support ─────────────────────────────────────────────────────── */}
         <SectionLabel title="SUPPORT" />
         <SettingsCard>
+          {/* Guideline 1.4.1 requires citations for health information to be
+              easy for the user to find, so this sits above Report a bug rather
+              than buried behind a web link. */}
+          <RowBase
+            label="Sources"
+            sublabel="Where the health information in Readiness comes from"
+            topBorder={false}
+            onPress={() => router.push('/sources')}
+            right={<Text style={styles.rowChevron}>›</Text>}
+          />
           <RowBase
             label="Report a bug"
             sublabel="Opens your email app with a pre-filled report"
-            topBorder={false}
             onPress={handleReportBug}
             right={<Text style={styles.rowChevron}>›</Text>}
           />
