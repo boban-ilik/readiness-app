@@ -14,6 +14,7 @@ import {
 import { Link, router } from 'expo-router';
 import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
 import { useAuth } from '@contexts/AuthContext';
+import PasswordInput from '@components/common/PasswordInput';
 
 export default function SignupScreen() {
   const { signUp } = useAuth();
@@ -100,7 +101,7 @@ export default function SignupScreen() {
 
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>PASSWORD</Text>
-            <TextInput
+            <PasswordInput
               style={[styles.input, focusedField === 'password' && styles.inputFocused]}
               placeholder="Min. 8 characters"
               placeholderTextColor={colors.text.tertiary}
@@ -108,7 +109,6 @@ export default function SignupScreen() {
               onChangeText={setPassword}
               onFocus={() => setFocusedField('password')}
               onBlur={() => setFocusedField(null)}
-              secureTextEntry
               returnKeyType="next"
               keyboardAppearance="dark"
             />
@@ -116,7 +116,7 @@ export default function SignupScreen() {
 
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>CONFIRM PASSWORD</Text>
-            <TextInput
+            <PasswordInput
               style={[styles.input, focusedField === 'confirm' && styles.inputFocused]}
               placeholder="Re-enter password"
               placeholderTextColor={colors.text.tertiary}
@@ -124,7 +124,6 @@ export default function SignupScreen() {
               onChangeText={setConfirmPassword}
               onFocus={() => setFocusedField('confirm')}
               onBlur={() => setFocusedField(null)}
-              secureTextEntry
               returnKeyType="done"
               onSubmitEditing={handleSignUp}
               keyboardAppearance="dark"

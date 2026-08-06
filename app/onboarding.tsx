@@ -33,6 +33,7 @@ import {
   isHealthKitAvailable,
 } from '@services/healthkit';
 import { getPersonalRHRBaseline } from '@hooks/useHealthData';
+import { pushProfile } from '@services/profileSync';
 import {
   colors,
   fontSize,
@@ -694,8 +695,12 @@ function StepPermissions({
 
       <View style={styles.privacyBanner}>
         <Ionicons name="lock-closed-outline" size={14} color={colors.text.tertiary} />
+        {/* This used to claim the data never leaves the device, which was not
+            true: scores sync to Supabase and the AI features send metrics to
+            Anthropic. Saying so at the moment of consent matters more than the
+            reassurance did. */}
         <Text style={styles.privacyText}>
-          Your health data stays on your device and is never uploaded or shared.
+          Your score is calculated on your device. Your metrics sync to your account, and the AI features send them to Anthropic's Claude to write your briefing. Never sold, never shared with advertisers.
         </Text>
       </View>
 
@@ -707,18 +712,22 @@ function StepPermissions({
         disabled={busy}
         activeOpacity={0.85}
       >
+        {/* Guideline 5.1.1(iv): the button before a permission request must not
+            name the grant. "Grant Apple Health Access" was rejected; Apple asks
+            for wording like Continue or Next. */}
         {busy
           ? <ActivityIndicator color={colors.text.inverse} />
-          : <Text style={styles.primaryBtnText}>Grant Apple Health Access</Text>
+          : <Text style={styles.primaryBtnText}>Continue</Text>
         }
       </TouchableOpacity>
 
+      {/* No skip affordance here. 5.1.1(iv) also requires that the user always
+          reaches the system permission request after this priming screen, so a
+          "Skip for now" that dismissed it without asking was rejected. Back
+          still works as ordinary navigation. */}
       <View style={styles.navRow}>
         <TouchableOpacity style={styles.backBtn} onPress={onBack}>
           <Text style={styles.backBtnText}>← Back</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => onNext(false)}>
-          <Text style={styles.skipText}>Skip for now</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -808,6 +817,9 @@ function StepSetup({
       if (weight.trim()) pairs.push([PROFILE_WEIGHT_KEY, weight.trim()]);
 
       await AsyncStorage.multiSet(pairs);
+      // Mirror to Supabase so the profile survives a reinstall and follows the
+      // account to another device. Non-blocking — never hold up onboarding.
+      pushProfile().catch(() => {});
       await pause(400);
       onComplete();
     }

@@ -19,6 +19,11 @@ const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 export interface ChatMessage {
   role:    'user' | 'assistant';
   content: string;
+  /**
+   * Local date the message was written, YYYY-MM-DD. Absent on messages stored
+   * before this field existed, which are treated as older than today.
+   */
+  date?:   string;
 }
 
 export async function askCoach(
@@ -77,7 +82,9 @@ export async function askCoach(
           event_type: e.event_type,
           notes:      e.notes,
         })),
-        history,
+        // The Edge Function spreads these straight into the Anthropic messages
+        // array, which rejects unexpected keys, so `date` is stripped here.
+        history: history.map(m => ({ role: m.role, content: m.content })),
         profile,
       }),
     });

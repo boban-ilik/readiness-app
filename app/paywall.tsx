@@ -9,9 +9,8 @@
  *
  * ── RevenueCat entitlement: "pro" ───────────────────────────────────────────
  * Expected packages in the "default" Offering:
- *   $rc_monthly → monthly   ($6.99/mo)
- *   $rc_annual  → yearly    ($49.99/yr, 7-day free trial)
- *   lifetime    → lifetime  (one-time purchase, non-consumable)
+ *   $rc_monthly → monthly   ($9.99/mo)
+ *   $rc_annual  → yearly    ($69.99/yr, 14-day free trial)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -24,6 +23,7 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -39,12 +39,12 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type BillingCycle = 'monthly' | 'annual' | 'lifetime';
+type BillingCycle = 'monthly' | 'annual';
 
 interface DisplayPackage {
   cycle:       BillingCycle;
-  priceLabel:  string;   // e.g. "$49.99 / year"
-  perMonth:    string;   // e.g. "$4.17"  (for lifetime: "$0" — no monthly charge)
+  priceLabel:  string;   // e.g. "$69.99 / year"
+  perMonth:    string;   // e.g. "$5.83"
   total?:      string;   // e.g. "billed annually"
   badge?:      string;   // optional pill label, e.g. "SAVE 40%"
   rcPackage:   unknown;  // PurchasesPackage | null (null = mock)
@@ -79,28 +79,32 @@ const FEATURES: Array<{
   },
 ];
 
+// ─── Legal links ──────────────────────────────────────────────────────────────
+// App Review guideline 3.1.2 requires a screen selling an auto-renewable
+// subscription to link to both a privacy policy and terms of use. These must
+// resolve — dead links are a routine rejection.
+// Served by GitHub Pages from the repo root on main. Switch to
+// https://thereadiness.app/privacy once that domain is hosting the policy —
+// this link must resolve, so don't point it at a domain before it's live.
+const PRIVACY_URL = 'https://boban-ilik.github.io/readiness-app/privacy-policy.html';
+// Apple's standard EULA, which apps may use in place of bespoke terms.
+const TERMS_URL   = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+
 // ─── Fallback pricing (shown when RevenueCat packages haven't loaded) ─────────
 
 const MOCK_PACKAGES: Record<BillingCycle, DisplayPackage> = {
   annual: {
     cycle:      'annual',
-    priceLabel: '$49.99 / year',
-    perMonth:   '$4.17',
+    priceLabel: '$69.99 / year',
+    perMonth:   '$5.83',
     total:      'billed annually',
-    badge:      '-40%',
+    badge:      '-42%',
     rcPackage:  null,
   },
   monthly: {
     cycle:      'monthly',
-    priceLabel: '$6.99 / month',
-    perMonth:   '$6.99',
-    rcPackage:  null,
-  },
-  lifetime: {
-    cycle:      'lifetime',
-    priceLabel: '$99.99 once',
-    perMonth:   'Pay once, own forever',
-    badge:      'BEST',
+    priceLabel: '$9.99 / month',
+    perMonth:   '$9.99',
     rcPackage:  null,
   },
 };
@@ -134,7 +138,6 @@ function FeatureRow({
 const CYCLE_LABELS: Record<BillingCycle, string> = {
   monthly:  'Monthly',
   annual:   'Annual',
-  lifetime: 'Lifetime',
 };
 
 function BillingToggle({
@@ -148,7 +151,7 @@ function BillingToggle({
 }) {
   return (
     <View style={styles.toggleWrap}>
-      {(['monthly', 'annual', 'lifetime'] as BillingCycle[]).map(cycle => {
+      {(['monthly', 'annual'] as BillingCycle[]).map(cycle => {
         const badge = packages[cycle].badge;
         return (
           <TouchableOpacity
@@ -195,34 +198,62 @@ export default function PaywallScreen() {
         const Purchases = (require('react-native-purchases') as { default: import('react-native-purchases').PurchasesStatic }).default;
         const offerings = await Purchases.getOfferings();
         const current   = offerings.current;
-        if (!current) return;
+        if (!current) {
+          console.warn(
+            '[Paywall] RevenueCat returned no current offering. ' +
+            `all=${JSON.stringify(Object.keys(offerings.all ?? {}))}`,
+          );
+          return;
+        }
+
+        if (current.availablePackages.length === 0) {
+          console.warn(
+            `[Paywall] Offering "${current.identifier}" has no available packages — ` +
+            'App Store is not serving products for these identifiers.',
+          );
+        }
 
         const updated: Record<BillingCycle, DisplayPackage> = { ...MOCK_PACKAGES };
 
-        for (const pkg of current.availablePackages) {
-          const productId = pkg.product.productIdentifier;
-          const price     = pkg.product.priceString;  // e.g. "$6.99"
+        // RevenueCat can return packages whose StoreKit product failed to
+        // resolve, leaving product fields undefined. Log the real shape so a
+        // mismatch is diagnosable rather than guesswork.
+        console.log(
+          '[Paywall] offering packages:',
+          JSON.stringify(
+            current.availablePackages.map(p => ({
+              id:      p.identifier,
+              type:    p.packageType,
+              product: p.product?.productIdentifier ?? null,
+              price:   p.product?.priceString ?? null,
+            })),
+          ),
+        );
 
-          const isAnnual   = pkg.packageType === 'ANNUAL'   || productId === 'yearly'   || productId.includes('annual')   || productId.includes('yearly');
-          const isMonthly  = pkg.packageType === 'MONTHLY'  || productId === 'monthly'  || productId.includes('monthly');
-          const isLifetime = pkg.packageType === 'LIFETIME' || productId === 'lifetime' || productId.includes('lifetime');
+        for (const pkg of current.availablePackages) {
+          // Every access here is guarded. Reading .includes() on an undefined
+          // productIdentifier previously threw and aborted the whole load, so
+          // one hollow package silently downgraded the paywall to fallback
+          // prices and made purchases impossible.
+          const productId = pkg.product?.productIdentifier ?? '';
+          const price     = pkg.product?.priceString ?? '';
+          const pkgId     = pkg.identifier ?? '';
+
+          const isAnnual   = pkg.packageType === 'ANNUAL'  || pkgId === '$rc_annual'
+                          || productId === 'yearly'  || productId.includes('annual') || productId.includes('yearly');
+          const isMonthly  = pkg.packageType === 'MONTHLY' || pkgId === '$rc_monthly'
+                          || productId === 'monthly' || productId.includes('monthly');
 
           if (isAnnual) {
-            const monthly = `$${(pkg.product.price / 12).toFixed(2)}`;
+            const monthly = pkg.product?.price
+              ? `$${(pkg.product.price / 12).toFixed(2)}`
+              : MOCK_PACKAGES.annual.perMonth;
             updated.annual = {
               cycle:      'annual',
               priceLabel: `${price} / year`,
               perMonth:   monthly,
               total:      'billed annually',
-              badge:      '-40%',
-              rcPackage:  pkg,
-            };
-          } else if (isLifetime) {
-            updated.lifetime = {
-              cycle:      'lifetime',
-              priceLabel: `${price} once`,
-              perMonth:   'Pay once, own forever',
-              badge:      'BEST',
+              badge:      '-42%',
               rcPackage:  pkg,
             };
           } else if (isMonthly) {
@@ -237,8 +268,14 @@ export default function PaywallScreen() {
 
         setPackages(updated);
         setRcLoaded(true);
-      } catch {
-        // RevenueCat not linked yet (Expo Go) — mock packages remain
+      } catch (e: any) {
+        // Expected in Expo Go, where the native module isn't linked. Anywhere
+        // else this is the reason the paywall shows fallback prices and can't
+        // sell anything, so don't swallow it silently.
+        console.warn(
+          '[Paywall] Could not load RevenueCat offerings — showing fallback prices. ' +
+          `code=${e?.code ?? 'n/a'} message=${e?.message ?? String(e)}`,
+        );
       }
     }
 
@@ -246,6 +283,23 @@ export default function PaywallScreen() {
   }, []);
 
   const selectedPkg = packages[cycle];
+
+  // How much annual saves versus paying monthly for a year. Derived from the
+  // live prices when RevenueCat has loaded, so it can't drift from what the
+  // App Store actually charges; falls back to the offering's badge otherwise.
+  const annualSaving = (() => {
+    const m = packages.monthly.rcPackage as { product?: { price?: number } } | null;
+    const a = packages.annual.rcPackage  as { product?: { price?: number } } | null;
+    const monthlyPrice = m?.product?.price;
+    const annualPrice  = a?.product?.price;
+
+    if (monthlyPrice && annualPrice) {
+      const yearOfMonthly = monthlyPrice * 12;
+      if (annualPrice >= yearOfMonthly) return null;  // no saving to claim
+      return `${Math.round((1 - annualPrice / yearOfMonthly) * 100)}%`;
+    }
+    return packages.annual.badge?.replace('-', '') ?? null;
+  })();
 
   // ── Purchase handler ────────────────────────────────────────────────────────
   async function handleSubscribe() {
@@ -268,11 +322,21 @@ export default function PaywallScreen() {
         } else {
           Alert.alert('Purchase Issue', 'Payment completed but Pro entitlement was not activated. Please restore purchases or contact support.');
         }
-      } else {
+      } else if (__DEV__) {
         // ── Mock purchase (dev / Expo Go) ─────────────────────────────────────
         await new Promise<void>(r => setTimeout(r, 1000));
         await debugSetPro(true);
         router.back();
+      } else {
+        // No RevenueCat package — StoreKit returned no products. Most often the
+        // Paid Applications Agreement isn't active yet, but it can also be a
+        // transient App Store outage. Never close silently: a subscribe button
+        // that appears to do nothing reads as a broken app (and is an App
+        // Review guideline 2.1 risk).
+        Alert.alert(
+          'Purchases unavailable',
+          'We couldn\'t reach the App Store just now. Please try again shortly.',
+        );
       }
     } catch (e: any) {
       // User cancelled (errorCode 1) — don't show an alert
@@ -301,6 +365,14 @@ export default function PaywallScreen() {
         } else {
           Alert.alert('No Previous Purchase', 'We couldn\'t find an active Pro subscription linked to your Apple ID.');
         }
+      } else {
+        // RevenueCat never loaded — without this the button would do nothing
+        // at all. App Review checks restore on a fresh install, and a silent
+        // no-op reads as a broken app.
+        Alert.alert(
+          'Restore unavailable',
+          'We couldn\'t reach the App Store just now. Please try again shortly.',
+        );
       }
     } catch (e: any) {
       Alert.alert('Restore Failed', e?.message ?? 'Could not restore purchases.');
@@ -358,17 +430,28 @@ export default function PaywallScreen() {
               Just {selectedPkg.perMonth}/mo — {selectedPkg.total}
             </Text>
           )}
-          {cycle === 'lifetime' && (
-            <Text style={styles.priceNote}>{selectedPkg.perMonth}</Text>
-          )}
         </View>
 
-        {/* ── Trial badge (annual only) ── */}
+        {/* ── Trial badge (annual only — monthly has no introductory offer) ── */}
         {cycle === 'annual' && (
           <View style={styles.trialBadge}>
             <Text style={styles.trialBadgeIcon}>🎁</Text>
-            <Text style={styles.trialBadgeText}>7-day free trial included</Text>
+            <Text style={styles.trialBadgeText}>14-day free trial included</Text>
           </View>
+        )}
+
+        {/* ── Annual advantage (shown on monthly, where the trial is invisible) ── */}
+        {cycle === 'monthly' && (
+          <TouchableOpacity
+            style={styles.switchPrompt}
+            onPress={() => setCycle('annual')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.switchPromptText}>
+              Go annual for a <Text style={styles.switchPromptStrong}>14-day free trial</Text>
+              {annualSaving ? <> and save {annualSaving}</> : null}
+            </Text>
+          </TouchableOpacity>
         )}
 
         {/* ── CTA ── */}
@@ -381,18 +464,14 @@ export default function PaywallScreen() {
           {busy
             ? <ActivityIndicator color={colors.text.inverse} />
             : <Text style={styles.ctaText}>
-                {cycle === 'annual'   ? 'Start Free Trial'    :
-                 cycle === 'lifetime' ? 'Buy Lifetime Access' :
-                                       'Subscribe Monthly'}
+                {cycle === 'annual' ? 'Start Free Trial' : 'Subscribe Monthly'}
               </Text>
           }
         </TouchableOpacity>
 
         <Text style={styles.ctaNote}>
           {cycle === 'annual'
-            ? 'No charge for 7 days · Cancel anytime in App Store'
-            : cycle === 'lifetime'
-            ? 'One-time purchase · No recurring charges'
+            ? 'No charge for 14 days · Cancel anytime in App Store'
             : 'Billed monthly · Cancel anytime in App Store'}
         </Text>
 
@@ -402,11 +481,17 @@ export default function PaywallScreen() {
             <Text style={styles.footerLink}>Restore Purchases</Text>
           </TouchableOpacity>
           <Text style={styles.footerDot}>·</Text>
-          <TouchableOpacity activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})}
+            activeOpacity={0.7}
+          >
             <Text style={styles.footerLink}>Privacy</Text>
           </TouchableOpacity>
           <Text style={styles.footerDot}>·</Text>
-          <TouchableOpacity activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={() => Linking.openURL(TERMS_URL).catch(() => {})}
+            activeOpacity={0.7}
+          >
             <Text style={styles.footerLink}>Terms</Text>
           </TouchableOpacity>
         </View>
@@ -611,6 +696,27 @@ const styles = StyleSheet.create({
     color: colors.amber[400],
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+  },
+
+  // ── Annual advantage prompt (monthly only) ──────────────────────────────────
+  switchPrompt: {
+    alignSelf: 'center',
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    backgroundColor: colors.bg.secondary,
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[4],
+    marginBottom: spacing[5],
+  },
+  switchPromptText: {
+    color: colors.text.secondary,
+    fontSize: fontSize.sm,
+    textAlign: 'center',
+  },
+  switchPromptStrong: {
+    color: colors.amber[400],
+    fontWeight: fontWeight.semiBold,
   },
 
   // ── CTA ─────────────────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@ import {
   Alert, ScrollView, Image, Platform, Linking,
 } from 'react-native';
 import { SafeAreaView }              from 'react-native-safe-area-context';
-import { useEffect, useState }       from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AsyncStorage                  from '@react-native-async-storage/async-storage';
 import Constants                     from 'expo-constants';
 import { useRouter }                 from 'expo-router';
@@ -17,6 +17,7 @@ import { useStravaActivities }       from '@hooks/useStravaActivities';
 import { ProGate }                   from '@components/common/ProGate';
 import { Ionicons }                  from '@expo/vector-icons';
 import { NAME_KEY, FREQ_KEY, JOINED_AT_KEY } from '../onboarding';
+import { pushProfile }               from '@services/profileSync';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
@@ -465,6 +466,20 @@ export default function ProfileScreen() {
   // ── Strava connection ────────────────────────────────────────────────────────
   const strava = useStravaActivities(7);
 
+  // ── Mirror profile edits to Supabase ────────────────────────────────────────
+  // Each field saves to AsyncStorage independently, so rather than pushing from
+  // nine handlers this watches the values and syncs once they settle. Debounced
+  // because sliders fire continuously while dragging.
+  const hasHydrated = useRef(false);
+  useEffect(() => {
+    if (!hasHydrated.current) {
+      hasHydrated.current = true;   // skip the initial load, nothing changed yet
+      return;
+    }
+    const t = setTimeout(() => { pushProfile().catch(() => {}); }, 1500);
+    return () => clearTimeout(t);
+  }, [userName, trainingFreq, age, sex, height, weight, goal]);
+
   // ── Load saved data ─────────────────────────────────────────────────────────
   useEffect(() => {
     (async () => {
@@ -894,7 +909,7 @@ export default function ProfileScreen() {
             activeOpacity={0.85}
             onPress={presentPaywall}
           >
-            <Text style={styles.upgradeText}>Upgrade to Pro · $6.99/mo</Text>
+            <Text style={styles.upgradeText}>Upgrade to Pro · $9.99/mo</Text>
           </TouchableOpacity>
         )}
 
@@ -1072,10 +1087,19 @@ export default function ProfileScreen() {
         {/* ── Support ─────────────────────────────────────────────────────── */}
         <SectionLabel title="SUPPORT" />
         <SettingsCard>
+          {/* Guideline 1.4.1 requires citations for health information to be
+              easy for the user to find, so this sits above Report a bug rather
+              than buried behind a web link. */}
+          <RowBase
+            label="Sources"
+            sublabel="Where the health information in Readiness comes from"
+            topBorder={false}
+            onPress={() => router.push('/sources')}
+            right={<Text style={styles.rowChevron}>›</Text>}
+          />
           <RowBase
             label="Report a bug"
             sublabel="Opens your email app with a pre-filled report"
-            topBorder={false}
             onPress={handleReportBug}
             right={<Text style={styles.rowChevron}>›</Text>}
           />

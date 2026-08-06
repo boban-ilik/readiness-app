@@ -9,9 +9,8 @@
  *
  * ── Products expected in RevenueCat "default" Offering ──────────────────────
  *   Package ID   │ Product ID   │ Type
- *   $rc_monthly  │ monthly      │ Auto-renewable subscription ($6.99/mo)
- *   $rc_annual   │ yearly       │ Auto-renewable subscription ($49.99/yr, 7-day trial)
- *   lifetime     │ lifetime     │ Non-consumable one-time purchase
+ *   $rc_monthly  │ monthly      │ Auto-renewable subscription ($9.99/mo)
+ *   $rc_annual   │ yearly       │ Auto-renewable subscription ($69.99/yr, 14-day trial)
  *
  * ── Entitlement ─────────────────────────────────────────────────────────────
  *   Identifier: "pro"  — attach all three products to this entitlement.
@@ -31,12 +30,14 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   ReactNode,
 } from 'react';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import type { CustomerInfo, PurchasesStatic } from 'react-native-purchases';
+import { useAuth } from '@contexts/AuthContext';
 
 // ─── RevenueCat API Key ────────────────────────────────────────────────────────
 const REVENUECAT_API_KEY_IOS = 'appl_nHqlgLzhlUlmYeuMxNqThGAuPlJ';
@@ -47,6 +48,24 @@ const ENTITLEMENT_PRO = 'pro';
 // ─── PAYWALL_RESULT string values (mirrors the RC enum) ──────────────────────
 const PAYWALL_PURCHASED = 'PURCHASED';
 const PAYWALL_RESTORED  = 'RESTORED';
+
+/**
+ * Whether to present RevenueCat's own paywall sheet instead of the in-app
+ * /paywall screen.
+ *
+ * Currently OFF. RevenueCatUI.presentPaywall() requires a paywall to be
+ * designed against the offering in the RevenueCat dashboard; the "default"
+ * offering has none, so the sheet opens empty and shows RevenueCat's native
+ * "Error 23: There is an issue with your configuration" alert. That alert is
+ * rendered inside the sheet, so it appears before our own error handling can
+ * fall back — the user just sees a broken paywall.
+ *
+ * The in-app /paywall screen loads the same offering and calls
+ * Purchases.purchasePackage(), so purchases work identically.
+ *
+ * Flip this to true once a paywall is published in the RC dashboard.
+ */
+const USE_REVENUECAT_PAYWALL_UI = false;
 
 // ─── Keys ─────────────────────────────────────────────────────────────────────
 const DEV_OVERRIDE_KEY = '@readiness/dev_is_pro';
@@ -138,18 +157,30 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [isLoading,  setIsLoading]  = useState(true);
   const [rcReady,    setRcReady]    = useState(false);
 
+  // Supabase user id, or null when signed out. SubscriptionProvider is nested
+  // inside AuthProvider in app/_layout.tsx, so this is always available.
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
+
+  // __DEV__-only Pro override. Held in a ref so every place that derives isPro
+  // from RevenueCat can OR it in — otherwise a real "not subscribed" response
+  // would immediately switch the dev toggle back off.
+  const devProRef = useRef(false);
+
   // ── Bootstrap ──────────────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
 
     async function init() {
-      // 1. Check dev override first (instant, no network)
+      // 1. Dev override — reflect Pro immediately, but do NOT skip SDK setup.
+      //    This used to return early, which left Purchases unconfigured for the
+      //    whole session. The paywall calls Purchases.getOfferings() directly,
+      //    so it then failed with "There is no singleton instance" and could
+      //    never sell anything until the toggle was switched back off.
       if (__DEV__) {
         const devVal = await AsyncStorage.getItem(DEV_OVERRIDE_KEY).catch(() => null);
-        if (devVal === 'true') {
-          if (!cancelled) { setIsPro(true); setIsLoading(false); }
-          return;
-        }
+        devProRef.current = devVal === 'true';
+        if (devProRef.current && !cancelled) setIsPro(true);
       }
 
       // 2. Only on iOS native builds — not Expo Go / web
@@ -169,11 +200,15 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         Purchases.configure({ apiKey: REVENUECAT_API_KEY_IOS });
 
         const info = await Purchases.getCustomerInfo();
-        if (!cancelled) setIsPro(!!info.entitlements.active[ENTITLEMENT_PRO]);
+        if (!cancelled) {
+          setIsPro(devProRef.current || !!info.entitlements.active[ENTITLEMENT_PRO]);
+        }
 
         // Real-time updates: fires after purchase, restore, or subscription change
         Purchases.addCustomerInfoUpdateListener((updatedInfo: CustomerInfo) => {
-          if (!cancelled) setIsPro(!!updatedInfo.entitlements.active[ENTITLEMENT_PRO]);
+          if (!cancelled) {
+            setIsPro(devProRef.current || !!updatedInfo.entitlements.active[ENTITLEMENT_PRO]);
+          }
         });
 
         if (!cancelled) setRcReady(true);
@@ -188,6 +223,48 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, []);
 
+  // ── Identity ───────────────────────────────────────────────────────────────
+  /**
+   * Ties the RevenueCat customer to the signed-in Supabase user.
+   *
+   * Without this, RevenueCat identifies buyers by a per-install anonymous ID,
+   * so a subscription belongs to the device rather than the account — someone
+   * who subscribes and then signs in on a new phone would appear un-subscribed
+   * until they tapped "Restore Purchases".
+   *
+   * Runs after configure() (rcReady) and re-runs whenever the user changes.
+   */
+  useEffect(() => {
+    if (!rcReady) return;
+    let cancelled = false;
+
+    async function syncIdentity() {
+      const Purchases = await getPurchases();
+      if (!Purchases) return;
+
+      try {
+        if (userId) {
+          const { customerInfo } = await Purchases.logIn(userId);
+          if (!cancelled) {
+            setIsPro(devProRef.current || !!customerInfo.entitlements.active[ENTITLEMENT_PRO]);
+          }
+        } else {
+          // logOut() rejects when the current user is already anonymous —
+          // that's an expected no-op, swallowed by the catch below.
+          const customerInfo = await Purchases.logOut();
+          if (!cancelled) {
+            setIsPro(devProRef.current || !!customerInfo.entitlements.active[ENTITLEMENT_PRO]);
+          }
+        }
+      } catch (e) {
+        console.warn('[Subscription] RevenueCat identity sync failed (non-fatal):', e);
+      }
+    }
+
+    syncIdentity();
+    return () => { cancelled = true; };
+  }, [rcReady, userId]);
+
   // ── Refresh entitlements ───────────────────────────────────────────────────
   const refreshEntitlements = useCallback(async () => {
     if (!rcReady) return;
@@ -195,7 +272,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       const Purchases = await getPurchases();
       if (!Purchases) return;
       const info = await Purchases.getCustomerInfo();
-      setIsPro(!!info.entitlements.active[ENTITLEMENT_PRO]);
+      setIsPro(devProRef.current || !!info.entitlements.active[ENTITLEMENT_PRO]);
     } catch (e) {
       console.warn('[Subscription] refreshEntitlements failed:', e);
     }
@@ -209,7 +286,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
    * 2. If not linked (Expo Go / before pod install) → push to /paywall.
    */
   const presentPaywall = useCallback(async () => {
-    if (rcReady) {
+    if (rcReady && USE_REVENUECAT_PAYWALL_UI) {
       try {
         const RCUI = await getRevenueCatUI();
         if (RCUI) {
@@ -257,6 +334,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const debugSetPro = useCallback(async (value: boolean) => {
     if (!__DEV__) return;
     await AsyncStorage.setItem(DEV_OVERRIDE_KEY, value ? 'true' : 'false');
+    devProRef.current = value;
     setIsPro(value);
   }, []);
 

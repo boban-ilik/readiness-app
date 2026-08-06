@@ -13,7 +13,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router';
 import { askCoach, type ChatMessage } from '@services/coachChat';
 import { getCoachSession } from '@services/coachSession';
-import { loadChatHistory, saveChatHistory, clearChatHistory, CONTEXT_WINDOW } from '@services/chatMemory';
+import { loadChatHistory, saveChatHistory, clearChatHistory, selectContext, todayLocal } from '@services/chatMemory';
 import { loadUserProfile, type UserProfile } from '@services/userProfile';
 import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
 
@@ -91,7 +91,7 @@ export default function CoachChatScreen() {
     const question = input.trim();
     if (!session || !question || isSending) return;
 
-    const userMessage: ChatMessage = { role: 'user', content: question };
+    const userMessage: ChatMessage = { role: 'user', content: question, date: todayLocal() };
     const nextHistory = [...history, userMessage];
 
     setInput('');
@@ -110,11 +110,11 @@ export default function CoachChatScreen() {
         session.patterns,
         session.workload,
         session.lifeEvents,
-        nextHistory.slice(-CONTEXT_WINDOW),
+        selectContext(nextHistory),
         profile,
       );
 
-      const assistantMessage: ChatMessage = { role: 'assistant', content: answer };
+      const assistantMessage: ChatMessage = { role: 'assistant', content: answer, date: todayLocal() };
       const updatedHistory: ChatMessage[] = [...nextHistory, assistantMessage];
       setHistory(updatedHistory);
       saveChatHistory(updatedHistory);

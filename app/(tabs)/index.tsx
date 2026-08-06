@@ -24,6 +24,7 @@ import DailyBriefingModal from '@components/score/DailyBriefingModal';
 import ShareCard from '@components/score/ShareCard';
 import { ProGate } from '@components/common/ProGate';
 import { colors, fontSize, fontWeight, spacing, radius, getScoreColor, getScoreLabel } from '@constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { useHealthData } from '@hooks/useHealthData';
 import { useRecentWorkouts } from '@hooks/useRecentWorkouts';
 import { useStravaActivities } from '@hooks/useStravaActivities';
@@ -453,6 +454,23 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
+        {/* Today's training — the answer to "what do I do today?", so it sits
+            directly under the score rather than below four analytics cards. */}
+        {score > 0 && (
+          <View style={styles.trainingSection}>
+            <Text style={styles.sectionTitle}>TODAY'S TRAINING</Text>
+            <ProGate
+              feature="Training Load Recommendations"
+              description="Get a daily training prescription — zone, duration, and RPE — tailored to how recovered you actually are."
+            >
+              <TrainingLoadCard
+                score={score}
+                components={readiness?.components ?? { recovery: 50, sleep: 50, stress: 50 }}
+              />
+            </ProGate>
+          </View>
+        )}
+
         {/* Streak banner */}
         <StreakBanner score={score} />
 
@@ -486,13 +504,33 @@ export default function HomeScreen() {
         {/* Overtraining early warning — shown when pattern analysis detects fatigue risk */}
         <OvertrainingWarningCard warning={overtraining} />
 
-        {/* Data confidence banner — shown when Apple Watch data is missing or partial */}
+        {/* Data confidence banner — shown when wearable data is missing or partial.
+            Tappable when HRV is what's missing, since that's the one gap the user
+            can close by hand: Garmin, Whoop, Polar and Oura don't write HRV to
+            Apple Health, so manual entry is their only route. */}
         {score > 0 && readiness?.dataQuality?.confidence !== 'high' &&
           readiness?.dataQuality?.warningMessage && (
-          <View style={styles.confidenceBanner}>
-            <Text style={styles.confidenceIcon}>⚠</Text>
+          <TouchableOpacity
+            style={styles.confidenceBanner}
+            onPress={handleEnterManualHRV}
+            disabled={readiness.dataQuality.hasHRV}
+            activeOpacity={readiness.dataQuality.hasHRV ? 1 : 0.7}
+            accessibilityRole={readiness.dataQuality.hasHRV ? undefined : 'button'}
+            accessibilityLabel={
+              readiness.dataQuality.hasHRV ? undefined : 'Enter your HRV manually'
+            }
+          >
+            <Text style={styles.confidenceIcon}>⌚</Text>
             <Text style={styles.confidenceText}>{readiness.dataQuality.warningMessage}</Text>
-          </View>
+            {!readiness.dataQuality.hasHRV && (
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={colors.text.tertiary}
+                style={styles.confidenceChevron}
+              />
+            )}
+          </TouchableOpacity>
         )}
 
         {/* Error state */}
@@ -572,22 +610,6 @@ export default function HomeScreen() {
                 />
               </ProGate>
             </Animated.View>
-          </View>
-        )}
-
-        {/* Training Load — Pro feature */}
-        {score > 0 && (
-          <View style={styles.trainingSection}>
-            <Text style={styles.sectionTitle}>TODAY'S TRAINING</Text>
-            <ProGate
-              feature="Training Load Recommendations"
-              description="Get a daily training prescription — zone, duration, and RPE — tailored to how recovered you actually are."
-            >
-              <TrainingLoadCard
-                score={score}
-                components={readiness?.components ?? { recovery: 50, sleep: 50, stress: 50 }}
-              />
-            </ProGate>
           </View>
         )}
 
@@ -799,21 +821,22 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   // Subtle amber strip shown when Apple Watch data quality is medium or low
+  // Neutral, not amber: missing wearable data is a setup step, not a fault.
+  // Alarm styling here made a normal first run look like an error state.
   confidenceBanner: {
     flexDirection:  'row',
     alignItems:     'flex-start',
     gap:            spacing[2],
-    backgroundColor: 'rgba(251, 191, 36, 0.10)',
+    backgroundColor: colors.bg.secondary,
     borderRadius:   radius.md,
     borderWidth:    1,
-    borderColor:    'rgba(251, 191, 36, 0.25)',
+    borderColor:    colors.border.subtle,
     paddingHorizontal: spacing[3],
     paddingVertical:   spacing[2],
     marginBottom:   spacing[4],
   },
   confidenceIcon: {
     fontSize:   13,
-    color:      colors.amber[400],
     lineHeight: 18,
   },
   confidenceText: {
@@ -821,6 +844,9 @@ const styles = StyleSheet.create({
     fontSize:   fontSize.xs,
     color:      colors.text.secondary,
     lineHeight: 16,
+  },
+  confidenceChevron: {
+    marginTop: 1,
   },
   errorBanner: {
     backgroundColor: colors.bg.tertiary,

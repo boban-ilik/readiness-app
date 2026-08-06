@@ -324,13 +324,18 @@ export function useHealthData(): UseHealthDataReturn {
   // ── Nuclear fallback — guarantee isLoading never stays true forever ─────────
   // On iOS 26 beta, HealthKit callbacks and/or setTimeout can silently stall.
   // This hard wall ensures the app UI always appears within 20 seconds.
+  //
+  // Depends on isLoading so the timer is torn down the moment loading finishes.
+  // Previously it ran once on mount and always fired at 20s, logging a fallback
+  // warning even on healthy launches that had rendered long before.
   useEffect(() => {
+    if (!isLoading) return;
     const t = setTimeout(() => {
       console.warn('[Readiness] ☢️  Nuclear fallback — forcing isLoading=false after 20s');
       setIsLoading(false);
     }, 20_000);
     return () => clearTimeout(t);
-  }, []);
+  }, [isLoading]);
 
   // ── Initial load ────────────────────────────────────────────────────────────
   useEffect(() => {

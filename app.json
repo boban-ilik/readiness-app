@@ -34,6 +34,7 @@
         "NSHealthUpdateUsageDescription": "Readiness does not write any health data.",
         "NSCameraUsageDescription": "Readiness uses your camera to take a profile photo.",
         "NSPhotoLibraryUsageDescription": "Readiness uses your photo library to set a profile picture.",
+        "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
           "fetch"
         ]

@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@services/supabase';
+import { syncDataOwner } from '@services/userScopedStorage';
+import { pullProfile } from '@services/profileSync';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -12,6 +14,12 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<void>;
   confirmEmailCode: (email: string, token: string) => Promise<void>;
   resendSignupCode: (email: string) => Promise<void>;
+  sendPasswordResetCode: (email: string) => Promise<void>;
+  resetPasswordWithCode: (
+    email: string,
+    token: string,
+    newPassword: string,
+  ) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -43,9 +51,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Always catch — if the token refresh network call fails (e.g. momentary
     // offline) we just treat it as signed-out rather than crashing the app.
     supabase.auth.getSession()
-      .then(({ data: { session } }) => {
+      .then(async ({ data: { session } }) => {
         if (cancelled) return;
         clearTimeout(loadingTimeout);
+        // Wipe device-local personal data if it belongs to another account,
+        // then restore this account's profile if the device has none.
+        await syncDataOwner(session?.user?.id ?? null).catch(() => {});
+        if (session?.user) await pullProfile().catch(() => {});
+        if (cancelled) return;
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
@@ -63,9 +76,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (_event, session) => {
         if (cancelled) return;
         clearTimeout(loadingTimeout);
-        setSession(session);
-        setUser(session?.user ?? null);
-        setIsLoading(false);
+        // Runs on sign-in as well as refresh, so a different account signing
+        // in on this device never inherits the previous user's data.
+        syncDataOwner(session?.user?.id ?? null)
+          .then(() => (session?.user ? pullProfile() : null))
+          .catch(() => {})
+          .finally(() => {
+            if (cancelled) return;
+            setSession(session);
+            setUser(session?.user ?? null);
+            setIsLoading(false);
+          });
       }
     );
 
@@ -109,6 +130,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   };
 
+  /**
+   * Sends the "Reset password" email. That template is configured in Supabase
+   * to deliver a 6-digit {{ .Token }} rather than a link, matching the signup
+   * confirmation flow — no deep link required.
+   */
+  const sendPasswordResetCode = async (email: string): Promise<void> => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw error;
+  };
+
+  /**
+   * Verifies the emailed recovery code, which returns a short-lived session,
+   * then sets the new password on that session.
+   */
+  const resetPasswordWithCode = async (
+    email: string,
+    token: string,
+    newPassword: string,
+  ): Promise<void> => {
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'recovery',
+    });
+    if (verifyError) throw verifyError;
+
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    if (updateError) throw updateError;
+  };
+
   const resendSignupCode = async (email: string): Promise<void> => {
     const { error } = await supabase.auth.resend({
       type: 'signup',
@@ -128,6 +181,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         signIn,
         signUp,
+        sendPasswordResetCode,
+        resetPasswordWithCode,
         confirmEmailCode,
         resendSignupCode,
         signOut,
