@@ -93,8 +93,14 @@ const DEFAULT_BULLETS = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function ProGate({ feature, description, children, style }: ProGateProps) {
-  const { isPro } = useSubscription();
-  const router    = useRouter();
+  const { isPro, isLoading } = useSubscription();
+  const router               = useRouter();
+
+  // isPro starts false while RevenueCat resolves, so rendering the gate straight
+  // away flashed the upgrade panel at paying subscribers on every cold start —
+  // their own app appearing to have downgraded them. Render nothing until the
+  // entitlement is known; that also avoids briefly exposing gated content.
+  if (isLoading) return null;
 
   // Pro users — render children with zero overhead
   if (isPro) return <>{children}</>;
@@ -151,8 +157,11 @@ export function ProGate({ feature, description, children, style }: ProGateProps)
           <Text style={styles.ctaText}>Upgrade to Pro</Text>
         </TouchableOpacity>
 
+        {/* The introductory offer exists on the annual subscription only, so
+            this used to advertise a free trial directly above a monthly price
+            that does not carry one. */}
         <Text style={styles.footerNote}>
-          14-day free trial · Cancel anytime
+          14-day free trial on the annual plan · Cancel anytime
         </Text>
 
       </View>
