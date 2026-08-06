@@ -12,11 +12,15 @@ import type { HealthData, ReadinessScore } from '@/types/index';
 
 // ─── Baseline defaults (used when no personal baseline is established yet) ────
 
-const DEFAULTS = {
+export const DEFAULTS = {
   HRV_BASELINE: 55,       // ms — population average
   HRV_SD: 15,             // standard deviation
   RHR_BASELINE: 60,       // bpm
-  OPTIMAL_SLEEP: 480,     // minutes (8h)
+  // 7h, matching the AASM / Sleep Research Society joint consensus that adults
+  // need seven or more hours. This was 8h, which scored people as deficient
+  // while they were meeting the actual health guideline.
+  // https://jcsm.aasm.org/doi/10.5664/jcsm.4950
+  OPTIMAL_SLEEP: 420,     // minutes (7h)
   MIN_SLEEP: 300,         // minutes (5h) — floor for scoring
   OPTIMAL_DEEP_PCT: 0.20, // 20% of total sleep
   OPTIMAL_REM_PCT: 0.25,  // 25% of total sleep

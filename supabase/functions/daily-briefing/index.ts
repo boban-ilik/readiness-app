@@ -129,7 +129,7 @@ DO_TODAY:
 
 Every DO_TODAY item must be something the user can actually do today and must follow from the data above. Do not restate the overview.
 
-If you recommend a sleep duration, use the 8 hour target the app scores against. Do not invent a different figure.`;
+If you recommend a sleep duration, use the 7 hour guideline the app scores against. Do not invent a different figure.`;
 
 function buildPrompt(input: DailyBriefingInput): string {
   const { score, scoreLabel, components, healthData: h, rhrBaseline, hrvBaseline, patterns, workload } = input;
@@ -152,13 +152,13 @@ function buildPrompt(input: DailyBriefingInput): string {
   if (h.sleepDuration !== null) {
     const hrs = (h.sleepDuration / 60).toFixed(1);
     // Without an anchor the model called 6.3 hours "decent in duration". The
-    // shortfall and its tiers mirror OPTIMAL_SLEEP and the breakdown copy, so
+    // shortfall and its tiers mirror OPTIMAL_SLEEP (7h) and the breakdown copy, so
     // the coach and the sleep detail describe the same night the same way.
-    const shortfall = 480 - h.sleepDuration;
+    const shortfall = 420 - h.sleepDuration;
     const note =
-      shortfall <= 0  ? '  (at or above the 8 hour target)'
-    : shortfall <= 60 ? `  (${Math.round(shortfall)} min short of the 8 hour target: a mild deficit)`
-    :                   `  (${Math.round(shortfall)} min short of the 8 hour target. Do not call this decent, solid or adequate.)`;
+      shortfall <= 0  ? '  (at or above the 7 hour guideline)'
+    : shortfall <= 60 ? `  (${Math.round(shortfall)} min below the 7 hour guideline: a mild shortfall)`
+    :                   `  (${Math.round(shortfall)} min below the 7 hour guideline. Do not call this decent, solid or adequate.)`;
     lines.push(`  Sleep duration: ${hrs} hours${note}`);
   }
   if (h.sleepEfficiency !== null) {

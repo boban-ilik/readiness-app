@@ -12,6 +12,12 @@
  */
 
 import type { HealthData } from '../types/index';
+// The sleep target lived here as a hardcoded 480 in five places. It now comes
+// from the scoring model, so copy and score can never drift apart again.
+import { DEFAULTS } from '@utils/readiness';
+
+const SLEEP_TARGET = DEFAULTS.OPTIMAL_SLEEP;        // 420 min (7h)
+const SLEEP_TARGET_H = SLEEP_TARGET / 60;           // 7
 import { colors } from '@constants/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -139,12 +145,12 @@ function buildRecovery(
     const hrs      = Math.floor(sleep / 60);
     const mins     = sleep % 60;
     const totalStr = mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
-    const shortfall = 480 - sleep; // vs 8h target
+    const shortfall = SLEEP_TARGET - sleep;
     const sub       = shortfall <= 0
-      ? `At or above the 8h target — sleep fully supported overnight recovery`
+      ? `At or above the ${SLEEP_TARGET_H}h guideline — sleep fully supported overnight recovery`
       : shortfall <= 60
-      ? `About ${Math.round(shortfall / 60 * 10) / 10}h short of 8h — mild sleep debt can blunt recovery by 10–15%`
-      : `${Math.floor(shortfall / 60)}h+ below the 8h target — significant sleep debt suppresses heart rate variability and raises resting heart rate`;
+      ? `About ${Math.round(shortfall / 60 * 10) / 10}h below ${SLEEP_TARGET_H}h — a mild shortfall can blunt recovery`
+      : `${Math.floor(shortfall / 60)}h+ below the 7h guideline — a significant shortfall suppresses heart rate variability and raises resting heart rate`;
     metrics.push({
       label:  'Last Night\'s Sleep',
       value:  totalStr,
@@ -231,7 +237,7 @@ function buildRecovery(
 
   // Cross-reference sleep if it's dragging recovery down
   if (sleep != null) {
-    const shortfall = 480 - sleep;
+    const shortfall = SLEEP_TARGET - sleep;
     if (shortfall >= 90) {
       parts.push(`Last night's sleep (${fmtDur(sleep)}) is likely a key factor in today's recovery score — sleep is when your body restores heart rate variability and repairs muscle tissue. Prioritising sleep tonight will have the biggest impact on tomorrow's score.`);
     }
@@ -273,12 +279,12 @@ function buildSleep(score: number, h: HealthData | null): BreakdownDetail {
 
   // ── Metric 1: Total Sleep ────────────────────────────────────────────────────
   if (sleepDuration != null) {
-    const diff      = sleepDuration - 480;
-    const shortfall = 480 - sleepDuration;
+    const diff      = sleepDuration - SLEEP_TARGET;
+    const shortfall = SLEEP_TARGET - sleepDuration;
     const sub       = shortfall <= 0
-      ? `At or above the 8h target — enough time for your body to complete multiple full sleep cycles`
+      ? `At or above the 7h guideline — enough time for your body to complete multiple full sleep cycles`
       : shortfall <= 60
-      ? `${fmtDur(shortfall)} short of the 8h target — most sleep stages will be present but slightly compressed`
+      ? `${fmtDur(shortfall)} below the 7h guideline — most sleep stages will be present but slightly compressed`
       : shortfall <= 120
       ? `${fmtDur(shortfall)} below target — deep and REM stages are cut short first, reducing physical and mental recovery`
       : `${fmtDur(shortfall)} below target — significant restriction that markedly impairs performance, mood, and immunity`;
@@ -398,13 +404,13 @@ function buildSleep(score: number, h: HealthData | null): BreakdownDetail {
   // Total duration context in plain body terms
   if (sleepDuration != null) {
     const hrs       = (sleepDuration / 60).toFixed(1);
-    const shortfall = 480 - sleepDuration;
+    const shortfall = SLEEP_TARGET - sleepDuration;
     if (shortfall <= 0) {
-      parts.push(`You got ${hrs} hours — at or above the 8-hour target. Total duration is strong, which gives your body the time to cycle through deep and REM sleep multiple times overnight.`);
+      parts.push(`You got ${hrs} hours — at or above the 7-hour guideline. Total duration is strong, which gives your body the time to cycle through deep and REM sleep multiple times overnight.`);
     } else if (shortfall <= 60) {
-      parts.push(`At ${hrs} hours, you're about ${fmtDur(shortfall)} short of the 8-hour target. This mild deficit is manageable — most of your critical sleep stages will still have occurred, just slightly compressed.`);
+      parts.push(`At ${hrs} hours, you're about ${fmtDur(shortfall)} below the 7-hour guideline. This mild deficit is manageable — most of your critical sleep stages will still have occurred, just slightly compressed.`);
     } else {
-      parts.push(`At ${hrs} hours, you're ${fmtDur(shortfall)} short of the 8-hour target. Sleep duration is the foundation everything else builds on — when it's cut short, the body prioritises the early cycles and sacrifices the later ones (deep sleep and REM) first. This is why one short night hits harder than it looks.`);
+      parts.push(`At ${hrs} hours, you're ${fmtDur(shortfall)} below the 7-hour guideline. Sleep duration is the foundation everything else builds on — when it's cut short, the body prioritises the early cycles and sacrifices the later ones (deep sleep and REM) first. This is why one short night hits harder than it looks.`);
     }
   }
 
@@ -438,7 +444,7 @@ function buildSleep(score: number, h: HealthData | null): BreakdownDetail {
   const advice = score >= 80
     ? `Well rested and ready. Sleep is fully supporting today's performance — train hard, think clearly, and trust your energy. To protect this pattern, keep your bedtime consistent and avoid screens in the 30 minutes before sleep.`
     : score >= 65
-    ? `Good sleep with room to improve. Avoid caffeine after 2 pm — its half-life is 5–6 hours, and afternoon coffee pushes deep sleep later into the night. Aim to be in bed by 10:30 pm to lock in a full 8-hour window.`
+    ? `Good sleep with room to improve. Avoid caffeine after 2 pm — its half-life is 5–6 hours, and afternoon coffee pushes deep sleep later into the night. Aim to be in bed early enough to clear seven hours.`
     : score >= 50
     ? `Below-optimal sleep. Keep today's training moderate — your reaction time and strength are both slightly blunted. Tonight: set a firm lights-out time, keep your room cool (around 18°C / 65°F), and avoid heavy meals in the 2 hours before bed.`
     : score >= 35
@@ -602,7 +608,7 @@ function buildStress(score: number, h: HealthData | null, rhrBaseline: number, h
 
   // Cross-reference sleep — sleep and stress are tightly coupled
   if (h?.sleepDuration != null) {
-    const sleepShortfall = 480 - h.sleepDuration;
+    const sleepShortfall = SLEEP_TARGET - h.sleepDuration;
     if (sleepShortfall >= 60) {
       parts.push(`Last night's sleep (${fmtDur(h.sleepDuration)}) is likely contributing to today's elevated stress readings. Sleep deprivation and physiological stress are tightly linked — poor sleep raises cortisol and prevents the overnight recovery that brings heart rate variability and stress scores back to baseline.`);
     }

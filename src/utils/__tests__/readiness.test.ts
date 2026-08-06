@@ -133,20 +133,23 @@ describe('calculateReadiness', () => {
     });
 
     it('renormalises the weights when only duration is available', () => {
-      const full = calculateReadiness(makeHealthData({ sleepDuration: 480 }));
+      // 420 min is OPTIMAL_SLEEP — the AASM/SRS seven-hour guideline. Pinning
+      // the target here means moving it again fails loudly rather than silently
+      // re-scoring every night in the app.
+      const full = calculateReadiness(makeHealthData({ sleepDuration: 420 }));
       expect(full.components.sleep).toBe(100);
 
-      const half = calculateReadiness(makeHealthData({ sleepDuration: 240 }));
+      const half = calculateReadiness(makeHealthData({ sleepDuration: 210 }));
       expect(half.components.sleep).toBe(50);
     });
 
     it('lets poor duration outweigh excellent sleep stages', () => {
-      // 4h sleep (duration 50) with perfect stage percentages and efficiency.
+      // 3.5h sleep (duration 50) with perfect stage percentages and efficiency.
       const { components } = calculateReadiness(
         makeHealthData({
-          sleepDuration: 240,
-          deepSleep: 48,      // 20% — on target
-          remSleep: 60,       // 25% — on target
+          sleepDuration: 210,
+          deepSleep: 42,      // 20% — on target
+          remSleep: 52.5,     // 25% — on target
           sleepEfficiency: 85,
         })
       );
