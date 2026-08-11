@@ -197,7 +197,7 @@ section { padding: 88px 0; }
 
 /* ── Science ─────────────────────────────────────────────────────────────── */
 .science { background: var(--bg-secondary); }
-.sources-list { margin-top: 36px; display: grid; gap: 14px; max-width: 720px; }
+.sources-list { margin: 36px auto 0; display: grid; gap: 14px; max-width: 720px; text-align: left; }
 .source {
   display: block;
   background: var(--bg-tertiary);
@@ -214,8 +214,9 @@ section { padding: 88px 0; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
-  margin-top: 44px;
+  margin: 44px auto 0;
   max-width: 780px;
+  text-align: left;
 }
 @media (max-width: 700px) { .plans { grid-template-columns: 1fr; } }
 .plan {
@@ -244,7 +245,7 @@ section { padding: 88px 0; }
 }
 
 /* ── FAQ ─────────────────────────────────────────────────────────────────── */
-.faq-list { margin-top: 36px; max-width: 760px; display: grid; gap: 12px; }
+.faq-list { margin: 36px auto 0; max-width: 760px; display: grid; gap: 12px; text-align: left; }
 details {
   background: var(--bg-secondary);
   border: 1px solid var(--border-subtle);
@@ -301,3 +302,7 @@ details p { margin-top: 14px; font-size: 0.95rem; }
   gap: 16px;
   flex-wrap: wrap;
 }
+
+/* Sections whose content is narrower than the page column read better centred */
+.centered { text-align: center; }
+.centered .section-sub { margin-inline: auto; }
