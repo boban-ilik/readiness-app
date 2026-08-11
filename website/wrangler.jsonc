@@ -1,11 +1,17 @@
 {
   // Cloudflare Workers static-assets deployment.
   // First deploy: npx wrangler login, then npm run deploy.
-  // Custom domain: Workers dashboard → this worker → Settings → Domains & Routes
-  // → add thereadiness.app (DNS is already on Cloudflare, so it wires itself).
+  // Custom domains: Workers dashboard → this worker → Settings → Domains & Routes
+  // → thereadiness.app AND www.thereadiness.app must both be attached; worker.js
+  // 301s www to the apex.
   "name": "thereadiness-app",
   "compatibility_date": "2026-08-01",
+  "main": "worker.js",
   "assets": {
-    "directory": "./dist"
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Route every request through worker.js so the www redirect fires even for
+    // paths that match a static asset; otherwise assets are served first.
+    "run_worker_first": true
   }
 }
