@@ -1,0 +1,92 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Readiness — a readiness score for the watch you already own',
+  description =
+    'Daily readiness scores from your HRV, resting heart rate and sleep, read from Apple Health. Works with Apple Watch, Garmin, Polar, Fitbit and more. No extra hardware.',
+} = Astro.props;
+
+const APP_STORE_URL = 'https://apps.apple.com/app/id6760478506';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={new URL(Astro.url.pathname, Astro.site)} />
+    <meta property="og:image" content={new URL('/screens/hero.png', Astro.site)} />
+    <meta name="twitter:card" content="summary" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="wordmark" href="/">Readiness<span class="dot">.</span></a>
+        <nav class="site-nav">
+          <a href="/#features">Features</a>
+          <a href="/#how">How it works</a>
+          <a href="/#science">Science</a>
+          <a href="/#pricing">Pricing</a>
+          <a href="/#faq">FAQ</a>
+        </nav>
+        <a class="btn btn-sm" href={APP_STORE_URL}>Download</a>
+      </div>
+    </header>
+
+    <slot />
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <div class="footer-cols">
+          <div>
+            <a class="wordmark" href="/">Readiness<span class="dot">.</span></a>
+            <p class="footer-tagline">
+              Know when to push. Know when to rest. Your daily recovery score, from the gear you already own.
+            </p>
+          </div>
+          <div>
+            <h4>Product</h4>
+            <ul>
+              <li><a href="/#features">Features</a></li>
+              <li><a href="/#pricing">Pricing</a></li>
+              <li><a href={APP_STORE_URL}>Download</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Support</h4>
+            <ul>
+              <li><a href="/support">Support</a></li>
+              <li><a href="/#faq">FAQ</a></li>
+              <li><a href="mailto:support@thereadiness.app">support@thereadiness.app</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4>Trust</h4>
+            <ul>
+              <li><a href="/privacy">Privacy Policy</a></li>
+              <li><a href="/#science">Sources</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-legal">
+          <span>© 2026 Readiness</span>
+          <span>Readiness is a general wellness app and is not a substitute for medical advice.</span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

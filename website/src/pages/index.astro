@@ -1,0 +1,271 @@
+---
+import Base from '../layouts/Base.astro';
+
+const APP_STORE_URL = 'https://apps.apple.com/app/id6760478506';
+
+const features = [
+  {
+    icon: '☀️',
+    title: 'Daily AI briefing',
+    body: 'A personalised morning summary written by a coach that knows your numbers. Why your score is what it is, and what to do about it today.',
+  },
+  {
+    icon: '💬',
+    title: 'Ask your coach anything',
+    body: '"Should I do my long run tomorrow?" Your coach has your full history and answers in plain English rather than charts.',
+  },
+  {
+    icon: '📅',
+    title: 'See three days ahead',
+    body: 'A readiness forecast, so you can move your key session before fatigue arrives instead of after.',
+  },
+  {
+    icon: '⚠️',
+    title: 'Catch overtraining early',
+    body: 'Readiness watches for the patterns that precede burnout and tells you before you dig a hole you have to climb out of.',
+  },
+  {
+    icon: '🏷️',
+    title: 'Tag what affects you',
+    body: 'Log alcohol, illness, travel or a late night, and watch your coach connect them to what your body did next.',
+  },
+  {
+    icon: '📱',
+    title: 'On your home screen',
+    body: "A widget keeps today's score one glance away, so you know before you go.",
+  },
+];
+
+const sources = [
+  {
+    title: 'Monitoring Training Adaptation and Recovery Status in Athletes Using Heart Rate Variability via Mobile Devices: A Narrative Review',
+    where: 'Sensors, 2025',
+    url: 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12787763/',
+  },
+  {
+    title: 'Heart Rate Variability Applications in Strength and Conditioning: A Narrative Review',
+    where: 'Journal of Functional Morphology and Kinesiology, 2024',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11204851/',
+  },
+  {
+    title: 'Joint Consensus Statement on the Recommended Amount of Sleep for a Healthy Adult',
+    where: 'Journal of Clinical Sleep Medicine, 2015',
+    url: 'https://jcsm.aasm.org/doi/10.5664/jcsm.4950',
+  },
+  {
+    title: 'The Impact of Alcohol on Sleep Physiology: A Prospective Observational Study on Nocturnal Resting Heart Rate',
+    where: 'Journal of Clinical Medicine, 2025',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC12073130/',
+  },
+];
+
+const faqs = [
+  {
+    q: "My Garmin doesn't share HRV with Apple Health. Does Readiness still work?",
+    a: 'Yes. Garmin keeps HRV inside Garmin Connect, so Readiness lets you enter your morning HRV in a couple of taps and blends it with the sleep and heart-rate data your watch does sync. Everything else is automatic.',
+  },
+  {
+    q: 'Do I need an Apple Watch?',
+    a: 'No. Readiness reads Apple Health, so any device that writes there works: Apple Watch, Garmin, Polar, Fitbit, Whoop, Samsung Galaxy Watch, Oura Ring and more. You need an iPhone, and a wearable that tracks sleep and heart rate.',
+  },
+  {
+    q: 'What data does the AI see?',
+    a: 'Your readiness score is calculated on your device. The AI features send the relevant metrics to Anthropic\'s Claude to write your briefing and chat replies, and nothing more. Your data is never sold and never shared with advertisers. The privacy policy sets out exactly what is sent and what is not.',
+  },
+  {
+    q: 'Why do my scores take a week to settle?',
+    a: 'Readiness scores you against your own baselines, not population averages, and it takes about seven days of overnight wear to learn them. Scores sharpen as calibration completes.',
+  },
+  {
+    q: 'How do I cancel?',
+    a: 'Subscriptions are billed by Apple and cancelled in your iPhone settings under Apple Account → Subscriptions, any time. The 14-day free trial on the annual plan can be cancelled before it converts and you will not be charged.',
+  },
+];
+---
+
+<Base>
+  <!-- ── Hero ─────────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <h1>A readiness score for the watch you already own.</h1>
+        <p class="lede">
+          Readiness reads your HRV, resting heart rate and sleep from Apple Health and turns them
+          into one number every morning: how ready your body is to train. Know when to push. Know
+          when to rest.
+        </p>
+        <a class="btn" href={APP_STORE_URL}>Download on the App Store</a>
+        <p class="hero-devices">
+          Works with Apple Watch · Garmin · Polar · Fitbit · Whoop · Samsung · Oura
+        </p>
+      </div>
+      <div class="hero-phone">
+        <div class="phone">
+          <img
+            src="/screens/hero.png"
+            alt="Readiness home screen showing a readiness score of 63, Good to Go, with today's training recommendation"
+            width="1242"
+            height="2688"
+            loading="eager"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── How it works ─────────────────────────────────────────────────── -->
+  <section id="how">
+    <div class="wrap">
+      <span class="kicker">How it works</span>
+      <h2>Three steps. Then it's automatic.</h2>
+      <div class="steps">
+        <div class="step">
+          <span class="num">1</span>
+          <h3>Connect Apple Health</h3>
+          <p>
+            Readiness reads three things: heart rate variability, resting heart rate and sleep.
+            Nothing else. If your watch keeps HRV to itself, enter it in two taps.
+          </p>
+        </div>
+        <div class="step">
+          <span class="num">2</span>
+          <h3>One week of calibration</h3>
+          <p>
+            Your first seven nights teach Readiness your personal baselines. Scores are measured
+            against your normal, not someone else's average.
+          </p>
+        </div>
+        <div class="step">
+          <span class="num">3</span>
+          <h3>Wake up to your number</h3>
+          <p>
+            Every morning: your score, what drove it, and a briefing that tells you whether today
+            calls for a hard session or active recovery.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Features ─────────────────────────────────────────────────────── -->
+  <section id="features">
+    <div class="wrap">
+      <span class="kicker">Features</span>
+      <h2>Built to answer one question: how hard should I go today?</h2>
+      <div class="features-grid">
+        {features.map((f) => (
+          <div class="feature">
+            <span class="icon">{f.icon}</span>
+            <h3>{f.title}</h3>
+            <p>{f.body}</p>
+          </div>
+        ))}
+      </div>
+      <div class="feature-phones">
+        <div class="phone">
+          <img
+            src="/screens/briefing.png"
+            alt="Daily AI briefing explaining the day's readiness score with concrete actions"
+            width="1242"
+            height="2688"
+            loading="lazy"
+          />
+        </div>
+        <div class="phone">
+          <img
+            src="/screens/history.png"
+            alt="Seven day readiness history with score trend chart and weekly stats"
+            width="1242"
+            height="2688"
+            loading="lazy"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Science ──────────────────────────────────────────────────────── -->
+  <section id="science" class="science">
+    <div class="wrap">
+      <span class="kicker">Science</span>
+      <h2>We cite our sources.</h2>
+      <p class="section-sub">
+        Health apps make a lot of claims. Ours link to the research behind them, both here and
+        inside the app, and where our guidance is a rule of thumb rather than a finding, we say so.
+        Readiness is a general wellness app and does not diagnose or treat any condition.
+      </p>
+      <div class="sources-list">
+        {sources.map((s) => (
+          <a class="source" href={s.url} target="_blank" rel="noopener">
+            <strong>{s.title}</strong>
+            <span>{s.where} ↗</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Pricing ──────────────────────────────────────────────────────── -->
+  <section id="pricing">
+    <div class="wrap">
+      <span class="kicker">Pricing</span>
+      <h2>Start free. Upgrade when it earns it.</h2>
+      <div class="plans">
+        <div class="plan free">
+          <h3>Free</h3>
+          <div class="price">$0</div>
+          <ul>
+            <li>Daily readiness score</li>
+            <li>Recovery, sleep and stress components</li>
+            <li>Home screen widget</li>
+            <li>Manual HRV entry</li>
+            <li>Streaks</li>
+          </ul>
+          <a class="btn btn-sm" href={APP_STORE_URL}>Get the app</a>
+        </div>
+        <div class="plan pro">
+          <span class="trial-badge">14-day free trial on annual</span>
+          <h3>Readiness Pro</h3>
+          <div class="price">$9.99 <small>/ month</small></div>
+          <div class="annual">or $69.99 / year — about 42% less</div>
+          <ul>
+            <li>Daily AI briefing and coach chat</li>
+            <li>Full history, patterns and CSV export</li>
+            <li>3-day readiness forecast</li>
+            <li>Training and nutrition guidance</li>
+            <li>Overtraining and HRV-drop alerts</li>
+            <li>Weekly report</li>
+          </ul>
+          <a class="btn btn-sm" href={APP_STORE_URL}>Start with the free trial</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FAQ ──────────────────────────────────────────────────────────── -->
+  <section id="faq">
+    <div class="wrap">
+      <span class="kicker">FAQ</span>
+      <h2>Fair questions.</h2>
+      <div class="faq-list">
+        {faqs.map((f) => (
+          <details>
+            <summary>{f.q}</summary>
+            <p>{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Final CTA ────────────────────────────────────────────────────── -->
+  <section class="cta-band">
+    <div class="wrap">
+      <h2>Stop guessing. Start listening to your body.</h2>
+      <p class="section-sub" style="margin-inline: auto;">
+        One score every morning, from the gear you already own.
+      </p>
+      <a class="btn" href={APP_STORE_URL}>Download on the App Store</a>
+    </div>
+  </section>
+</Base>

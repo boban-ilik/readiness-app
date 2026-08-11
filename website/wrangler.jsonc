@@ -1,0 +1,11 @@
+{
+  // Cloudflare Workers static-assets deployment.
+  // First deploy: npx wrangler login, then npm run deploy.
+  // Custom domain: Workers dashboard → this worker → Settings → Domains & Routes
+  // → add thereadiness.app (DNS is already on Cloudflare, so it wires itself).
+  "name": "thereadiness-app",
+  "compatibility_date": "2026-08-01",
+  "assets": {
+    "directory": "./dist"
+  }
+}
