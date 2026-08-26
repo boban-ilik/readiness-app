@@ -70,17 +70,42 @@ const USE_REVENUECAT_PAYWALL_UI = false;
 // ─── Keys ─────────────────────────────────────────────────────────────────────
 const DEV_OVERRIDE_KEY = '@readiness/dev_is_pro';
 
+// ─── Calibration-week trial ───────────────────────────────────────────────────
+// Every account's first 7 days are full Pro. The window is keyed off the
+// Supabase auth user's created_at — server-side and immutable — so deleting
+// and reinstalling the app cannot restart it. The paywall lands on day 7,
+// which is also the day calibration completes and scores become personal:
+// the product's best moment, not its least proven one.
+const TRIAL_DAYS = 7;
+
+function trialEndMs(createdAt: string | undefined): number {
+  if (!createdAt) return 0;
+  const t = Date.parse(createdAt);
+  return Number.isFinite(t) ? t + TRIAL_DAYS * 86_400_000 : 0;
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type SubscriptionTier = 'free' | 'pro';
 
 interface SubscriptionContextType {
-  /** Whether the user has an active Pro entitlement */
+  /** Whether the user has Pro access right now — paid, dev override, or calibration-week trial */
   isPro: boolean;
+  /** True when Pro access comes from the calibration-week trial rather than a purchase */
+  isTrialActive: boolean;
+  /** Whole days of trial remaining (0 when expired or not applicable) */
+  trialDaysLeft: number;
   /** Raw tier string — useful for analytics / display */
   tier: SubscriptionTier;
   /** True while reading/verifying subscription state */
   isLoading: boolean;
+  /**
+   * True once the RevenueCat customer identity matches the signed-in user.
+   * Gates that render on isPro should wait for this: before identity sync the
+   * SDK reports the anonymous customer, and a paying user briefly reads as
+   * free — which is the paywall-flash bug.
+   */
+  identityReady: boolean;
   /**
    * Present the RevenueCat paywall sheet (configured in RC dashboard).
    * Falls back to the in-app /paywall route in Expo Go / when RC is not linked.
@@ -156,11 +181,20 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [isPro,      setIsPro]      = useState(false);
   const [isLoading,  setIsLoading]  = useState(true);
   const [rcReady,    setRcReady]    = useState(false);
+  const [identityReady, setIdentityReady] = useState(false);
 
   // Supabase user id, or null when signed out. SubscriptionProvider is nested
   // inside AuthProvider in app/_layout.tsx, so this is always available.
   const { user } = useAuth();
   const userId = user?.id ?? null;
+
+  // Calibration-week trial, derived rather than stored: created_at comes from
+  // the auth server with the session, so there is nothing to sync or wipe.
+  const trialEnd      = trialEndMs(user?.created_at);
+  const isTrialActive = !!userId && Date.now() < trialEnd;
+  const trialDaysLeft = isTrialActive
+    ? Math.max(0, Math.ceil((trialEnd - Date.now()) / 86_400_000))
+    : 0;
 
   // __DEV__-only Pro override. Held in a ref so every place that derives isPro
   // from RevenueCat can OR it in — otherwise a real "not subscribed" response
@@ -185,14 +219,14 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
       // 2. Only on iOS native builds — not Expo Go / web
       if (Platform.OS !== 'ios') {
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) { setIsLoading(false); setIdentityReady(true); }
         return;
       }
 
       const Purchases = await getPurchases();
       if (!Purchases) {
         // Package not yet linked (Expo Go). Treat as free.
-        if (!cancelled) setIsLoading(false);
+        if (!cancelled) { setIsLoading(false); setIdentityReady(true); }
         return;
       }
 
@@ -214,6 +248,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         if (!cancelled) setRcReady(true);
       } catch (e) {
         console.warn('[Subscription] RevenueCat init failed:', e);
+        // rcReady never set, so the identity effect will not run — release the
+        // gates rather than leaving them blank forever.
+        if (!cancelled) setIdentityReady(true);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -258,6 +295,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         }
       } catch (e) {
         console.warn('[Subscription] RevenueCat identity sync failed (non-fatal):', e);
+      } finally {
+        if (!cancelled) setIdentityReady(true);
       }
     }
 
@@ -341,9 +380,15 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   return (
     <SubscriptionContext.Provider
       value={{
-        isPro,
-        tier: isPro ? 'pro' : 'free',
+        // Trial ORs in at the edge: the internal isPro state stays purely the
+        // RevenueCat/dev entitlement, so an RC update can never clobber an
+        // active trial and vice versa.
+        isPro: isPro || isTrialActive,
+        isTrialActive: isTrialActive && !isPro,
+        trialDaysLeft,
+        tier: isPro || isTrialActive ? 'pro' : 'free',
         isLoading,
+        identityReady,
         presentPaywall,
         presentCustomerCenter,
         debugSetPro,

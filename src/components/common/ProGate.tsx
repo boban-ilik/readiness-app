@@ -93,14 +93,16 @@ const DEFAULT_BULLETS = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function ProGate({ feature, description, children, style }: ProGateProps) {
-  const { isPro, isLoading } = useSubscription();
-  const router               = useRouter();
+  const { isPro, isLoading, identityReady } = useSubscription();
+  const router                              = useRouter();
 
   // isPro starts false while RevenueCat resolves, so rendering the gate straight
   // away flashed the upgrade panel at paying subscribers on every cold start —
-  // their own app appearing to have downgraded them. Render nothing until the
-  // entitlement is known; that also avoids briefly exposing gated content.
-  if (isLoading) return null;
+  // their own app appearing to have downgraded them. isLoading alone was not
+  // enough: it clears after the initial (anonymous) customer fetch, before
+  // Purchases.logIn() resolves the signed-in customer, which reopened the same
+  // flash for one beat. Wait for both.
+  if (isLoading || !identityReady) return null;
 
   // Pro users — render children with zero overhead
   if (isPro) return <>{children}</>;

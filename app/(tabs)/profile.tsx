@@ -443,7 +443,7 @@ function NotificationsContent() {
 export default function ProfileScreen() {
   const router                             = useRouter();
   const { user, signOut }                  = useAuth();
-  const { isPro, debugSetPro, presentPaywall, presentCustomerCenter } = useSubscription();
+  const { isPro, isTrialActive, trialDaysLeft, debugSetPro, presentPaywall, presentCustomerCenter } = useSubscription();
 
   // ── Profile fields ──────────────────────────────────────────────────────────
   const [userName,     setUserName]     = useState<string>('');
@@ -883,7 +883,11 @@ export default function ProfileScreen() {
             <RowBase
               label="Plan"
               right={
-                isPro ? (
+                isTrialActive ? (
+                  <View style={styles.proPill}>
+                    <Text style={styles.proPillText}>PRO TRIAL · {trialDaysLeft}d left</Text>
+                  </View>
+                ) : isPro ? (
                   <View style={styles.proPill}>
                     <Text style={styles.proPillText}>PRO ♛</Text>
                   </View>
@@ -893,7 +897,9 @@ export default function ProfileScreen() {
               }
             />
           </TouchableOpacity>
-          {isPro && (
+          {/* Trial users have nothing to manage in the Customer Center — they
+              have no subscription yet. Show them the upgrade path instead. */}
+          {isPro && !isTrialActive && (
             <RowBase
               label="Manage subscription"
               sublabel="Cancel, upgrade, request refund, or contact support"
@@ -903,13 +909,15 @@ export default function ProfileScreen() {
           )}
         </SettingsCard>
 
-        {!isPro && (
+        {(!isPro || isTrialActive) && (
           <TouchableOpacity
             style={styles.upgradeButton}
             activeOpacity={0.85}
             onPress={presentPaywall}
           >
-            <Text style={styles.upgradeText}>Upgrade to Pro · $9.99/mo</Text>
+            <Text style={styles.upgradeText}>
+              {isTrialActive ? 'Keep Pro after your calibration week' : 'Upgrade to Pro · $9.99/mo'}
+            </Text>
           </TouchableOpacity>
         )}
 
