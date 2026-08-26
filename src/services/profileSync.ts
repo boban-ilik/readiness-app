@@ -120,6 +120,7 @@ export async function pullProfile(): Promise<boolean> {
       writes.push([key, String(value)]);
     };
 
+    put(ONBOARDING_KEY,     row.onboarded_at ? 'true' : null);
     put(NAME_KEY,           row.name);
     put(FREQ_KEY,           row.training_frequency);
     put(DEVICE_KEY,         row.device_type);

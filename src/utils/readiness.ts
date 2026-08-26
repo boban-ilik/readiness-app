@@ -194,7 +194,7 @@ function assessDataQuality(data: HealthData): DataQuality {
   // advice they can't act on — they can enter HRV by hand instead.
   let warningMessage: string | null = null;
   if (confidence === 'low') {
-    warningMessage = 'Today\'s score is an estimate from typical values. Wear your watch overnight and tomorrow\'s will be yours.';
+    warningMessage = 'No overnight data from your watch yet, so this is an estimate. Open your watch\'s app to sync, then pull down here to refresh.';
   } else if (confidence === 'medium') {
     if (!hasHRV && !hasRHR) {
       warningMessage = 'Sleep is tracked. Wear your watch snugly overnight to add heart rate, or tap to enter HRV yourself.';
