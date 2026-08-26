@@ -25,6 +25,7 @@ import { analyzePatterns, type PatternInsight } from '@services/patternAnalysis'
 import { analyzeWorkload, type WorkloadResult } from '@services/workloadAnalysis';
 import { fetchRecentEvents, type LifeEvent } from '@services/lifeEvents';
 import { setCoachSession } from '@services/coachSession';
+import { useSubscription } from '@contexts/SubscriptionContext';
 import type { ReadinessResult } from '@utils/readiness';
 import type { HealthData } from '@/types/index';
 import { supabase } from '@services/supabase';
@@ -195,6 +196,7 @@ export default function DailyBriefingModal({
   hrvBaseline,
 }: DailyBriefingModalProps) {
   const router = useRouter();
+  const { isPro, presentPaywall } = useSubscription();
   const [briefing,     setBriefing]     = useState<DailyBriefing | null>(null);
   const [isLoading,    setIsLoading]    = useState(false);
   const [error,        setError]        = useState<string | null>(null);
@@ -260,6 +262,9 @@ export default function DailyBriefingModal({
   }
 
   function handleOpenCoach() {
+    // The weekly free briefing opens this modal for free users, but the coach
+    // itself stays Pro: every chat turn is a metered API call.
+    if (!isPro) { onClose(); presentPaywall(); return; }
     if (!readiness || !healthData) return;
     setCoachSession({
       readiness,

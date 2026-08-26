@@ -21,6 +21,7 @@ import ForecastStrip from '@components/score/ForecastStrip';
 import LifeEventTagger from '@components/score/LifeEventTagger';
 import BreakdownModal from '@components/score/BreakdownModal';
 import DailyBriefingModal from '@components/score/DailyBriefingModal';
+import { canUseFreeBriefing, markFreeBriefingUsed } from '@services/freeBriefing';
 import ShareCard from '@components/score/ShareCard';
 import { ProGate } from '@components/common/ProGate';
 import { colors, fontSize, fontWeight, spacing, radius, getScoreColor, getScoreLabel } from '@constants/theme';
@@ -412,13 +413,23 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Score ring — tappable for Pro daily briefing */}
+        {/* Score ring — tappable for the daily briefing. Pro gets it daily;
+            free users keep one per week after the trial, because a briefing
+            written from their own numbers is the best ad for the daily one. */}
         <TouchableOpacity
           style={styles.ringContainer}
-          activeOpacity={isPro && score > 0 ? 0.7 : 1}
-          onPress={() => {
-            if (!isPro)     { presentPaywall(); return; }
+          activeOpacity={score > 0 ? 0.7 : 1}
+          onPress={async () => {
             if (score <= 0) return;
+            if (!isPro) {
+              if (await canUseFreeBriefing()) {
+                await markFreeBriefingUsed();
+                setBriefingVisible(true);
+              } else {
+                presentPaywall();
+              }
+              return;
+            }
             setBriefingVisible(true);
           }}
         >
@@ -448,7 +459,7 @@ export default function HomeScreen() {
                   ? (yesterdayScore !== null && score - yesterdayScore < -7
                       ? 'Tap to understand today\'s drop'
                       : 'Tap for briefing')
-                  : '🔒 Pro'}
+                  : 'Tap for briefing'}
               </Text>
             )}
           </View>
@@ -648,7 +659,12 @@ export default function HomeScreen() {
         {forecast && (
           <View style={styles.trainingSection}>
             <Text style={styles.sectionTitle}>3-DAY FORECAST</Text>
-            <ForecastStrip forecast={forecast} />
+            <ProGate
+              feature="3-Day Forecast"
+              description="See readiness three days ahead, so you can move your key session before fatigue arrives instead of after."
+            >
+              <ForecastStrip forecast={forecast} />
+            </ProGate>
           </View>
         )}
 

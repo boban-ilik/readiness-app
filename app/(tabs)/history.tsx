@@ -708,19 +708,6 @@ function TodayCard({ today }: { today: DayHistory | undefined }) {
 
 // ─── Teaser banner (free users) ───────────────────────────────────────────────
 
-function TeaserBanner({ daysTracked }: { daysTracked: number }) {
-  const msg = daysTracked >= 7
-    ? `You've been tracking for ${daysTracked} days — see your trend`
-    : `${daysTracked} day${daysTracked !== 1 ? 's' : ''} tracked — your 7-day chart is ready`;
-  return (
-    <View style={styles.teaserBanner}>
-      <Text style={styles.teaserIcon}>📈</Text>
-      <Text style={styles.teaserText}>{msg}</Text>
-      <Text style={styles.teaserLock}>Pro</Text>
-    </View>
-  );
-}
-
 // ─── Range toggle ─────────────────────────────────────────────────────────────
 
 function MetricToggle({
@@ -975,28 +962,31 @@ export default function HistoryScreen() {
         </View>
 
         <TodayCard today={today} />
-        <TeaserBanner daysTracked={daysTracked} />
+
+        {/* The 7-day chart is free: it is what turns a one-glance score into a
+            daily habit, and the habit is what conversion is downstream of. The
+            deeper analysis below it stays Pro. */}
+        <View style={styles.chartCard}>
+          <Text style={styles.chartLabel}>READINESS · 7 DAYS</Text>
+          {history.length > 0
+            ? <TrendChart data={history} chartWidth={chartWidth} />
+            : <View style={styles.chartEmpty}><Text style={styles.chartEmptyText}>No data yet</Text></View>
+          }
+        </View>
+
+        <View style={styles.statsRow}>
+          <StatChip label="7-DAY AVG" value={avgScore} />
+          <View style={styles.statDivider} />
+          <StatChip label="BEST" value={bestScore} />
+          <View style={styles.statDivider} />
+          <StatChip label="TODAY" value={todayScore} trend={trendVsAvg} />
+        </View>
 
         <ProGate
-          feature="7-Day History & Trends"
-          description="Track how your readiness evolves day by day and spot patterns in your recovery."
+          feature="Daily Log & Deep History"
+          description="Per-day breakdowns, 28-day trends, patterns and CSV export of your own data."
           style={styles.proGateBlock}
         >
-          <View style={styles.chartCard}>
-            <Text style={styles.chartLabel}>READINESS · 7 DAYS</Text>
-            {history.length > 0
-              ? <TrendChart data={history} chartWidth={chartWidth} />
-              : <View style={styles.chartEmpty}><Text style={styles.chartEmptyText}>No data yet</Text></View>
-            }
-          </View>
-
-          <View style={styles.statsRow}>
-            <StatChip label="7-DAY AVG" value={avgScore} />
-            <View style={styles.statDivider} />
-            <StatChip label="BEST" value={bestScore} />
-            <View style={styles.statDivider} />
-            <StatChip label="TODAY" value={todayScore} trend={trendVsAvg} />
-          </View>
 
           <View style={styles.dayList}>
             <Text style={styles.sectionTitle}>DAILY LOG</Text>
@@ -1222,36 +1212,6 @@ const styles = StyleSheet.create({
   },
 
   // Teaser
-  teaserBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.bg.tertiary,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    marginBottom: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    gap: spacing[2],
-  },
-  teaserIcon: {
-    fontSize: 16,
-  },
-  teaserText: {
-    flex: 1,
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
-  },
-  teaserLock: {
-    backgroundColor: colors.amber[400],
-    color: colors.text.inverse,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-    paddingHorizontal: spacing[2],
-    paddingVertical: 2,
-    borderRadius: radius.xs,
-    overflow: 'hidden',
-  },
 
   proGateBlock: {
     marginBottom: spacing[3],
