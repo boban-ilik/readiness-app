@@ -482,12 +482,12 @@
 					"FB_SONARKIT_ENABLED=1",
 				);
 				INFOPLIST_FILE = Readiness/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -516,12 +516,12 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = M8QJGU33AU;
 				INFOPLIST_FILE = Readiness/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -586,7 +586,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD = "";
 				LDPLUSPLUS = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -648,7 +648,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD = "";
 				LDPLUSPLUS = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -683,7 +683,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.bobanilikj.readiness.ReadinessWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -710,7 +710,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.bobanilikj.readiness.ReadinessWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
