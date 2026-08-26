@@ -32,6 +32,7 @@ import { useStravaActivities } from '@hooks/useStravaActivities';
 import { useSubscription } from '@contexts/SubscriptionContext';
 import { useNotifications } from '@hooks/useNotifications';
 import { useCalibrationStatus } from '@hooks/useCalibrationStatus';
+import { useRatingPrompt } from '@hooks/useRatingPrompt';
 import { useCycleTracking } from '@hooks/useCycleTracking';
 import { useOvertrainingWarning } from '@hooks/useOvertrainingWarning';
 import { PROFILE_SEX_KEY } from '@services/userProfile';
@@ -160,6 +161,9 @@ export default function HomeScreen() {
   const { readiness, isLoading, isRefreshing, error, refresh, rhrBaseline, hrvBaseline, setManualHRV } = useHealthData();
   const { isPro, presentPaywall } = useSubscription();
   const calibration = useCalibrationStatus();
+  // Ask for a rating once, the day calibration completes — the product's best
+  // moment, and the same day the trial paywall makes its case.
+  useRatingPrompt(calibration.daysComplete);
   const {
     checkAndAlertScore,
     rescheduleDigestWithScore,
