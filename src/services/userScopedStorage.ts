@@ -73,6 +73,9 @@ const USER_SCOPED_KEYS = [
   // Coach conversation — contains health details and whatever the user typed
   '@readiness/coach_chat_v1',
 
+  // One-time calibration-week report flag
+  '@readiness/calibration_report_seen',
+
   // Weekly free-briefing allowance — per account, so switching accounts
   // cannot smuggle extra briefings
   '@readiness/free_briefing_last_used',

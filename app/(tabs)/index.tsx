@@ -21,6 +21,8 @@ import ForecastStrip from '@components/score/ForecastStrip';
 import LifeEventTagger from '@components/score/LifeEventTagger';
 import BreakdownModal from '@components/score/BreakdownModal';
 import DailyBriefingModal from '@components/score/DailyBriefingModal';
+import CalibrationReportModal from '@components/score/CalibrationReportModal';
+import { hasSeenCalibrationReport, markCalibrationReportSeen } from '@services/calibrationReport';
 import { canUseFreeBriefing, markFreeBriefingUsed } from '@services/freeBriefing';
 import ShareCard from '@components/score/ShareCard';
 import { ProGate } from '@components/common/ProGate';
@@ -159,11 +161,29 @@ function buildSleepDetail(h: HealthData | null): string | undefined {
 export default function HomeScreen() {
   const router = useRouter();
   const { readiness, isLoading, isRefreshing, error, refresh, rhrBaseline, hrvBaseline, setManualHRV } = useHealthData();
-  const { isPro, presentPaywall } = useSubscription();
+  const { isPro, isTrialActive, presentPaywall } = useSubscription();
   const calibration = useCalibrationStatus();
-  // Ask for a rating once, the day calibration completes — the product's best
-  // moment, and the same day the trial paywall makes its case.
-  useRatingPrompt(calibration.daysComplete);
+
+  // Day-7 choreography: the calibration report owns the moment; the rating
+  // prompt waits until it has been seen so the two sheets never collide.
+  const [reportVisible,  setReportVisible]  = useState(false);
+  const [reportResolved, setReportResolved] = useState(false);
+  useEffect(() => {
+    if (calibration.daysComplete < 7 || reportResolved || reportVisible) return;
+    let cancelled = false;
+    hasSeenCalibrationReport().then(seen => {
+      if (cancelled) return;
+      if (seen) setReportResolved(true);
+      else      setReportVisible(true);
+    });
+    return () => { cancelled = true; };
+  }, [calibration.daysComplete, reportResolved, reportVisible]);
+  const closeReport = () => {
+    markCalibrationReportSeen();
+    setReportVisible(false);
+    setReportResolved(true);
+  };
+  useRatingPrompt(reportResolved ? calibration.daysComplete : 0);
   const {
     checkAndAlertScore,
     rescheduleDigestWithScore,
@@ -707,6 +727,16 @@ export default function HomeScreen() {
       />
 
       {/* ── Daily briefing modal (Pro only) ── */}
+      <CalibrationReportModal
+        visible={reportVisible}
+        onClose={closeReport}
+        hrvBaseline={hrvBaseline}
+        rhrBaseline={rhrBaseline}
+        isPro={isPro}
+        isTrialActive={isTrialActive}
+        onKeepPro={() => { closeReport(); presentPaywall(); }}
+      />
+
       <DailyBriefingModal
         visible={briefingVisible}
         onClose={() => setBriefingVisible(false)}
