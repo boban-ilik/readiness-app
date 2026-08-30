@@ -22,9 +22,12 @@ interface Props {
 
 type TrainingRec = 'push' | 'moderate' | 'rest';
 
+// Aligned with getScoreLabel's app-wide bands: 61–80 reads "Good to Go", so a
+// projected 72 must not carry a "Take it easier" chip while the driver text
+// says to run the planned session.
 function trainingRec(score: number): TrainingRec {
-  if (score >= 75) return 'push';
-  if (score >= 52) return 'moderate';
+  if (score >= 61) return 'push';
+  if (score >= 41) return 'moderate';
   return 'rest';
 }
 
