@@ -1,0 +1,41 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const fmt = (d: Date) =>
+  d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+---
+
+<Base title={`${post.data.title} — Readiness`} description={post.data.description}>
+  <article class="blog-post">
+    <div class="wrap wrap-narrow">
+      <a class="back-link" href="/blog/">← All articles</a>
+      <time datetime={post.data.pubDate.toISOString()}>{fmt(post.data.pubDate)}</time>
+      <h1>{post.data.title}</h1>
+      <div class="post-body">
+        <Content />
+      </div>
+
+      <aside class="post-cta">
+        <h3>One score every morning</h3>
+        <p>
+          Readiness Coach turns your HRV, sleep and resting heart rate into a single readiness
+          score, calibrated to your own baselines. Every new account starts with a free week of
+          the full app.
+        </p>
+        <a class="btn" href="https://apps.apple.com/app/id6760478506">Download on the App Store</a>
+      </aside>
+    </div>
+  </article>
+</Base>

@@ -1,0 +1,38 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog')).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+
+const fmt = (d: Date) =>
+  d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+---
+
+<Base
+  title="Blog — Readiness"
+  description="Plain-spoken writing on HRV, sleep, recovery and readiness scores, from the makers of Readiness Coach."
+>
+  <section class="blog-index">
+    <div class="wrap">
+      <span class="kicker">Blog</span>
+      <h1>Recovery, explained plainly.</h1>
+      <p class="section-sub">
+        How readiness scoring works, what the research actually says, and how to get more out of
+        the watch you already own.
+      </p>
+
+      <div class="post-list">
+        {posts.map((post) => (
+          <a class="post-card" href={`/blog/${post.id}/`}>
+            <time datetime={post.data.pubDate.toISOString()}>{fmt(post.data.pubDate)}</time>
+            <h2>{post.data.title}</h2>
+            <p>{post.data.description}</p>
+            <span class="read-more">Read article →</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+</Base>

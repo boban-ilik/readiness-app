@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "website",
+      "name": "website-preview",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "website", "run", "preview"],
+      "runtimeArgs": ["run", "preview", "--prefix", "website"],
       "port": 4321
     }
   ]

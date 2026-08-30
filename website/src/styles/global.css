@@ -306,3 +306,57 @@ details p { margin-top: 14px; font-size: 0.95rem; }
 /* Sections whose content is narrower than the page column read better centred */
 .centered { text-align: center; }
 .centered .section-sub { margin-inline: auto; }
+
+/* ── Blog ────────────────────────────────────────────────────────────────── */
+.blog-index { padding-top: 72px; }
+.blog-index h1 { font-size: clamp(2rem, 4.5vw, 3rem); font-weight: 800; }
+.post-list { margin-top: 44px; display: grid; gap: 18px; max-width: 760px; }
+.post-card {
+  display: block;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 18px;
+  padding: 28px 32px;
+  transition: border-color 0.15s ease;
+  color: var(--text-secondary);
+}
+.post-card:hover { border-color: var(--amber); text-decoration: none; }
+.post-card time { font-size: 0.82rem; color: var(--text-tertiary); }
+.post-card h2 { font-size: 1.35rem; margin: 8px 0 10px; }
+.post-card p { font-size: 0.95rem; }
+.post-card .read-more {
+  display: inline-block; margin-top: 14px;
+  color: var(--amber); font-size: 0.9rem; font-weight: 600;
+}
+
+.wrap-narrow { max-width: 760px; }
+.blog-post { padding: 72px 0 40px; }
+.back-link { display: inline-block; margin-bottom: 28px; font-size: 0.9rem; }
+.blog-post time { font-size: 0.85rem; color: var(--text-tertiary); }
+.blog-post h1 {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 800;
+  margin: 10px 0 8px;
+}
+.post-body { margin-top: 28px; font-size: 1.05rem; line-height: 1.75; }
+.post-body h2 {
+  font-size: 1.45rem; font-weight: 700;
+  margin: 40px 0 14px;
+}
+.post-body p { margin: 0 0 20px; }
+.post-body ul { margin: 0 0 20px 22px; }
+.post-body li { margin-bottom: 10px; }
+.post-body strong { color: var(--text-primary); }
+.post-body em { color: var(--text-primary); font-style: italic; }
+.post-body a { text-decoration: underline; text-underline-offset: 3px; }
+
+.post-cta {
+  margin: 56px 0 48px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 32px;
+  text-align: center;
+}
+.post-cta h3 { font-size: 1.25rem; }
+.post-cta p { max-width: 520px; margin: 12px auto 22px; font-size: 0.95rem; }

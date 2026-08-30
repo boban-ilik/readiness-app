@@ -70,7 +70,7 @@ const SECTIONS: Section[] = [
     sources: [
       {
         title: 'The Impact of Alcohol on Sleep Physiology: A Prospective Observational Study on Nocturnal Resting Heart Rate Using Smartwatch Technology',
-        where: 'Journal of Clinical Medicine, 2025',
+        where: 'Nutrients, 2025',
         url:   'https://pmc.ncbi.nlm.nih.gov/articles/PMC12073130/',
       },
     ],

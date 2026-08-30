@@ -88,6 +88,12 @@ interface DailyBriefingInput {
   workload:     WorkloadResult | null;
   /** Life events tagged by the user in the last 7 days. */
   lifeEvents?:        LifeEvent[];
+  /** Menstrual cycle context. Sent only when the user has enabled cycle tracking. */
+  cycle?: {
+    phase:           'menstrual' | 'follicular' | 'ovulatory' | 'luteal' | 'late_luteal';
+    dayOfCycle:      number;
+    cycleLengthDays: number;
+  } | null;
   /** User's rating of yesterday's briefing. Used to calibrate today's specificity. */
   yesterdayFeedback?: BriefingFeedback | null;
 }
@@ -210,6 +216,22 @@ function buildPrompt(input: DailyBriefingInput): string {
       lines.push(`  • ${e.date}: ${e.event_type}${noteStr}`);
     }
     lines.push('  Factor these into your coaching: if a life event aligns with a data drop (e.g. alcohol → low HRV), name the connection explicitly. If multiple events cluster, note the pattern.');
+  }
+
+  // ── Menstrual cycle context ─────────────────────────────────────────────────
+  if (input.cycle) {
+    const CYCLE_GUIDANCE: Record<string, string> = {
+      menstrual:   'HRV often dips and RHR can be slightly elevated in the first days of menstruation; both typically return to baseline afterwards. Fatigue is common, so treat a modest score dip as expected physiology, not lost fitness.',
+      follicular:  'Rising estrogen commonly supports higher HRV and faster recovery. This is often a good window for harder sessions if the data agrees.',
+      ovulatory:   'HRV is often near its cycle peak. If the numbers look strong, this is a reasonable window for intensity or key sessions.',
+      luteal:      'Progesterone commonly raises resting heart rate by roughly 2 to 3 bpm and lowers HRV compared to the follicular phase. A modestly lower score here is normal hormonal physiology, not necessarily fatigue or overtraining. Judge the user against what is typical for their luteal phase, not against their monthly best.',
+      late_luteal: 'This is the PMS window: sleep disruption and lower HRV are common. If sleep and HRV are both down, hormones are a likely contributor. Favour recovery-leaning guidance without alarmism.',
+    };
+    lines.push('');
+    lines.push('Menstrual cycle context (the user tracks their cycle in this app):');
+    lines.push(`  • Day ${input.cycle.dayOfCycle} of a roughly ${input.cycle.cycleLengthDays}-day cycle, currently in the ${input.cycle.phase.replace('_', ' ')} phase.`);
+    lines.push(`  • ${CYCLE_GUIDANCE[input.cycle.phase] ?? ''}`);
+    lines.push('  Use this to interpret the data, never to override it. If HRV or RHR shifts match the expected pattern for this phase, say so plainly and do not attribute them to overtraining or poor recovery. Phase effects vary between individuals, so frame them with "commonly" or "often", never as certainty. Never give medical, fertility, or contraception advice.');
   }
 
   // ── Yesterday's briefing feedback ───────────────────────────────────────────

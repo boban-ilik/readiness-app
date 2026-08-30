@@ -7,6 +7,7 @@
 
 import { supabase } from '@services/supabase';
 import type { ReadinessResult } from '@utils/readiness';
+import { getCycleContext } from '@services/cycleTracking';
 import type { HealthData } from '@/types/index';
 import type { PatternInsight } from '@services/patternAnalysis';
 import type { WorkloadResult } from '@services/workloadAnalysis';
@@ -42,6 +43,8 @@ export async function askCoach(
   if (!session) throw new Error('Not signed in');
   if (!SUPABASE_URL) throw new Error('Supabase not configured');
 
+  const cycle = await getCycleContext();
+
   const controller = new AbortController();
   const timeout    = setTimeout(() => controller.abort(), 20_000);
 
@@ -56,6 +59,7 @@ export async function askCoach(
       },
       body: JSON.stringify({
         question,
+        cycle,
         score:      Math.round(readiness.score),
         scoreLabel: readiness.score >= 80 ? 'Optimal' : readiness.score >= 60 ? 'Good' : readiness.score >= 40 ? 'Moderate' : 'Low',
         components: {

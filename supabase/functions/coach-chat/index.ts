@@ -83,6 +83,12 @@ interface CoachChatInput {
   workload:     WorkloadResult | null;
   lifeEvents:   LifeEvent[];       // recent tagged events (last 7 days)
   history:      ChatMessage[];     // last 6 turns for context
+  /** Menstrual cycle context. Sent only when the user has enabled cycle tracking. */
+  cycle?: {
+    phase:           'menstrual' | 'follicular' | 'ovulatory' | 'luteal' | 'late_luteal';
+    dayOfCycle:      number;
+    cycleLengthDays: number;
+  } | null;
   profile?:     UserProfile;       // personal details from profile screen
 }
 
@@ -143,6 +149,12 @@ function buildContext(input: CoachChatInput): string {
       for (const part of parts) lines.push(`  ${part}`);
       lines.push('');
     }
+  }
+
+  if (input.cycle) {
+    lines.push(`Menstrual cycle: day ${input.cycle.dayOfCycle} of ~${input.cycle.cycleLengthDays}, ${input.cycle.phase.replace('_', ' ')} phase.`);
+    lines.push('  Interpret HRV, RHR and sleep in the light of this phase: lower HRV and slightly higher RHR are common in the luteal and late luteal phases, and higher HRV in the follicular and ovulatory phases. Phase effects vary between individuals, so use "commonly" or "often", never certainty. Do not attribute phase-typical shifts to overtraining. Never give medical, fertility, or contraception advice.');
+    lines.push('');
   }
 
   lines.push(

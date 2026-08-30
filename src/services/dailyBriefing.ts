@@ -15,6 +15,7 @@ import { getScoreLabel } from '@constants/theme';
 import type { PatternInsight } from '@services/patternAnalysis';
 import type { WorkloadResult } from '@services/workloadAnalysis';
 import type { LifeEvent } from '@services/lifeEvents';
+import { getCycleContext } from '@services/cycleTracking';
 
 const SUPABASE_URL     = process.env.EXPO_PUBLIC_SUPABASE_URL     ?? '';
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
@@ -156,6 +157,7 @@ export async function fetchDailyBriefing(
 
   // Load yesterday's feedback before making the request so the AI can adjust tone
   const yesterdayFeedback = await loadYesterdayFeedback();
+  const cycle = await getCycleContext();
 
   const controller = new AbortController();
   const timeout    = setTimeout(() => controller.abort(), 25_000);
@@ -197,6 +199,7 @@ export async function fetchDailyBriefing(
         workload,
         lifeEvents,
         yesterdayFeedback,
+        cycle,
       }),
     });
 

@@ -29,6 +29,8 @@
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export type CyclePhase =
   | 'menstrual'
   | 'follicular'
@@ -229,4 +231,49 @@ export function nextPeriodLabel(daysUntilNext: number): string {
   if (daysUntilNext <= 7)  return `In ${daysUntilNext} days`;
   if (daysUntilNext <= 14) return `In ${Math.round(daysUntilNext / 7)} week`;
   return `In ${daysUntilNext} days`;
+}
+
+// ─── AI context ───────────────────────────────────────────────────────────────
+
+/** Compact phase snapshot sent to the AI briefing and coach. */
+export interface CycleContext {
+  phase:           CyclePhase;
+  dayOfCycle:      number;
+  cycleLengthDays: number;
+}
+
+/**
+ * Load the current cycle context directly from storage, for services that run
+ * outside React. Returns null unless the user has enabled cycle tracking and
+ * logged at least one period start, so the AI never sees cycle data the user
+ * has not opted into sharing with it.
+ */
+export async function getCycleContext(): Promise<CycleContext | null> {
+  try {
+    const pairs = await AsyncStorage.multiGet([
+      CYCLE_ENABLED_KEY, CYCLE_LENGTH_KEY, CYCLE_PERIOD_KEY, CYCLE_ENTRIES_KEY,
+    ]);
+    const get = (key: string) => pairs.find(([k]) => k === key)?.[1] ?? null;
+
+    if (get(CYCLE_ENABLED_KEY) !== 'true') return null;
+
+    const entries = parseEntries(get(CYCLE_ENTRIES_KEY));
+    const last    = latestEntry(entries);
+    if (!last) return null;
+
+    const settings: CycleSettings = {
+      enabled:          true,
+      cycleLengthDays:  parseInt(get(CYCLE_LENGTH_KEY)  ?? '', 10) || DEFAULT_CYCLE_SETTINGS.cycleLengthDays,
+      periodLengthDays: parseInt(get(CYCLE_PERIOD_KEY) ?? '', 10) || DEFAULT_CYCLE_SETTINGS.periodLengthDays,
+    };
+
+    const state = computeCycleState(last, settings);
+    return {
+      phase:           state.phase,
+      dayOfCycle:      state.dayOfCycle,
+      cycleLengthDays: settings.cycleLengthDays,
+    };
+  } catch {
+    return null; // cycle context is an enhancement, never a blocker
+  }
 }
