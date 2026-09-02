@@ -199,7 +199,7 @@ function TrendChart({
   const PAD_X    = 16;
 
   const cfg      = METRIC_CONFIG[metric];
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = localDateStr(new Date());
   const pts      = buildPoints(data, chartWidth - PAD_X * 2, PLOT_H, PAD_TOP, todayStr, cfg, PAD_X);
   const validPts = pts.filter(p => p.y !== null);
 
@@ -814,7 +814,7 @@ export default function HistoryScreen() {
   const chartWidth = width - SCREEN_PAD * 2 - CARD_PAD * 2;
   const calCellSize = Math.floor((chartWidth - 6 * CAL_GAP) / 7);
 
-  const todayStr    = new Date().toISOString().split('T')[0];
+  const todayStr    = localDateStr(new Date());
   const today       = history.find(d => d.date === todayStr);
   const scores      = history.filter(d => d.score !== null).map(d => d.score!);
   const avgScore    = scores.length > 0

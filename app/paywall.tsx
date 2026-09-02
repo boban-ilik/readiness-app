@@ -13,7 +13,7 @@
  *   $rc_annual  → yearly    ($69.99/yr, 14-day free trial)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -86,7 +86,7 @@ const FEATURES: Array<{
 // Served by GitHub Pages from the repo root on main. Switch to
 // https://thereadiness.app/privacy once that domain is hosting the policy —
 // this link must resolve, so don't point it at a domain before it's live.
-const PRIVACY_URL = 'https://boban-ilik.github.io/readiness-app/privacy-policy.html';
+const PRIVACY_URL = 'https://thereadiness.app/privacy/';
 // Apple's standard EULA, which apps may use in place of bespoke terms.
 const TERMS_URL   = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
 
@@ -186,13 +186,20 @@ export default function PaywallScreen() {
   const [cycle,    setCycle]    = useState<BillingCycle>('annual');
   const [busy,     setBusy]     = useState(false);
   const [packages, setPackages] = useState<Record<BillingCycle, DisplayPackage>>(MOCK_PACKAGES);
-  const [rcLoaded, setRcLoaded] = useState(false);
+  // Prices, the trial badge and the CTA render only once live StoreKit
+  // products are in hand. Showing the hard-coded USD fallback (and a "14-day
+  // free trial" claim) while the store is unreachable is a 3.1.2 rejection
+  // waiting to happen and misprices every non-US storefront.
+  const [offerings, setOfferings] = useState<'loading' | 'ready' | 'unavailable'>('loading');
+  const rcLoaded = offerings === 'ready';
 
   // ── Load live packages from RevenueCat ──────────────────────────────────────
-  useEffect(() => {
-    if (Platform.OS !== 'ios') return;
-
-    async function loadPackages() {
+  const loadPackages = useCallback(async () => {
+    if (Platform.OS !== 'ios') {
+      setOfferings('unavailable');
+      return;
+    }
+    setOfferings('loading');
       try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const Purchases = (require('react-native-purchases') as { default: import('react-native-purchases').PurchasesStatic }).default;
@@ -203,6 +210,7 @@ export default function PaywallScreen() {
             '[Paywall] RevenueCat returned no current offering. ' +
             `all=${JSON.stringify(Object.keys(offerings.all ?? {}))}`,
           );
+          setOfferings('unavailable');
           return;
         }
 
@@ -267,20 +275,25 @@ export default function PaywallScreen() {
         }
 
         setPackages(updated);
-        setRcLoaded(true);
+        // A package whose StoreKit product failed to resolve carries no price;
+        // treat "no sellable package" the same as "store unreachable".
+        const sellable = !!updated.annual.rcPackage || !!updated.monthly.rcPackage;
+        setOfferings(sellable ? 'ready' : 'unavailable');
       } catch (e: any) {
         // Expected in Expo Go, where the native module isn't linked. Anywhere
-        // else this is the reason the paywall shows fallback prices and can't
-        // sell anything, so don't swallow it silently.
+        // else this is the reason the paywall can't sell anything, so don't
+        // swallow it silently.
         console.warn(
-          '[Paywall] Could not load RevenueCat offerings — showing fallback prices. ' +
+          '[Paywall] Could not load RevenueCat offerings. ' +
           `code=${e?.code ?? 'n/a'} message=${e?.message ?? String(e)}`,
         );
+        // Dev builds without RevenueCat keep the mock prices so the mock
+        // purchase path stays exercisable.
+        setOfferings(__DEV__ ? 'ready' : 'unavailable');
       }
-    }
-
-    loadPackages();
   }, []);
+
+  useEffect(() => { loadPackages(); }, [loadPackages]);
 
   const selectedPkg = packages[cycle];
 
@@ -353,9 +366,20 @@ export default function PaywallScreen() {
     if (busy) return;
     setBusy(true);
     try {
-      if (rcLoaded) {
+      // Restore does not need offerings, only a configured SDK. Gating it on
+      // the price load refused exactly the subscriber on a new phone during
+      // a StoreKit hiccup, and App Review tests Restore on a fresh install.
+      let configured = false;
+      let Purchases: import('react-native-purchases').PurchasesStatic | null = null;
+      try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const Purchases = (require('react-native-purchases') as { default: import('react-native-purchases').PurchasesStatic }).default;
+        Purchases  = (require('react-native-purchases') as { default: import('react-native-purchases').PurchasesStatic }).default;
+        configured = await Purchases.isConfigured();
+      } catch {
+        configured = false;
+      }
+
+      if (configured && Purchases) {
         const info = await Purchases.restorePurchases();
         if (info.entitlements.active['pro']) {
           await refreshEntitlements();
@@ -366,9 +390,8 @@ export default function PaywallScreen() {
           Alert.alert('No Previous Purchase', 'We couldn\'t find an active Pro subscription linked to your Apple ID.');
         }
       } else {
-        // RevenueCat never loaded — without this the button would do nothing
-        // at all. App Review checks restore on a fresh install, and a silent
-        // no-op reads as a broken app.
+        // SDK not linked (Expo Go) or not configured — without this the button
+        // would do nothing at all, and a silent no-op reads as a broken app.
         Alert.alert(
           'Restore unavailable',
           'We couldn\'t reach the App Store just now. Please try again shortly.',
@@ -415,65 +438,91 @@ export default function PaywallScreen() {
           ))}
         </View>
 
-        {/* ── Billing toggle ── */}
-        <BillingToggle
-          selected={cycle}
-          packages={packages}
-          onSelect={setCycle}
-        />
-
-        {/* ── Price display ── */}
-        <View style={styles.priceBlock}>
-          <Text style={styles.priceMain}>{selectedPkg.priceLabel}</Text>
-          {cycle === 'annual' && (
+        {/* ── Prices unavailable: no fallback numbers, no trial claim ── */}
+        {offerings === 'loading' && (
+          <View style={styles.priceBlock}>
+            <ActivityIndicator color={colors.amber[400]} />
+            <Text style={styles.priceNote}>Loading prices from the App Store…</Text>
+          </View>
+        )}
+        {offerings === 'unavailable' && (
+          <View style={styles.priceBlock}>
             <Text style={styles.priceNote}>
-              Just {selectedPkg.perMonth}/mo — {selectedPkg.total}
+              We couldn't load prices from the App Store. Check your connection and try again.
             </Text>
-          )}
-        </View>
-
-        {/* ── Trial badge (annual only — monthly has no introductory offer) ── */}
-        {cycle === 'annual' && (
-          <View style={styles.trialBadge}>
-            <Text style={styles.trialBadgeIcon}>🎁</Text>
-            <Text style={styles.trialBadgeText}>14-day free trial included</Text>
+            <TouchableOpacity
+              style={[styles.ctaButton, { marginTop: 16 }]}
+              onPress={loadPackages}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.ctaText}>Try again</Text>
+            </TouchableOpacity>
           </View>
         )}
 
-        {/* ── Annual advantage (shown on monthly, where the trial is invisible) ── */}
-        {cycle === 'monthly' && (
-          <TouchableOpacity
-            style={styles.switchPrompt}
-            onPress={() => setCycle('annual')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.switchPromptText}>
-              Go annual for a <Text style={styles.switchPromptStrong}>14-day free trial</Text>
-              {annualSaving ? <> and save {annualSaving}</> : null}
+        {rcLoaded && (
+          <>
+            {/* ── Billing toggle ── */}
+            <BillingToggle
+              selected={cycle}
+              packages={packages}
+              onSelect={setCycle}
+            />
+
+            {/* ── Price display ── */}
+            <View style={styles.priceBlock}>
+              <Text style={styles.priceMain}>{selectedPkg.priceLabel}</Text>
+              {cycle === 'annual' && (
+                <Text style={styles.priceNote}>
+                  Just {selectedPkg.perMonth}/mo — {selectedPkg.total}
+                </Text>
+              )}
+            </View>
+
+            {/* ── Trial badge (annual only — monthly has no introductory offer) ── */}
+            {cycle === 'annual' && (
+              <View style={styles.trialBadge}>
+                <Text style={styles.trialBadgeIcon}>🎁</Text>
+                <Text style={styles.trialBadgeText}>14-day free trial included</Text>
+              </View>
+            )}
+
+            {/* ── Annual advantage (shown on monthly, where the trial is invisible) ── */}
+            {cycle === 'monthly' && (
+              <TouchableOpacity
+                style={styles.switchPrompt}
+                onPress={() => setCycle('annual')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.switchPromptText}>
+                  Go annual for a <Text style={styles.switchPromptStrong}>14-day free trial</Text>
+                  {annualSaving ? <> and save {annualSaving}</> : null}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* ── CTA ── */}
+            <TouchableOpacity
+              style={[styles.ctaButton, busy && styles.ctaButtonBusy]}
+              onPress={handleSubscribe}
+              disabled={busy}
+              activeOpacity={0.85}
+            >
+              {busy
+                ? <ActivityIndicator color={colors.text.inverse} />
+                : <Text style={styles.ctaText}>
+                    {cycle === 'annual' ? 'Start Free Trial' : 'Subscribe Monthly'}
+                  </Text>
+              }
+            </TouchableOpacity>
+
+            <Text style={styles.ctaNote}>
+              {cycle === 'annual'
+                ? 'No charge for 14 days · Cancel anytime in App Store'
+                : 'Billed monthly · Cancel anytime in App Store'}
             </Text>
-          </TouchableOpacity>
+          </>
         )}
-
-        {/* ── CTA ── */}
-        <TouchableOpacity
-          style={[styles.ctaButton, busy && styles.ctaButtonBusy]}
-          onPress={handleSubscribe}
-          disabled={busy}
-          activeOpacity={0.85}
-        >
-          {busy
-            ? <ActivityIndicator color={colors.text.inverse} />
-            : <Text style={styles.ctaText}>
-                {cycle === 'annual' ? 'Start Free Trial' : 'Subscribe Monthly'}
-              </Text>
-          }
-        </TouchableOpacity>
-
-        <Text style={styles.ctaNote}>
-          {cycle === 'annual'
-            ? 'No charge for 14 days · Cancel anytime in App Store'
-            : 'Billed monthly · Cancel anytime in App Store'}
-        </Text>
 
         {/* ── Footer links ── */}
         <View style={styles.footer}>

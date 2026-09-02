@@ -1078,7 +1078,7 @@ export default function ProfileScreen() {
               )}
             </SettingsCard>
             <Text style={styles.sectionHint}>
-              🔒 All cycle data is stored on your device only and never shared.
+              🔒 Your period dates stay on this device. While tracking is on, your current cycle phase (not the dates) is sent with briefing and coach requests so the AI reads your numbers in context. Turn tracking off to stop that.
             </Text>
           </>
         )}

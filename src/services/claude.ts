@@ -19,6 +19,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { HealthData } from '@/types/index';
+import { localDateStr } from '@utils/index';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -75,7 +76,7 @@ async function loadCachedInsight(
     if (!raw) return null;
     const cached: CachedInsight = JSON.parse(raw);
     // Invalidate if the cached entry is from a different calendar day
-    const cachedDate = new Date(cached.cachedAt).toISOString().split('T')[0];
+    const cachedDate = localDateStr(new Date(cached.cachedAt));
     if (cachedDate !== date) return null;
     return { interpretation: cached.interpretation, advice: cached.advice };
   } catch {

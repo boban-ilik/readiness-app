@@ -79,6 +79,9 @@ const USER_SCOPED_KEYS = [
   // Weekly free-briefing allowance — per account, so switching accounts
   // cannot smuggle extra briefings
   '@readiness/free_briefing_last_used',
+
+  // Trend insight cache (30 min TTL) — narrates the previous user's week
+  '@readiness/trend_v1',
 ];
 
 /**
@@ -90,6 +93,12 @@ const USER_SCOPED_PREFIXES = [
   '@readiness/manual_hrv_',
   '@readiness/daily_briefing_v1_',
   '@readiness/briefing_feedback_v1_',
+  // Weekly AI report (per ISO week) quotes averages, best/worst days and the
+  // narrative; the pattern cache feeds the next user's briefing, coach and
+  // forecast; the per-component AI insight quotes HRV/RHR directly.
+  '@readiness/weekly_report_v1_',
+  '@readiness/patterns_v1_',
+  '@readiness/ai_v1_',
 ];
 
 async function clearUserScopedData(): Promise<void> {

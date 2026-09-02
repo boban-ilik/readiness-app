@@ -143,11 +143,19 @@ export default function CalibrationReportModal({
             </View>
           )}
 
-          {isTrialActive ? (
+          {/*
+            Pitch whenever the user has no paid entitlement. The trial clock
+            (signup time + 168 h) and the report clock (calendar days since
+            onboarding) do not line up, so on the morning of day 7 the trial has
+            usually already lapsed; branching on isTrialActive alone would show
+            "Got it" to exactly the people the screen exists for.
+          */}
+          {isTrialActive || !isPro ? (
             <View style={styles.ctaBlock}>
               <Text style={styles.ctaText}>
-                Your free week of Pro ends soon. Keep the daily briefing, coach and
-                forecast running on the baselines you just built.
+                {isTrialActive
+                  ? 'Your free week of Pro ends soon. Keep the daily briefing, coach and forecast running on the baselines you just built.'
+                  : 'Your free week of Pro has ended. Bring back the daily briefing, coach and forecast, now running on the baselines you just built.'}
               </Text>
               <TouchableOpacity style={styles.ctaButton} onPress={onKeepPro} accessibilityRole="button">
                 <Text style={styles.ctaButtonText}>Keep Pro</Text>
@@ -158,7 +166,7 @@ export default function CalibrationReportModal({
             </View>
           ) : (
             <TouchableOpacity style={styles.ctaButton} onPress={onClose} accessibilityRole="button">
-              <Text style={styles.ctaButtonText}>{isPro ? 'Continue' : 'Got it'}</Text>
+              <Text style={styles.ctaButtonText}>Continue</Text>
             </TouchableOpacity>
           )}
         </ScrollView>

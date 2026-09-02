@@ -15,6 +15,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@services/supabase';
 import type { SupabaseScoreRow } from '@services/scoreSync';
+import { localDateStr } from '@utils/index';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,7 +37,7 @@ interface PatternCache {
 }
 
 function todayKey(): string {
-  return CACHE_PREFIX + new Date().toISOString().split('T')[0];
+  return CACHE_PREFIX + localDateStr();
 }
 
 async function getCached(): Promise<PatternInsight[] | null> {
@@ -226,7 +227,7 @@ export async function analyzePatterns(userId: string): Promise<PatternInsight[]>
   try {
     const from = new Date();
     from.setDate(from.getDate() - 29);
-    const fromStr = from.toISOString().split('T')[0];
+    const fromStr = localDateStr(from);
 
     const { data, error } = await supabase
       .from('readiness_scores')

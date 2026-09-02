@@ -16,6 +16,7 @@ import type { PatternInsight } from '@services/patternAnalysis';
 import type { WorkloadResult } from '@services/workloadAnalysis';
 import type { LifeEvent } from '@services/lifeEvents';
 import { getCycleContext } from '@services/cycleTracking';
+import { localDateStr } from '@utils/index';
 
 const SUPABASE_URL     = process.env.EXPO_PUBLIC_SUPABASE_URL     ?? '';
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
@@ -56,7 +57,7 @@ export async function loadYesterdayFeedback(): Promise<BriefingFeedback | null> 
   try {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    const key = FEEDBACK_KEY_PREFIX + d.toISOString().split('T')[0];
+    const key = FEEDBACK_KEY_PREFIX + localDateStr(d);
     const raw = await AsyncStorage.getItem(key);
     return raw ? JSON.parse(raw) : null;
   } catch {

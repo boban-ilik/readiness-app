@@ -107,7 +107,7 @@ export async function fetchTodaysHealthData(): Promise<HealthData | null> {
   ]);
 
   const result: HealthData = {
-    date: now.toISOString().split('T')[0],
+    date: localDateStr(now),
     hrv:             hrv.status       === 'fulfilled' ? hrv.value               : null,
     restingHeartRate: rhr.status      === 'fulfilled' ? rhr.value               : null,
     sleepDuration:   sleep.status     === 'fulfilled' ? sleep.value?.duration   ?? null : null,

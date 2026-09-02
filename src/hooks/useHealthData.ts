@@ -14,6 +14,7 @@ import type { HealthData } from '../types';
 import { supabase } from '@services/supabase';
 import { upsertTodayScore } from '@services/scoreSync';
 import { pushScoreToWidget } from '@services/widgetBridge';
+import { localDateStr } from '@utils/index';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -147,7 +148,7 @@ export async function getPersonalHRVBaseline(): Promise<number> {
 // ─── Mock data (Expo Go / web dev) ────────────────────────────────────────────
 
 const MOCK_HEALTH_DATA: HealthData = {
-  date: new Date().toISOString().split('T')[0],
+  date: localDateStr(),
   hrv: 58,
   restingHeartRate: 52,
   sleepDuration: 427,
@@ -175,7 +176,7 @@ const MIN_SILENT_REFETCH_MS = 5 * 60 * 1000; // 5 minutes
 // HealthKit callbacks can silently hang (permission edge-cases, simulator quirks,
 // background-app-refresh disabled, etc.). Wrap any async HealthKit call so we
 // always get a fallback value rather than leaving isLoading=true forever.
-function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+export function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>(resolve => {

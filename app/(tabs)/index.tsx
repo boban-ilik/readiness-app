@@ -48,6 +48,7 @@ import { fetchRecentEvents, type LifeEvent } from '@services/lifeEvents';
 import { supabase } from '@services/supabase';
 import type { HealthData } from '@/types/index';
 import { NAME_KEY } from '../onboarding';
+import { localDateStr } from '@utils/index';
 
 // ─── Greeting helper ──────────────────────────────────────────────────────────
 
@@ -168,22 +169,38 @@ export default function HomeScreen() {
   // prompt waits until it has been seen so the two sheets never collide.
   const [reportVisible,  setReportVisible]  = useState(false);
   const [reportResolved, setReportResolved] = useState(false);
+  const [ratingArmed,    setRatingArmed]    = useState(false);
   useEffect(() => {
-    if (calibration.daysComplete < 7 || reportResolved || reportVisible) return;
+    if (calibration.isLoading || calibration.daysComplete < 7 || reportResolved || reportVisible) return;
+    // The report is a day-7 moment, not a "has been here at least a week"
+    // moment: the seen-flag is new, so without this window every account
+    // that predates it (and every reinstall of an old account) would get a
+    // "calibration complete" sheet on first launch.
+    const since    = calibration.daysSinceJoined;
+    const inWindow = since !== null && since >= 7 && since <= 9;
     let cancelled = false;
     hasSeenCalibrationReport().then(seen => {
       if (cancelled) return;
-      if (seen) setReportResolved(true);
-      else      setReportVisible(true);
+      if (seen || !inWindow) {
+        if (!seen) markCalibrationReportSeen();
+        setReportResolved(true);
+        setRatingArmed(true);
+      } else {
+        setReportVisible(true);
+      }
     });
     return () => { cancelled = true; };
-  }, [calibration.daysComplete, reportResolved, reportVisible]);
-  const closeReport = () => {
+  }, [calibration.isLoading, calibration.daysComplete, calibration.daysSinceJoined, reportResolved, reportVisible]);
+  // The rating sheet only arms on the dismiss path. Someone who just tapped
+  // "Keep Pro" is on their way to the paywall, and iOS's review dialog
+  // sliding over it is the last thing that screen needs.
+  const closeReport = (armRating: boolean) => {
     markCalibrationReportSeen();
     setReportVisible(false);
     setReportResolved(true);
+    if (armRating) setRatingArmed(true);
   };
-  useRatingPrompt(reportResolved ? calibration.daysComplete : 0);
+  useRatingPrompt(ratingArmed ? calibration.daysComplete : 0);
   const {
     checkAndAlertScore,
     rescheduleDigestWithScore,
@@ -326,7 +343,7 @@ export default function HomeScreen() {
         const yesterdayStr = (() => {
           const d = new Date();
           d.setDate(d.getDate() - 1);
-          return d.toISOString().split('T')[0];
+          return localDateStr(d);
         })();
         const { data: yesterdayRow } = await supabase
           .from('readiness_scores')
@@ -729,12 +746,12 @@ export default function HomeScreen() {
       {/* ── Daily briefing modal (Pro only) ── */}
       <CalibrationReportModal
         visible={reportVisible}
-        onClose={closeReport}
+        onClose={() => closeReport(true)}
         hrvBaseline={hrvBaseline}
         rhrBaseline={rhrBaseline}
         isPro={isPro}
         isTrialActive={isTrialActive}
-        onKeepPro={() => { closeReport(); presentPaywall(); }}
+        onKeepPro={() => { closeReport(false); presentPaywall(); }}
       />
 
       <DailyBriefingModal

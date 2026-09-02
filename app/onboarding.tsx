@@ -32,7 +32,8 @@ import {
   requestHealthKitPermissions,
   isHealthKitAvailable,
 } from '@services/healthkit';
-import { getPersonalRHRBaseline } from '@hooks/useHealthData';
+import * as Notifications from 'expo-notifications';
+import { getPersonalRHRBaseline, withTimeout } from '@hooks/useHealthData';
 import { pushProfile } from '@services/profileSync';
 import {
   colors,
@@ -573,6 +574,27 @@ function StepNotificationTime({
   onNext:  () => void;
   onBack:  () => void;
 }) {
+  // This screen is the priming for the iOS notification prompt: the user has
+  // just chosen when they want the digest, so ask now. Nothing else in the
+  // app requests notification permission until they touch the Profile toggle,
+  // and the toggle already reads ON after onboarding, so without this the
+  // promised digest was never scheduled. Denied or Expo Go: carry on.
+  const [asking, setAsking] = useState(false);
+  async function handleNext() {
+    if (asking) return;
+    setAsking(true);
+    try {
+      await Notifications.requestPermissionsAsync({
+        ios: { allowAlert: true, allowBadge: false, allowSound: false },
+      });
+    } catch {
+      // Native module absent (Expo Go) or the prompt failed: not blocking.
+    } finally {
+      setAsking(false);
+    }
+    onNext();
+  }
+
   return (
     <ScrollView
       style={styles.scrollStep}
@@ -627,7 +649,7 @@ function StepNotificationTime({
         <TouchableOpacity style={styles.backBtn} onPress={onBack}>
           <Text style={styles.backBtnText}>← Back</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.primaryBtnSmall} onPress={onNext} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.primaryBtnSmall} onPress={handleNext} disabled={asking} activeOpacity={0.85}>
           <Text style={styles.primaryBtnText}>Continue →</Text>
         </TouchableOpacity>
       </View>
@@ -788,11 +810,22 @@ function StepSetup({
   });
 
   useEffect(() => {
+    // Nothing in here may leave the user on "Setting up…" forever. The raw
+    // HealthKit history query behind getPersonalRHRBaseline has no timeout of
+    // its own and can hang on first launch, and a storage error would
+    // otherwise skip the onboarding flag and restart onboarding from step 0.
     async function run() {
       await pause(700);
       setS(prev => ({ ...prev, healthDone: true }));
 
-      const baseline = permissionGranted ? await getPersonalRHRBaseline() : 60;
+      let baseline = 60;
+      if (permissionGranted) {
+        try {
+          baseline = await withTimeout(getPersonalRHRBaseline(), 8_000, 60);
+        } catch {
+          baseline = 60;
+        }
+      }
       setS(prev => ({ ...prev, baselineDone: true, baseline }));
 
       await pause(900);
@@ -816,14 +849,21 @@ function StepSetup({
       if (height.trim()) pairs.push([PROFILE_HEIGHT_KEY, height.trim()]);
       if (weight.trim()) pairs.push([PROFILE_WEIGHT_KEY, weight.trim()]);
 
-      await AsyncStorage.multiSet(pairs);
-      // Mirror to Supabase so the profile survives a reinstall and follows the
-      // account to another device. Non-blocking — never hold up onboarding.
-      pushProfile().catch(() => {});
+      try {
+        await AsyncStorage.multiSet(pairs);
+        // Mirror to Supabase so the profile survives a reinstall and follows the
+        // account to another device. Non-blocking — never hold up onboarding.
+        pushProfile().catch(() => {});
+      } catch (e) {
+        console.warn('[Onboarding] Could not persist setup:', e);
+      }
       await pause(400);
       onComplete();
     }
-    run();
+    run().catch(e => {
+      console.warn('[Onboarding] Setup failed, continuing anyway:', e);
+      onComplete();
+    });
   }, []);
 
   const firstName = userName.trim() ? `, ${userName.trim().split(' ')[0]}` : '';

@@ -64,7 +64,7 @@
     <div class="logo">READINESS</div>
 
     <h1>Privacy Policy</h1>
-    <p class="updated">Last updated: 30 August 2026</p>
+    <p class="updated">Last updated: 3 September 2026</p>
 
     <div class="card">
       <p>Readiness is built on a simple principle: <strong style="color:#E8EAF0">your health data belongs to you.</strong> We collect only what is necessary to calculate your daily readiness score and personalise your coaching. We never sell your data, never share it with advertisers, and never use it for purposes beyond the app.</p>
@@ -87,6 +87,13 @@
       <li>Training load metrics (suffer score, moving time)</li>
     </ul>
     <p>Strava connection is optional. If connected, we fetch your recent activities via the Strava API to calculate training load and acute:chronic ratio. You can disconnect Strava at any time from your profile.</p>
+
+    <p><strong style="color:#E8EAF0">Menstrual cycle data (optional)</strong></p>
+    <ul>
+      <li>Period start dates you log, plus your cycle length and period length settings</li>
+      <li>The cycle phase and cycle day the app derives from them</li>
+    </ul>
+    <p>Cycle tracking is off by default and only available if you turn it on in your profile. Your period dates and settings are stored on your device only and are never uploaded to our servers. While tracking is on, the derived phase, cycle day and cycle length (never the dates themselves) are included in morning briefing and coach chat requests so the AI can interpret your metrics in context (see "AI-generated coaching" below). Turning tracking off stops that immediately.</p>
 
     <p><strong style="color:#E8EAF0">Account data</strong></p>
     <ul>
@@ -113,16 +120,16 @@
     <h2>3. Legal Bases for Processing (GDPR)</h2>
     <p>For readers in the European Economic Area and the United Kingdom: the data controller is Boban Ilik, operating Readiness (contact details in Section 9). We rely on the following legal bases:</p>
     <ul>
-      <li><strong style="color:#E8EAF0">Explicit consent</strong> (Art. 6(1)(a) and Art. 9(2)(a)) — for all health and fitness data. Health data is special-category data under the GDPR, and we process it only because you explicitly grant access: once through Apple's HealthKit permission screen, and again for each optional connection such as Strava. You can withdraw consent at any time by revoking HealthKit access, disconnecting Strava, or deleting your account; withdrawal does not affect the lawfulness of processing before it.</li>
+      <li><strong style="color:#E8EAF0">Explicit consent</strong> (Art. 6(1)(a) and Art. 9(2)(a)) — for all health and fitness data. Health data is special-category data under the GDPR, and we process it only because you explicitly grant access: once through Apple's HealthKit permission screen, again for each optional connection such as Strava, and again when you switch on cycle tracking in your profile. You can withdraw consent at any time by revoking HealthKit access, disconnecting Strava, switching cycle tracking off, or deleting your account; withdrawal does not affect the lawfulness of processing before it.</li>
       <li><strong style="color:#E8EAF0">Performance of a contract</strong> (Art. 6(1)(b)) — for your account, syncing your scores between devices, and managing your subscription.</li>
       <li><strong style="color:#E8EAF0">Legitimate interests</strong> (Art. 6(1)(f)) — for keeping the service secure and for anonymous crash and performance diagnostics that cannot be linked back to you.</li>
     </ul>
     <p>Readiness does not make automated decisions about you that produce legal or similarly significant effects. The AI features generate coaching text from your metrics; they do not decide anything about your access to the service.</p>
 
     <h2>4. Data Storage, Retention &amp; International Transfers</h2>
-    <p>Account and score data is stored on Supabase servers in the EU. All data in transit is encrypted via TLS. Health data is processed on your device where possible and is never stored in plain text on our servers.</p>
+    <p>Account and score data is stored on Supabase servers in the EU (Ireland). All data in transit is encrypted via TLS. Your readiness score is calculated on your device; the daily metrics behind it (HRV, resting heart rate, sleep duration and efficiency) are stored alongside the score so your history follows your account. That data is encrypted at rest by our hosting provider and protected by row-level security, so it is only readable through your own signed-in account.</p>
     <p><strong style="color:#E8EAF0">Retention.</strong> Account, profile, and score data is kept for as long as your account is active, and permanently removed from our servers within 30 days of account deletion. Coach chat history, cached briefings, and preferences are stored only on your device; they are wiped when you sign into a different account and removed when you delete the app.</p>
-    <p><strong style="color:#E8EAF0">International transfers.</strong> Some of our service providers process data in the United States: Anthropic (AI coaching text) and RevenueCat (subscription management). Where personal data leaves the EEA or UK, the transfer takes place under each provider's data processing agreement, which incorporates the European Commission's Standard Contractual Clauses.</p>
+    <p><strong style="color:#E8EAF0">International transfers.</strong> Some of our service providers process data in the United States: Anthropic (AI coaching text), RevenueCat (subscription management) and, for this website only, Google (analytics). Where personal data leaves the EEA or UK, the transfer takes place under each provider's data processing agreement, which incorporates the European Commission's Standard Contractual Clauses.</p>
 
     <h2>5. Third-Party Services</h2>
     <ul>
@@ -130,11 +137,20 @@
       <li><strong style="color:#E8EAF0">Strava API</strong> — only if you connect; governed by <a href="https://www.strava.com/legal/privacy" target="_blank">Strava's Privacy Policy</a></li>
       <li><strong style="color:#E8EAF0">Supabase</strong> — backend database and authentication; <a href="https://supabase.com/privacy" target="_blank">Supabase Privacy Policy</a></li>
       <li><strong style="color:#E8EAF0">RevenueCat</strong> — subscription management; <a href="https://www.revenuecat.com/privacy" target="_blank">RevenueCat Privacy Policy</a></li>
+      <li><strong style="color:#E8EAF0">Google Analytics</strong> — used on this website (thereadiness.app) only, not in the app, to understand visitor traffic; it sets cookies in your browser. <a href="https://policies.google.com/privacy" target="_blank">Google Privacy Policy</a></li>
       <li><strong style="color:#E8EAF0">Anthropic (Claude)</strong> — powers your daily insight, morning briefing, weekly report, and coach chat; <a href="https://www.anthropic.com/legal/privacy" target="_blank">Anthropic Privacy Policy</a></li>
     </ul>
 
     <h3 style="color:#E8EAF0">AI-generated coaching</h3>
-    <p>Readiness uses Anthropic's Claude to turn your numbers into plain-English coaching. When a daily insight, morning briefing, weekly report, or coach chat reply is generated, we send the relevant metrics — your heart rate variability, resting heart rate, sleep duration and efficiency, and your readiness scores — to Anthropic's API, together with any life events you have logged (such as alcohol, illness, or travel), since those are what let the coaching explain a change rather than just report it. In Coach Chat we also include your first name, so the reply can address you directly, along with the messages you send.</p>
+    <p>Readiness uses Anthropic's Claude to turn your numbers into plain-English coaching. When a daily insight, morning briefing, weekly report, or coach chat reply is generated, we send Anthropic's API the data that reply needs:</p>
+    <ul>
+      <li>Your readiness score and its Recovery, Sleep and Stress components, plus the metrics shown in your breakdown: heart rate variability, resting heart rate, sleep duration, deep and REM sleep, sleep efficiency, daytime average heart rate and step count</li>
+      <li>Yesterday's workouts (type, duration, calories and estimated load) and any life events you have logged, such as alcohol, illness or travel, since those are what let the coaching explain a change rather than just report it</li>
+      <li>Patterns the app has detected over the previous weeks, in plain sentences (for example, a run of falling HRV readings or accumulated sleep debt)</li>
+      <li>Your cycle phase, cycle day and cycle length, only if you have switched cycle tracking on</li>
+      <li>Your first name, so the reply can address you directly, and a thumbs-down you gave the previous briefing</li>
+      <li>In Coach Chat only: the messages you send, and your profile details (age, biological sex, height, weight, training frequency and primary goal) so the advice fits you</li>
+    </ul>
     <p>We do not send your email address or any account identifier. Anthropic processes this data solely to generate the text you see, and not for advertising. Under Anthropic's API terms, data sent through the Claude platform is excluded from model training.</p>
     <p>Your readiness score and its Recovery, Sleep, and Stress breakdown are calculated on your device from Apple Health data. Anthropic is involved only when an AI feature produces text for you.</p>
 

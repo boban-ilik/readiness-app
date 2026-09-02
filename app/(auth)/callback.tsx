@@ -55,8 +55,6 @@ export default function AuthCallbackScreen() {
   const params = useLocalSearchParams<{
     token_hash?: string;
     type?: string;
-    access_token?: string;
-    refresh_token?: string;
     error?: string;
     error_description?: string;
   }>();
@@ -84,14 +82,6 @@ export default function AuthCallbackScreen() {
             typeof params.type === 'string'
               ? params.type
               : parsedFromIncomingUrl.type ?? parsedFromInitialUrl.type,
-          access_token:
-            typeof params.access_token === 'string'
-              ? params.access_token
-              : parsedFromIncomingUrl.access_token ?? parsedFromInitialUrl.access_token,
-          refresh_token:
-            typeof params.refresh_token === 'string'
-              ? params.refresh_token
-              : parsedFromIncomingUrl.refresh_token ?? parsedFromInitialUrl.refresh_token,
           error:
             typeof params.error === 'string'
               ? params.error
@@ -106,20 +96,10 @@ export default function AuthCallbackScreen() {
           throw new Error(String(merged.error_description ?? merged.error));
         }
 
-        if (
-          typeof merged.access_token === 'string' &&
-          typeof merged.refresh_token === 'string'
-        ) {
-          setMessage('Creating your session...');
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: merged.access_token,
-            refresh_token: merged.refresh_token,
-          });
-          if (sessionError) throw sessionError;
-          router.replace('/');
-          return;
-        }
-
+        // Deliberately no access_token/refresh_token branch: the app only ever
+        // signs in through OTP codes, and accepting raw session tokens from a
+        // deep link would let any link (QR, Safari, another app) log the
+        // victim into an attacker's account and pour their health data into it.
         if (
           typeof merged.token_hash === 'string' &&
           typeof merged.type === 'string' &&
