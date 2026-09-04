@@ -82,6 +82,11 @@ const FEATURE_BULLETS: Record<string, string[]> = {
     'Correlation insights (sleep, alcohol, etc.)',
     'Shareable weekly summary card',
   ],
+  'Coach Chat': [
+    'Answers grounded in today\'s HRV, sleep and load',
+    'Remembers the thread across the day',
+    'Reads your cycle phase when tracking is on',
+  ],
 };
 
 const DEFAULT_BULLETS = [

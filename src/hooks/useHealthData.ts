@@ -285,7 +285,10 @@ export function useHealthData(): UseHealthDataReturn {
         // source of truth and the app works fine without a network.
         supabase.auth.getUser()
           .then(({ data }) => {
-            if (data.user) {
+            // A score computed with no overnight signal at all is the
+            // population default, not a measurement. The home screen no
+            // longer shows it, so it must not become a history row either.
+            if (data.user && !result.dataQuality.isInsufficient) {
               upsertTodayScore(result, data.user.id).catch(err =>
                 console.warn('[Readiness] Supabase sync failed (non-fatal):', err.message),
               );

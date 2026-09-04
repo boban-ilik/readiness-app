@@ -11,6 +11,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { clearCoachSession } from '@services/coachSession';
 
 /** Tracks which Supabase user the locally stored data belongs to. */
 export const DATA_OWNER_KEY = '@readiness/data_owner_id';
@@ -105,6 +106,9 @@ async function clearUserScopedData(): Promise<void> {
   const all     = await AsyncStorage.getAllKeys();
   const dynamic = all.filter(k => USER_SCOPED_PREFIXES.some(p => k.startsWith(p)));
   await AsyncStorage.multiRemove([...USER_SCOPED_KEYS, ...dynamic]);
+  // The coach session is a module-level singleton, not storage, and the
+  // Coach tab reads it first, so it has to be dropped here too.
+  clearCoachSession();
 }
 
 /**

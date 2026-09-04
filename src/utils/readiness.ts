@@ -154,6 +154,8 @@ export interface DataQuality {
   hasHRV:         boolean;
   hasRHR:         boolean;
   hasSleep:       boolean;
+  /** True when there is not enough overnight data to produce a meaningful score. */
+  isInsufficient: boolean;
   confidence:     DataConfidence;
   /** Human-readable list of absent sensors, e.g. ['HRV', 'sleep'] */
   missingSignals: string[];
@@ -205,7 +207,12 @@ function assessDataQuality(data: HealthData): DataQuality {
     }
   }
 
-  return { hasHRV, hasRHR, hasSleep, confidence, missingSignals, warningMessage };
+  // A numeric fallback score is useful for partial data, but it is misleading
+  // when every overnight signal is absent. Keep that state explicit so the UI
+  // can ask the user to sync rather than presenting an invented 50.
+  const isInsufficient = !hasHRV && !hasRHR && !hasSleep;
+
+  return { hasHRV, hasRHR, hasSleep, isInsufficient, confidence, missingSignals, warningMessage };
 }
 
 // ─── Main scorer ──────────────────────────────────────────────────────────────

@@ -211,7 +211,7 @@ function StepperRow({
 }: {
   label:       string;
   sublabel?:   string;
-  value:       number;
+  value:       number | null;
   unit:        string;
   min:         number;
   max:         number;
@@ -219,6 +219,10 @@ function StepperRow({
   onIncrement: () => void;
   topBorder?:  boolean;
 }) {
+  const isUnset = value === null;
+  const atMin = value !== null && value <= min;
+  const atMax = value !== null && value >= max;
+
   return (
     <RowBase
       label={label}
@@ -227,25 +231,25 @@ function StepperRow({
       right={
         <View style={styles.stepper}>
           <TouchableOpacity
-            style={[styles.stepBtn, value <= min && styles.stepBtnDisabled]}
+            style={[styles.stepBtn, (isUnset || atMin) && styles.stepBtnDisabled]}
             onPress={onDecrement}
-            disabled={value <= min}
+            disabled={isUnset || atMin}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={[styles.stepBtnText, value <= min && styles.stepBtnTextDisabled]}>−</Text>
+            <Text style={[styles.stepBtnText, (isUnset || atMin) && styles.stepBtnTextDisabled]}>−</Text>
           </TouchableOpacity>
 
           <Text style={styles.stepValue}>
-            {value}<Text style={styles.stepUnit}> {unit}</Text>
+            {isUnset ? 'Not set' : <>{value}<Text style={styles.stepUnit}> {unit}</Text></>}
           </Text>
 
           <TouchableOpacity
-            style={[styles.stepBtn, value >= max && styles.stepBtnDisabled]}
+            style={[styles.stepBtn, atMax && styles.stepBtnDisabled]}
             onPress={onIncrement}
-            disabled={value >= max}
+            disabled={atMax}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={[styles.stepBtnText, value >= max && styles.stepBtnTextDisabled]}>+</Text>
+            <Text style={[styles.stepBtnText, atMax && styles.stepBtnTextDisabled]}>+</Text>
           </TouchableOpacity>
         </View>
       }
@@ -452,10 +456,10 @@ export default function ProfileScreen() {
   const [photoUri,     setPhotoUri]     = useState<string | null>(null);
 
   // Personal details
-  const [age,    setAge]    = useState<number>(30);
+  const [age,    setAge]    = useState<number | null>(null);
   const [sex,    setSex]    = useState<BiologicalSex | null>(null);
-  const [height, setHeight] = useState<number>(175); // cm
-  const [weight, setWeight] = useState<number>(75);  // kg
+  const [height, setHeight] = useState<number | null>(null); // cm
+  const [weight, setWeight] = useState<number | null>(null);  // kg
 
   // Training goal
   const [goal, setGoal] = useState<TrainingGoal | null>(null);
@@ -493,10 +497,10 @@ export default function ProfileScreen() {
         if (map[NAME_KEY])      setUserName(map[NAME_KEY]!.trim());
         if (map[FREQ_KEY])      setTrainingFreq(map[FREQ_KEY] as TrainingFrequency);
         if (map[JOINED_AT_KEY]) setJoinedAt(map[JOINED_AT_KEY]);
-        if (map[AGE_KEY])       setAge(Number(map[AGE_KEY]));
+        if (map[AGE_KEY] && Number.isFinite(Number(map[AGE_KEY]))) setAge(Number(map[AGE_KEY]));
         if (map[SEX_KEY])       setSex(map[SEX_KEY] as BiologicalSex);
-        if (map[HEIGHT_KEY])    setHeight(Number(map[HEIGHT_KEY]));
-        if (map[WEIGHT_KEY])    setWeight(Number(map[WEIGHT_KEY]));
+        if (map[HEIGHT_KEY] && Number.isFinite(Number(map[HEIGHT_KEY]))) setHeight(Number(map[HEIGHT_KEY]));
+        if (map[WEIGHT_KEY] && Number.isFinite(Number(map[WEIGHT_KEY]))) setWeight(Number(map[WEIGHT_KEY]));
         if (map[GOAL_KEY])      setGoal(map[GOAL_KEY] as TrainingGoal);
 
         // ── Validate stored photo URI ──────────────────────────────────────
@@ -973,8 +977,9 @@ export default function ProfileScreen() {
             unit="yrs"
             min={13}
             max={100}
-            onDecrement={() => saveAge(age - 1)}
-            onIncrement={() => saveAge(age + 1)}
+            sublabel={age === null ? 'Optional · tap + to set' : undefined}
+            onDecrement={() => { if (age !== null) saveAge(age - 1); }}
+            onIncrement={() => saveAge(age ?? 30)}
             topBorder={false}
           />
           <SelectRow
@@ -988,8 +993,9 @@ export default function ProfileScreen() {
             unit="cm"
             min={100}
             max={250}
-            onDecrement={() => saveHeight(height - 1)}
-            onIncrement={() => saveHeight(height + 1)}
+            sublabel={height === null ? 'Optional · tap + to set' : undefined}
+            onDecrement={() => { if (height !== null) saveHeight(height - 1); }}
+            onIncrement={() => saveHeight(height ?? 175)}
           />
           <StepperRow
             label="Weight"
@@ -997,8 +1003,9 @@ export default function ProfileScreen() {
             unit="kg"
             min={30}
             max={250}
-            onDecrement={() => saveWeight(weight - 1)}
-            onIncrement={() => saveWeight(weight + 1)}
+            sublabel={weight === null ? 'Optional · tap + to set' : undefined}
+            onDecrement={() => { if (weight !== null) saveWeight(weight - 1); }}
+            onIncrement={() => saveWeight(weight ?? 75)}
           />
         </SettingsCard>
 
