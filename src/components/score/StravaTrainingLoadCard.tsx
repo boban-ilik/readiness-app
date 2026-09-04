@@ -355,8 +355,11 @@ export default function StravaTrainingLoadCard({ activities, isPro }: Props) {
         <>
           <Divider />
 
-          {/* ── A:C ratio ── */}
-          {trend.acRatio !== null && (
+          {/* ── A:C ratio ──
+              Hidden at zero as well as null: a rest week produced a full gauge
+              reading "0.00", which is a lot of screen space spent saying
+              nothing. The coaching line below already explains the situation. */}
+          {trend.acRatio !== null && trend.acRatio > 0 && (
             <View style={styles.ratioSection}>
               <View style={styles.ratioHeader}>
                 <Text style={styles.sectionLabel}>ACUTE : CHRONIC RATIO</Text>

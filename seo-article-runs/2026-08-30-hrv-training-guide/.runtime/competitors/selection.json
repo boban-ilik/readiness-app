@@ -1,0 +1,40 @@
+{
+  "query": "hrv training",
+  "locale": "US / English",
+  "provider": "Ahrefs SERP overview (keyword 'hrv training', US, retrieved 2026-08-30, orchestrator-supplied) for observed positions; WebSearch (US) for original candidate discovery of the three Checkpoint-A-approved pages",
+  "captured_at": "2026-08-30",
+  "pages": [
+    {
+      "url": "https://www.whoop.com/us/en/thelocker/heart-rate-variability-training/",
+      "title": "HRV Training: Use HRV for Better Training Decisions (Whoop)",
+      "observed_position": null,
+      "selection_basis": "user_override",
+      "reason": "User explicitly approved keeping this page in the selected set at Checkpoint A (guided run, 2026-08-30) alongside the observed-SERP addition of HSS. Originally researcher-discovered via WebSearch; not present in the observed Ahrefs top-10 for 'hrv training', so position stays null. Dominant consumer-recovery brand's canonical guide for the exact reader task; freshest of the set (Apr 2026).",
+      "capture_path": "whoop-hrv-training.md"
+    },
+    {
+      "url": "https://ouraring.com/blog/train-better-using-hrv/",
+      "title": "How to Train Better Using HRV (Oura)",
+      "observed_position": null,
+      "selection_basis": "user_override",
+      "reason": "User explicitly approved keeping this page in the selected set at Checkpoint A (guided run, 2026-08-30). Originally researcher-discovered via WebSearch; not present in the observed Ahrefs top-10, so position stays null. Major wearable brand's how-to for the same reader task; representative of the consumer-editorial format.",
+      "capture_path": "oura-train-better-using-hrv.md"
+    },
+    {
+      "url": "https://www.trainingpeaks.com/blog/using-heart-rate-variability-to-schedule-the-intensity-of-your-training/",
+      "title": "How to Use HRV for Training (TrainingPeaks, Simon Wegerif)",
+      "observed_position": null,
+      "selection_basis": "user_override",
+      "reason": "User explicitly approved keeping this page in the selected set at Checkpoint A (guided run, 2026-08-30). The TrainingPeaks URL observed at position 9 in the Ahrefs SERP resolved to a distinct ~250-word link-hub ('The Athlete's Handbook to Training With HRV', captured separately, excluded); this Wegerif article is TrainingPeaks' substantive guide for the reader task and remains the honest content benchmark, with position null because it was not itself observed in the top 10.",
+      "capture_path": "trainingpeaks-how-to-use-hrv.md"
+    },
+    {
+      "url": "https://www.hss.edu/health-library/move-better/heart-rate-variability",
+      "title": "How to Use Heart Rate Variability Data in Your Training (HSS)",
+      "observed_position": 5,
+      "selection_basis": "observed_rank",
+      "reason": "Observed at organic position 5 (Ahrefs SERP overview, 'hrv training', US, 2026-08-30, orchestrator-supplied; DR 80, est. 45,845 monthly traffic). Highest-authority medical publisher in the observed set matching the reader task (daily training decisions from HRV), with named-expert (PT/DPT) sourcing. Added to the selection by user decision at Checkpoint A.",
+      "capture_path": "hss-hrv-training-data.md"
+    }
+  ]
+}

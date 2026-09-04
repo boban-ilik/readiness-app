@@ -25,6 +25,7 @@
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@services/supabase';
+import { localDateStr } from '@utils/index';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -130,9 +131,11 @@ async function fetchTrend(): Promise<TrendData> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
+  // Seven calendar dates including today. Going back 7 days matched eight
+  // dates, and with ascending order + limit(7) the row dropped was today's.
   const since = new Date();
-  since.setDate(since.getDate() - 7);
-  const sinceStr = since.toISOString().split('T')[0];
+  since.setDate(since.getDate() - 6);
+  const sinceStr = localDateStr(since);
 
   const { data, error } = await supabase
     .from('readiness_scores')

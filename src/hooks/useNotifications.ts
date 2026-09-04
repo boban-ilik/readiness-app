@@ -36,6 +36,7 @@ import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
+import { localDateStr } from '@utils/index';
 
 // ─── Expo Go guard ────────────────────────────────────────────────────────────
 // expo-notifications requires native code compiled into a custom dev build.
@@ -401,14 +402,22 @@ function isStrictlyDecline(entries: ScoreEntry[], n = 3): boolean {
   return true;
 }
 
-/** Cancel all scheduled digest notifications and re-schedule if enabled. */
+/** Cancel the scheduled digest notification(s) and re-schedule if enabled. */
 async function syncDigestNotification(
   p:         NotificationPrefs,
   lastScore: number | null = null,
 ): Promise<void> {
-  // Cancel existing digest (cancel-all is safe here; the threshold alert is
-  // immediate and won't sit in the scheduled list more than a second).
-  await Notifications.cancelAllScheduledNotificationsAsync();
+  // Cancel only the digest. The home screen fires this and the one-shot
+  // alerts (2 to 5 second fuses) in the same tick, so a cancel-all here was
+  // intermittently wiping a Smart Alert whose dedup key had already been
+  // written for the day. Matching on data.type also clears digests that
+  // older builds scheduled before an identifier was tracked.
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  await Promise.all(
+    scheduled
+      .filter(n => n.content?.data?.type === 'digest')
+      .map(n => Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => {})),
+  );
 
   if (!p.digestEnabled) return;
 
@@ -438,7 +447,7 @@ async function scheduleImmediateAlert(score: number, _threshold: number): Promis
 }
 
 function todayStr(): string {
-  return new Date().toISOString().split('T')[0];
+  return localDateStr();
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -503,13 +512,19 @@ export function useNotifications(): UseNotificationsReturn {
       'digestHour'    in updates ||
       'digestMinute'  in updates
     ) {
-      if (permissionStatus === 'granted') {
+      // Read the permission fresh rather than from the closed-over state:
+      // callers typically await requestPermissions() and then call this same
+      // closure, whose permissionStatus is still the pre-prompt value, which
+      // skipped scheduling on the very first enable.
+      const { status } = await Notifications.getPermissionsAsync();
+      setPermissionStatus(status);
+      if (status === 'granted') {
         const raw       = await AsyncStorage.getItem(K.LAST_SCORE);
         const lastScore = raw != null ? parseInt(raw, 10) : null;
         await syncDigestNotification(next, lastScore);
       }
     }
-  }, [prefs, permissionStatus]);
+  }, [prefs]);
 
   // ── Score alert check ─────────────────────────────────────────────────────
 

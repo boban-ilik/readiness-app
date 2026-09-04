@@ -13,6 +13,7 @@
 
 import { supabase } from '@services/supabase';
 import type { ReadinessResult } from '@utils/readiness';
+import { localDateStr } from '@utils/index';
 
 // ─── Row shape returned by the Supabase query ─────────────────────────────────
 
@@ -78,7 +79,7 @@ export async function fetchHistoryFromSupabase(
 ): Promise<SupabaseScoreRow[]> {
   const from = new Date();
   from.setDate(from.getDate() - (days - 1));
-  const fromStr = from.toISOString().split('T')[0];
+  const fromStr = localDateStr(from);
 
   const { data, error } = await supabase
     .from('readiness_scores')

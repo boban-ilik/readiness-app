@@ -1,0 +1,357 @@
+{
+  "approval_mode": "guided",
+  "archetype": {
+    "recommended": null,
+    "selected": null
+  },
+  "artifacts": {
+    "article.md": {
+      "bytes": 15710,
+      "sha256": "5ee3c6e597c2e6a4cc766ed415bac522a21930ca506fb76a111dd4370ab5f8db",
+      "status": "completed"
+    },
+    "brief.md": {
+      "bytes": 10335,
+      "sha256": "c993fa5bb483603967336372cbb2ebfc6ac44ba7a9f612a2d1101b7cbe4383ba",
+      "status": "completed"
+    },
+    "draft.md": {
+      "bytes": 15507,
+      "sha256": "bee4fa74c55e70e701ffbb6fea3f1f59fe77c9677263bee0d1dcc52632661788",
+      "status": "completed"
+    },
+    "qa.md": {
+      "bytes": 3810,
+      "sha256": "55873e29b985182dc8085827de1fc837a803c71fca31782b238b569b9f90b517",
+      "status": "completed"
+    },
+    "research.md": {
+      "bytes": 42302,
+      "sha256": "c020cd80afa2c63cce85c84aa065fb6c65cc6fe5a30c4a70353c158d58b8de06",
+      "status": "completed"
+    },
+    "run.json": {
+      "status": "completed"
+    }
+  },
+  "checkpoints": {
+    "archetype": true,
+    "brief": true
+  },
+  "competitor_benchmark": {
+    "competitor_sha256": "3242c423cc1ce4ce20ab10030a0251c73589cb3d32c3190a6fc34735049c3fb5",
+    "evidence_ref": "research.md#serp-and-competitor-benchmark",
+    "ranking_evidence": {
+      "basis": "observed_serp",
+      "inspected_results": [
+        {
+          "disposition": "excluded",
+          "observed_position": 2,
+          "reason": "'How to Improve HRV Naturally' (DR 21): improve-HRV intent, not the use-HRV-for-training reader task. URL as reported by Ahrefs.",
+          "url": "https://sbphysio.com/blog/blog"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 4,
+          "reason": "Academic narrative review (JFMK 2024) ranking organically; it is this run's own evidence source E2, not an editorial competitor.",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11204851"
+        },
+        {
+          "disposition": "selected",
+          "observed_position": 5,
+          "reason": "Highest-authority observed match for the reader task (DR 80, est. 45,845 monthly traffic; named PT/DPT expert). Added to the selection by user decision at Checkpoint A; captured in full (hss-hrv-training-data.md).",
+          "url": "https://www.hss.edu/health-library/move-better/heart-rate-variability"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 7,
+          "reason": "Tool/product homepage (DR 57), not an article.",
+          "url": "https://www.hrv4training.com/"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 8,
+          "reason": "'12 Ways to Improve Your Heart Rate Variability' (DR 56): improve-HRV intent. Ahrefs row title given; exact article path not resolved (domain-level URL recorded).",
+          "url": "https://elitehrv.com/"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 9,
+          "reason": "Ahrefs reported the blog-root URL (DR 80, est. 7,816 traffic); resolved to this distinct 'Athlete's Handbook' page \u2014 a ~250-word link-hub with seven teaser cards and no substantive standalone body to benchmark. Captured as reference (trainingpeaks-athlete-handbook-hub.md); the domain's substantive Wegerif article is the selected TrainingPeaks page.",
+          "url": "https://www.trainingpeaks.com/blog/the-athlete-handbook-training-hrv/"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 10,
+          "reason": "Prior exclusion stands: HRV-analytics vendor blog aimed at researchers/practitioners; audience mismatch (DR 51).",
+          "url": "https://www.kubios.com/blog/hrv-guided-training/"
+        },
+        {
+          "disposition": "selected",
+          "observed_position": null,
+          "reason": "User explicitly approved keeping this page in the selected set at Checkpoint A (guided run, 2026-08-30); frozen selection_basis user_override. Not present in the supplied observed top-10 rows, so no position is claimed. Canonical wearable-brand guide for the exact reader task (Apr 2026).",
+          "url": "https://www.whoop.com/us/en/thelocker/heart-rate-variability-training/"
+        },
+        {
+          "disposition": "selected",
+          "observed_position": null,
+          "reason": "User explicitly approved keeping this page in the selected set at Checkpoint A (guided run, 2026-08-30); frozen selection_basis user_override. Not present in the supplied observed top-10 rows, so no position is claimed. Major wearable brand's how-to for the same reader task.",
+          "url": "https://ouraring.com/blog/train-better-using-hrv/"
+        },
+        {
+          "disposition": "selected",
+          "observed_position": null,
+          "reason": "User explicitly approved keeping this page in the selected set at Checkpoint A (guided run, 2026-08-30); frozen selection_basis user_override. The observed TrainingPeaks ranking URL (#9) resolved to a link-hub, excluded above; this Wegerif article is the domain's substantive guide and the honest content benchmark, position null because it was not itself observed in the top 10.",
+          "url": "https://www.trainingpeaks.com/blog/using-heart-rate-variability-to-schedule-the-intensity-of-your-training/"
+        }
+      ],
+      "inspection_complete": true,
+      "reference": "Ahrefs SERP overview, keyword 'hrv training', US, 2026-08-30 (orchestrator-supplied)"
+    },
+    "rationale": "Four selected competitor pages are frozen: HSS (observed organic position 5 in the Ahrefs SERP overview for 'hrv training', US, 2026-08-30, orchestrator-supplied) plus Whoop, Oura, and the TrainingPeaks Wegerif article, which the user explicitly approved keeping in the selected set at Checkpoint A (guided run) \u2014 recorded as user_override with observed_position null because they did not appear in the supplied observed top-10 rows. The observed SERP: AI Overview on top; mixed intent confirmed (positions 2 and 8 plus all four PAA questions are improve-HRV intent), addressed by the user-approved scope addition of one compact cited improve-HRV section. The Ahrefs position-9 TrainingPeaks entry was reported at the blog-root URL and resolved to /blog/the-athlete-handbook-training-hrv/, a distinct ~250-word link-hub with no substantive body; it is excluded from the content benchmark (captured as a reference file) and the Wegerif article remains the selected TrainingPeaks page. Runtime constraint note: excluded results with null positions are not accepted under basis observed_serp, so inspected_results below carries the observed organic rows (real positions) plus the three null-position user_override selections; the 12 additional WebSearch-discovered candidates inspected and excluded during the original discovery pass are recorded with dispositions and reasons in research.md section 3 ('Inspected result set (original WebSearch discovery)'). Positions 1, 3, and 6 of the observed SERP were not included in the supplied data.",
+    "recorded_at": "2026-08-30T12:41:50.404782+00:00",
+    "research_sha256": "c020cd80afa2c63cce85c84aa065fb6c65cc6fe5a30c4a70353c158d58b8de06",
+    "run_id": "2026-08-30-hrv-training-guide",
+    "source_sha256": null,
+    "status": "benchmarked"
+  },
+  "competitor_pages": {
+    "bytes": 35618,
+    "captured_at": "2026-08-30",
+    "locale": "US / English",
+    "pages": [
+      {
+        "bytes": 9640,
+        "observed_position": null,
+        "reason": "User explicitly approved keeping this page in the selected set at Checkpoint A (guided run, 2026-08-30) alongside the observed-SERP addition of HSS. Originally researcher-discovered via WebSearch; not present in the observed Ahrefs top-10 for 'hrv training', so position stays null. Dominant consumer-recovery brand's canonical guide for the exact reader task; freshest of the set (Apr 2026).",
+        "selection_basis": "user_override",
+        "sha256": "49b28c29c3b39557f04a65196346db7a56c883bfdf106dd6c92d2128c604d269",
+        "title": "HRV Training: Use HRV for Better Training Decisions (Whoop)",
+        "url": "https://www.whoop.com/us/en/thelocker/heart-rate-variability-training/"
+      },
+      {
+        "bytes": 6642,
+        "observed_position": null,
+        "reason": "User explicitly approved keeping this page in the selected set at Checkpoint A (guided run, 2026-08-30). Originally researcher-discovered via WebSearch; not present in the observed Ahrefs top-10, so position stays null. Major wearable brand's how-to for the same reader task; representative of the consumer-editorial format.",
+        "selection_basis": "user_override",
+        "sha256": "9de9b764742387aece68b917c1dea9fe0b2366d85cb5d111613875e90bc9fbc0",
+        "title": "How to Train Better Using HRV (Oura)",
+        "url": "https://ouraring.com/blog/train-better-using-hrv/"
+      },
+      {
+        "bytes": 8240,
+        "observed_position": null,
+        "reason": "User explicitly approved keeping this page in the selected set at Checkpoint A (guided run, 2026-08-30). The TrainingPeaks URL observed at position 9 in the Ahrefs SERP resolved to a distinct ~250-word link-hub ('The Athlete's Handbook to Training With HRV', captured separately, excluded); this Wegerif article is TrainingPeaks' substantive guide for the reader task and remains the honest content benchmark, with position null because it was not itself observed in the top 10.",
+        "selection_basis": "user_override",
+        "sha256": "d6914c7f68769f981d6badf40f68c124b6ec3d966ad7be9a3b00793c9d7534c1",
+        "title": "How to Use HRV for Training (TrainingPeaks, Simon Wegerif)",
+        "url": "https://www.trainingpeaks.com/blog/using-heart-rate-variability-to-schedule-the-intensity-of-your-training/"
+      },
+      {
+        "bytes": 7220,
+        "observed_position": 5,
+        "reason": "Observed at organic position 5 (Ahrefs SERP overview, 'hrv training', US, 2026-08-30, orchestrator-supplied; DR 80, est. 45,845 monthly traffic). Highest-authority medical publisher in the observed set matching the reader task (daily training decisions from HRV), with named-expert (PT/DPT) sourcing. Added to the selection by user decision at Checkpoint A.",
+        "selection_basis": "observed_rank",
+        "sha256": "59200ebb1260b14c0fa2b9dd2b5678260fc40fed07d91e45a8682b6c0aca4a0b",
+        "title": "How to Use Heart Rate Variability Data in Your Training (HSS)",
+        "url": "https://www.hss.edu/health-library/move-better/heart-rate-variability"
+      }
+    ],
+    "provider": "Ahrefs SERP overview (keyword 'hrv training', US, retrieved 2026-08-30, orchestrator-supplied) for observed positions; WebSearch (US) for original candidate discovery of the three Checkpoint-A-approved pages",
+    "query": "hrv training",
+    "sha256": "3242c423cc1ce4ce20ab10030a0251c73589cb3d32c3190a6fc34735049c3fb5",
+    "snapshot_path": ".runtime/competitor-pages.json"
+  },
+  "consent": {
+    "apify": null,
+    "openrouter": {
+      "events": []
+    }
+  },
+  "current_stage": "qa",
+  "doctrine": {
+    "files": [
+      {
+        "bytes": 1859,
+        "path": "ai-visibility.md",
+        "sha256": "ca9850ff7d19ded6c9917e7db8c5a30a5f1c3eff042f1046a8a6ca0fe56a973a"
+      },
+      {
+        "bytes": 4936,
+        "path": "editing.md",
+        "sha256": "780a6312311d3675be998a1e9820d15eb3a1523de995225281c8f2c38df00944"
+      },
+      {
+        "bytes": 5612,
+        "path": "links.md",
+        "sha256": "e8b023c0522c6ad32344bd1d64ea082c1f91f02450766f7dda941d0bc6eda691"
+      },
+      {
+        "bytes": 2848,
+        "path": "sources-evidence.md",
+        "sha256": "10b3ab3031dd8472e48c93e698029211ffbb6bdfa5749da0e962d5f161d62ed9"
+      },
+      {
+        "bytes": 3661,
+        "path": "voice.md",
+        "sha256": "5d00c742d4e1353b41ccc7478912dd2515079a88b700b7cbf416ca553c5d4111"
+      },
+      {
+        "bytes": 5882,
+        "path": "writing.md",
+        "sha256": "d878fd031213771e5a81315f32797f32c3f717039d4c0ae7ac779ad6bcbc8136"
+      }
+    ],
+    "hash": "8a473bcf31622b9906b2129ef590923eb39737ef9a6d85e444d5c4d7a0a711c5",
+    "paths": [
+      "ai-visibility.md",
+      "editing.md",
+      "links.md",
+      "sources-evidence.md",
+      "voice.md",
+      "writing.md"
+    ],
+    "root": "/Users/bobanilikj/.claude/plugins/cache/authority-hacker-plugins/seo-article-writer-v2/0.1.13/doctrine",
+    "snapshot_path": ".runtime/doctrine-snapshot.json",
+    "snapshot_sha256": "aa49d4e672126c94fdf55e9788db90e2a1e82bf1aaff814432cccfa28f8db85c",
+    "source": "bundled",
+    "warnings": [
+      "no user doctrine loaded; using bundled doctrine"
+    ]
+  },
+  "failure": null,
+  "final_gate": {
+    "edited_before_humanize": {
+      "bytes": 15751,
+      "sha256": "93931f25007145b1569cd762aac526690ce106f19c5695f8336603892e9a9283"
+    },
+    "humanizer": {
+      "input_sha256": "93931f25007145b1569cd762aac526690ce106f19c5695f8336603892e9a9283",
+      "output_sha256": "5ee3c6e597c2e6a4cc766ed415bac522a21930ca506fb76a111dd4370ab5f8db"
+    },
+    "passed": true,
+    "qa_decision": "passed",
+    "site_url": "https://thereadiness.app/blog/hrv-training/"
+  },
+  "last_valid_artifact": "qa.md",
+  "mode": "new",
+  "model_routes": {
+    "editor": {
+      "effective": "claude-fable-5",
+      "fallback_used": false,
+      "provider": "native",
+      "requested": "automatic"
+    },
+    "writer": {
+      "effective": "claude-fable-5",
+      "fallback_used": false,
+      "provider": "native",
+      "requested": "automatic"
+    }
+  },
+  "openrouter_calls": [],
+  "openrouter_candidates_purged": 0,
+  "openrouter_responses_purged": 0,
+  "openrouter_totals": {
+    "accepted_calls": 0,
+    "cost_usd": 0.0,
+    "logical_calls": 0,
+    "provider_generations": 0,
+    "rejected_calls": 0,
+    "unknown_cost_calls": 0
+  },
+  "profile": {
+    "hash": null,
+    "name": null,
+    "root": null,
+    "selection": "bundled"
+  },
+  "provenance": {
+    "history": {
+      "editor": [
+        {
+          "attempt": 1,
+          "bytes": 15751,
+          "id": "aa96ebb30f1bba951",
+          "kind": "subagent",
+          "model_route": {
+            "effective": "claude-fable-5",
+            "fallback_used": false,
+            "provider": "native",
+            "requested": "automatic"
+          },
+          "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-08-30-hrv-training-guide/.runtime/edited-before-humanize.md",
+          "sha256": "93931f25007145b1569cd762aac526690ce106f19c5695f8336603892e9a9283"
+        }
+      ],
+      "writer": [
+        {
+          "attempt": 1,
+          "bytes": 15507,
+          "id": "aaf5417aa6898ae4f",
+          "kind": "subagent",
+          "model_route": {
+            "effective": "claude-fable-5",
+            "fallback_used": false,
+            "provider": "native",
+            "requested": "automatic"
+          },
+          "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-08-30-hrv-training-guide/draft.md",
+          "sha256": "bee4fa74c55e70e701ffbb6fea3f1f59fe77c9677263bee0d1dcc52632661788"
+        }
+      ]
+    },
+    "outputs": {
+      "editor": {
+        "attempt": 1,
+        "bytes": 15751,
+        "id": "aa96ebb30f1bba951",
+        "kind": "subagent",
+        "model_route": {
+          "effective": "claude-fable-5",
+          "fallback_used": false,
+          "provider": "native",
+          "requested": "automatic"
+        },
+        "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-08-30-hrv-training-guide/.runtime/edited-before-humanize.md",
+        "sha256": "93931f25007145b1569cd762aac526690ce106f19c5695f8336603892e9a9283"
+      },
+      "writer": {
+        "attempt": 1,
+        "bytes": 15507,
+        "id": "aaf5417aa6898ae4f",
+        "kind": "subagent",
+        "model_route": {
+          "effective": "claude-fable-5",
+          "fallback_used": false,
+          "provider": "native",
+          "requested": "automatic"
+        },
+        "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-08-30-hrv-training-guide/draft.md",
+        "sha256": "bee4fa74c55e70e701ffbb6fea3f1f59fe77c9677263bee0d1dcc52632661788"
+      }
+    }
+  },
+  "qa": {
+    "editor_fresh_context": true,
+    "execution_contexts": {
+      "editor": {
+        "id": "aa96ebb30f1bba951",
+        "kind": "subagent"
+      },
+      "writer": {
+        "id": "aaf5417aa6898ae4f",
+        "kind": "subagent"
+      }
+    },
+    "writer_fresh_context": true
+  },
+  "rejected_openrouter_outputs_purged": 0,
+  "research_stop_closed": true,
+  "run_contract_version": 4,
+  "run_id": "2026-08-30-hrv-training-guide",
+  "schema_version": 1,
+  "source_presentation": "automatic",
+  "status": "completed",
+  "topic": null
+}

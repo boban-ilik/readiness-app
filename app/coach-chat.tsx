@@ -12,10 +12,16 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { askCoach, type ChatMessage } from '@services/coachChat';
-import { getCoachSession } from '@services/coachSession';
-import { loadChatHistory, saveChatHistory, clearChatHistory, CONTEXT_WINDOW } from '@services/chatMemory';
+import { getCoachSession, setCoachSession, type CoachSessionContext } from '@services/coachSession';
+import { loadChatHistory, saveChatHistory, clearChatHistory, selectContext, todayLocal } from '@services/chatMemory';
 import { loadUserProfile, type UserProfile } from '@services/userProfile';
+import { useHealthData } from '@hooks/useHealthData';
+import { analyzePatterns } from '@services/patternAnalysis';
+import { analyzeWorkload } from '@services/workloadAnalysis';
+import { fetchRecentEvents } from '@services/lifeEvents';
+import { supabase } from '@services/supabase';
 import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
+import { track } from '@services/analytics';
 
 function parseInline(text: string): React.ReactNode[] {
   const tokens = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
@@ -68,7 +74,9 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 export default function CoachChatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const session = getCoachSession();
+  const { readiness, isLoading: isHealthLoading, error: healthError, rhrBaseline, hrvBaseline } = useHealthData();
+  const [session, setSession] = useState<CoachSessionContext | null>(() => getCoachSession());
+  const [isContextLoading, setIsContextLoading] = useState(() => !getCoachSession());
   const scrollRef = useRef<ScrollView>(null);
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -76,7 +84,51 @@ export default function CoachChatScreen() {
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile>({});
 
+  // The briefing flow seeds a session before navigating here. When Coach is
+  // opened directly from the tab bar, build the same context from today's
+  // readiness data so the screen is useful on its own.
   useEffect(() => {
+    if (session || isHealthLoading) return;
+    if (!readiness) {
+      setIsContextLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const currentReadiness = readiness;
+
+    async function hydrateContext() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const [patterns, workload, lifeEvents] = await Promise.all([
+          user ? analyzePatterns(user.id).catch(() => []) : Promise.resolve([]),
+          analyzeWorkload().catch(() => null),
+          fetchRecentEvents(7).catch(() => []),
+        ]);
+
+        if (cancelled) return;
+        const nextSession: CoachSessionContext = {
+          readiness: currentReadiness,
+          healthData: currentReadiness.healthData,
+          rhrBaseline,
+          hrvBaseline,
+          patterns,
+          workload,
+          lifeEvents,
+        };
+        setCoachSession(nextSession);
+        setSession(nextSession);
+      } finally {
+        if (!cancelled) setIsContextLoading(false);
+      }
+    }
+
+    hydrateContext();
+    return () => { cancelled = true; };
+  }, [session, isHealthLoading, readiness, rhrBaseline, hrvBaseline]);
+
+  useEffect(() => {
+    track('coach_opened');
     loadChatHistory().then(setHistory).catch(() => {});
     loadUserProfile().then(setProfile).catch(() => {});
   }, []);
@@ -91,7 +143,7 @@ export default function CoachChatScreen() {
     const question = input.trim();
     if (!session || !question || isSending) return;
 
-    const userMessage: ChatMessage = { role: 'user', content: question };
+    const userMessage: ChatMessage = { role: 'user', content: question, date: todayLocal() };
     const nextHistory = [...history, userMessage];
 
     setInput('');
@@ -110,11 +162,11 @@ export default function CoachChatScreen() {
         session.patterns,
         session.workload,
         session.lifeEvents,
-        nextHistory.slice(-CONTEXT_WINDOW),
+        selectContext(nextHistory),
         profile,
       );
 
-      const assistantMessage: ChatMessage = { role: 'assistant', content: answer };
+      const assistantMessage: ChatMessage = { role: 'assistant', content: answer, date: todayLocal() };
       const updatedHistory: ChatMessage[] = [...nextHistory, assistantMessage];
       setHistory(updatedHistory);
       saveChatHistory(updatedHistory);
@@ -131,16 +183,27 @@ export default function CoachChatScreen() {
     setError(null);
   }
 
+  if (isContextLoading || isHealthLoading) {
+    return (
+      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyTitle}>Loading your coach</Text>
+          <Text style={styles.emptyBody}>Pulling in today&apos;s readiness and training context.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (!session) {
     return (
       <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
         <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>Coach chat needs a score context</Text>
+          <Text style={styles.emptyTitle}>{healthError ? 'Your coach is waiting for a score' : 'No score context yet'}</Text>
           <Text style={styles.emptyBody}>
-            Open your readiness score first, then launch coach chat from there so we can include today&apos;s data.
+            Open Today after your wearable syncs overnight data, then come back here for questions grounded in your numbers.
           </Text>
-          <TouchableOpacity style={styles.primaryButton} onPress={() => router.back()}>
-            <Text style={styles.primaryButtonText}>Go back</Text>
+          <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace('/(tabs)')}>
+            <Text style={styles.primaryButtonText}>Open Today</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -155,9 +218,16 @@ export default function CoachChatScreen() {
         keyboardVerticalOffset={0}
       >
         <View style={styles.header}>
-          <TouchableOpacity style={styles.headerButton} onPress={() => router.back()} activeOpacity={0.8}>
-            <Text style={styles.headerButtonText}>Back</Text>
-          </TouchableOpacity>
+          {/* Pushed from the briefing there is somewhere to go back to; opened
+              from the Coach tab there is not, so hide the button rather than
+              hand the user a dead control. */}
+          {router.canGoBack() ? (
+            <TouchableOpacity style={styles.headerButton} onPress={() => router.back()} activeOpacity={0.8}>
+              <Text style={styles.headerButtonText}>Back</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.headerButton} />
+          )}
           <View style={styles.headerCopy}>
             <Text style={styles.title}>Coach chat</Text>
             <Text style={styles.subtitle}>Grounded in your real readiness, recovery, and training context.</Text>

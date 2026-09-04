@@ -22,9 +22,12 @@ interface Props {
 
 type TrainingRec = 'push' | 'moderate' | 'rest';
 
+// Aligned with getScoreLabel's app-wide bands: 61–80 reads "Good to Go", so a
+// projected 72 must not carry a "Take it easier" chip while the driver text
+// says to run the planned session.
 function trainingRec(score: number): TrainingRec {
-  if (score >= 75) return 'push';
-  if (score >= 52) return 'moderate';
+  if (score >= 61) return 'push';
+  if (score >= 41) return 'moderate';
   return 'rest';
 }
 
@@ -189,8 +192,19 @@ function ForecastCard({
 
 export default function ForecastStrip({ forecast }: Props) {
   const [cardHeight, setCardHeight] = useState(0);
-  const bestDay = [...forecast].sort((a, b) => b.score - a.score)[0];
-  const easiestDay = [...forecast].sort((a, b) => a.score - b.score)[0];
+  // Take both ends of one sort. Sorting twice returned the same element when
+  // every day scored alike — a stable sort preserves the original order — which
+  // produced "Thursday looks strongest ... keep Thursday more conservative".
+  const ranked     = [...forecast].sort((a, b) => b.score - a.score);
+  const bestDay    = ranked[0];
+  const easiestDay = ranked[ranked.length - 1];
+
+  // Day-one predictions carry ±5, later days more. A gap smaller than that
+  // isn't a real difference, so naming a "best window" from it would send
+  // someone to train hard on an arbitrary day.
+  const MEANINGFUL_SPREAD = 5;
+  const hasStandout =
+    bestDay !== easiestDay && bestDay.score - easiestDay.score >= MEANINGFUL_SPREAD;
 
   function handleMeasure(event: LayoutChangeEvent) {
     const nextHeight = Math.ceil(event.nativeEvent.layout.height);
@@ -200,15 +214,33 @@ export default function ForecastStrip({ forecast }: Props) {
   return (
     <View style={styles.wrapper}>
       <View style={styles.summaryCard}>
-        <View style={styles.summaryHeader}>
-          <Text style={styles.summaryEyebrow}>Best window</Text>
-          <Text style={styles.summaryTitle}>
-            {bestDay.dateLabel} looks strongest at {bestDay.score}
-          </Text>
-        </View>
-        <Text style={styles.summaryBody}>
-          Plan your hardest work around {bestDay.label.toLowerCase()}, and keep {easiestDay.dateLabel} more conservative if you need a lighter day.
-        </Text>
+        {hasStandout ? (
+          <>
+            <View style={styles.summaryHeader}>
+              <Text style={styles.summaryEyebrow}>Best window</Text>
+              <Text style={styles.summaryTitle}>
+                {bestDay.dateLabelLong} looks strongest at {bestDay.score}
+              </Text>
+            </View>
+            <Text style={styles.summaryBody}>
+              Plan your hardest work around {bestDay.label.toLowerCase()}, and keep {easiestDay.dateLabelLong} more conservative if you need a lighter day.
+            </Text>
+          </>
+        ) : (
+          <>
+            <View style={styles.summaryHeader}>
+              <Text style={styles.summaryEyebrow}>Steady ahead</Text>
+              <Text style={styles.summaryTitle}>
+                No standout day — readiness holds near {bestDay.score}
+              </Text>
+            </View>
+            <Text style={styles.summaryBody}>
+              Nothing ahead separates itself by more than the forecast's own margin
+              of error. Train to your plan, and let how you feel on the day set the
+              intensity.
+            </Text>
+          </>
+        )}
       </View>
       <Text style={styles.sectionNote}>
         Directional estimate based on recent patterns and load

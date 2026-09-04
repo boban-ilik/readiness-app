@@ -12,6 +12,12 @@
  */
 
 import type { HealthData } from '../types/index';
+// The sleep target lived here as a hardcoded 480 in five places. It now comes
+// from the scoring model, so copy and score can never drift apart again.
+import { STRESS_ELEVATION_LOW, STRESS_ELEVATION_HIGH, DEFAULTS } from '@utils/readiness';
+
+const SLEEP_TARGET = DEFAULTS.OPTIMAL_SLEEP;        // 420 min (7h)
+const SLEEP_TARGET_H = SLEEP_TARGET / 60;           // 7
 import { colors } from '@constants/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -26,7 +32,8 @@ export interface MetricRow {
 export interface BreakdownDetail {
   icon:            string;
   label:           string;
-  weight:          string;      // "45%", "40%", "15%", "Context · not scored"
+  weight:          string;      // "45% of readiness score", or for Activity:
+                                // "Context · doesn't affect your score"
   dateContext?:    string;      // e.g. "Yesterday · Monday, Mar 9" — shown in modal header
   score:           number;
   statusLabel:     string;      // "Optimal", "Good", "Moderate", "Reduced", "Low"
@@ -38,11 +45,16 @@ export interface BreakdownDetail {
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
-/** "Last night · Mon, Mar 9" — used by overnight metrics (Recovery, Sleep). */
+/**
+ * "Last night" — used by overnight metrics (Recovery, Sleep).
+ *
+ * Deliberately undated. This used to print the previous calendar day, so a
+ * Friday morning read "Last night · Thursday, Jul 30" while History filed the
+ * same night's sleep under Friday. Both conventions are defensible; showing
+ * both in one app is not, and "last night" needs no date to be understood.
+ */
 function lastNightContext(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return `Last night · ${d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`;
+  return 'Last night';
 }
 
 /** "Today · Tue, Mar 10" — used by real-time metrics (Stress). */
@@ -133,12 +145,12 @@ function buildRecovery(
     const hrs      = Math.floor(sleep / 60);
     const mins     = sleep % 60;
     const totalStr = mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
-    const shortfall = 480 - sleep; // vs 8h target
+    const shortfall = SLEEP_TARGET - sleep;
     const sub       = shortfall <= 0
-      ? `At or above the 8h target — sleep fully supported overnight recovery`
+      ? `At or above the ${SLEEP_TARGET_H}h guideline — sleep fully supported overnight recovery`
       : shortfall <= 60
-      ? `About ${Math.round(shortfall / 60 * 10) / 10}h short of 8h — mild sleep debt can blunt recovery by 10–15%`
-      : `${Math.floor(shortfall / 60)}h+ below the 8h target — significant sleep debt suppresses heart rate variability and raises resting heart rate`;
+      ? `About ${Math.round(shortfall / 60 * 10) / 10}h below ${SLEEP_TARGET_H}h — a mild shortfall can blunt recovery`
+      : `${Math.floor(shortfall / 60)}h+ below the 7h guideline — a significant shortfall suppresses heart rate variability and raises resting heart rate`;
     metrics.push({
       label:  'Last Night\'s Sleep',
       value:  totalStr,
@@ -225,7 +237,7 @@ function buildRecovery(
 
   // Cross-reference sleep if it's dragging recovery down
   if (sleep != null) {
-    const shortfall = 480 - sleep;
+    const shortfall = SLEEP_TARGET - sleep;
     if (shortfall >= 90) {
       parts.push(`Last night's sleep (${fmtDur(sleep)}) is likely a key factor in today's recovery score — sleep is when your body restores heart rate variability and repairs muscle tissue. Prioritising sleep tonight will have the biggest impact on tomorrow's score.`);
     }
@@ -267,12 +279,12 @@ function buildSleep(score: number, h: HealthData | null): BreakdownDetail {
 
   // ── Metric 1: Total Sleep ────────────────────────────────────────────────────
   if (sleepDuration != null) {
-    const diff      = sleepDuration - 480;
-    const shortfall = 480 - sleepDuration;
+    const diff      = sleepDuration - SLEEP_TARGET;
+    const shortfall = SLEEP_TARGET - sleepDuration;
     const sub       = shortfall <= 0
-      ? `At or above the 8h target — enough time for your body to complete multiple full sleep cycles`
+      ? `At or above the 7h guideline — enough time for your body to complete multiple full sleep cycles`
       : shortfall <= 60
-      ? `${fmtDur(shortfall)} short of the 8h target — most sleep stages will be present but slightly compressed`
+      ? `${fmtDur(shortfall)} below the 7h guideline — most sleep stages will be present but slightly compressed`
       : shortfall <= 120
       ? `${fmtDur(shortfall)} below target — deep and REM stages are cut short first, reducing physical and mental recovery`
       : `${fmtDur(shortfall)} below target — significant restriction that markedly impairs performance, mood, and immunity`;
@@ -366,11 +378,21 @@ function buildSleep(score: number, h: HealthData | null): BreakdownDetail {
   // ── Interpretation ──────────────────────────────────────────────────────────
   const parts: string[] = [];
 
+  // A composite score can land in a healthy band while duration was well short:
+  // strong efficiency and stage percentages offset a night that was simply too
+  // brief. Calling that "a good night's sleep" contradicts the metrics listed
+  // directly above it, so short nights get their own honest framing.
+  const shortNight = sleepDuration != null && sleepDuration < 420;   // under 7h
+
   // Lead with what the score means
-  if (score >= 80) {
+  if (score >= 80 && !shortNight) {
     parts.push(`Your sleep score of ${Math.round(score)} is excellent — last night gave your body and brain everything they need to perform and recover well today.`);
+  } else if (score >= 65 && shortNight) {
+    parts.push(`Your sleep score of ${Math.round(score)} holds up on quality — efficiency and stage balance were reasonable — but you were short on time. A brief night limits total recovery no matter how well you slept while you were down.`);
   } else if (score >= 65) {
     parts.push(`Your sleep score of ${Math.round(score)} is solid. Last night was a good night's sleep, though there's a little room at the margin — you'll feel capable but not at your absolute peak.`);
+  } else if (score >= 80) {
+    parts.push(`Your sleep score of ${Math.round(score)} is strong on quality, though the night was shorter than ideal.`);
   } else if (score >= 50) {
     parts.push(`Your sleep score of ${Math.round(score)} is moderate. Last night's sleep was functional but incomplete — you'll likely feel the effects in focus, mood, or energy at some point today.`);
   } else if (score >= 35) {
@@ -382,13 +404,13 @@ function buildSleep(score: number, h: HealthData | null): BreakdownDetail {
   // Total duration context in plain body terms
   if (sleepDuration != null) {
     const hrs       = (sleepDuration / 60).toFixed(1);
-    const shortfall = 480 - sleepDuration;
+    const shortfall = SLEEP_TARGET - sleepDuration;
     if (shortfall <= 0) {
-      parts.push(`You got ${hrs} hours — at or above the 8-hour target. Total duration is strong, which gives your body the time to cycle through deep and REM sleep multiple times overnight.`);
+      parts.push(`You got ${hrs} hours — at or above the 7-hour guideline. Total duration is strong, which gives your body the time to cycle through deep and REM sleep multiple times overnight.`);
     } else if (shortfall <= 60) {
-      parts.push(`At ${hrs} hours, you're about ${fmtDur(shortfall)} short of the 8-hour target. This mild deficit is manageable — most of your critical sleep stages will still have occurred, just slightly compressed.`);
+      parts.push(`At ${hrs} hours, you're about ${fmtDur(shortfall)} below the 7-hour guideline. This mild deficit is manageable — most of your critical sleep stages will still have occurred, just slightly compressed.`);
     } else {
-      parts.push(`At ${hrs} hours, you're ${fmtDur(shortfall)} short of the 8-hour target. Sleep duration is the foundation everything else builds on — when it's cut short, the body prioritises the early cycles and sacrifices the later ones (deep sleep and REM) first. This is why one short night hits harder than it looks.`);
+      parts.push(`At ${hrs} hours, you're ${fmtDur(shortfall)} below the 7-hour guideline. Sleep duration is the foundation everything else builds on — when it's cut short, the body prioritises the early cycles and sacrifices the later ones (deep sleep and REM) first. This is why one short night hits harder than it looks.`);
     }
   }
 
@@ -422,7 +444,7 @@ function buildSleep(score: number, h: HealthData | null): BreakdownDetail {
   const advice = score >= 80
     ? `Well rested and ready. Sleep is fully supporting today's performance — train hard, think clearly, and trust your energy. To protect this pattern, keep your bedtime consistent and avoid screens in the 30 minutes before sleep.`
     : score >= 65
-    ? `Good sleep with room to improve. Avoid caffeine after 2 pm — its half-life is 5–6 hours, and afternoon coffee pushes deep sleep later into the night. Aim to be in bed by 10:30 pm to lock in a full 8-hour window.`
+    ? `Good sleep with room to improve. Avoid caffeine after 2 pm — its half-life is 5–6 hours, and afternoon coffee pushes deep sleep later into the night. Aim to be in bed early enough to clear seven hours.`
     : score >= 50
     ? `Below-optimal sleep. Keep today's training moderate — your reaction time and strength are both slightly blunted. Tonight: set a firm lights-out time, keep your room cool (around 18°C / 65°F), and avoid heavy meals in the 2 hours before bed.`
     : score >= 35
@@ -487,30 +509,41 @@ function buildStress(score: number, h: HealthData | null, rhrBaseline: number, h
   if (daytimeAvgHR != null) {
     const elevation = daytimeAvgHR - rhrBaseline;
     const sign      = elevation >= 0 ? '+' : '';
-    const sub       = elevation <= 3
-      ? `${sign}${elevation} bpm above your ${rhrBaseline} bpm baseline — heart rate is close to rest, a low-stress signal`
-      : elevation <= 10
-      ? `${sign}${elevation} bpm above your ${rhrBaseline} bpm baseline — mild elevation from activity, caffeine, or moderate stress`
-      : `${sign}${elevation} bpm above your ${rhrBaseline} bpm baseline — significant elevation often signals high physiological stress or poor recovery`;
+    // Waking HR always sits above resting HR; the bands are shared with the
+    // scorer so this copy never calls an ordinary day "significant elevation".
+    const sub       = elevation <= STRESS_ELEVATION_LOW
+      ? `${sign}${elevation} bpm above your ${rhrBaseline} bpm baseline — within the normal daytime range, a low-stress signal`
+      : elevation <= STRESS_ELEVATION_HIGH
+      ? `${sign}${elevation} bpm above your ${rhrBaseline} bpm baseline — a typical waking day with some activity, caffeine, or moderate stress`
+      : `${sign}${elevation} bpm above your ${rhrBaseline} bpm baseline — well above a normal daytime average, which often signals physiological stress or poor recovery`;
     metrics.push({
       label:  'Daytime Avg Heart Rate',
       value:  `${daytimeAvgHR} bpm`,
       sub,
-      status: elevation <= 3 ? 'good' : elevation <= 10 ? 'ok' : 'poor',
+      status: elevation <= STRESS_ELEVATION_LOW ? 'good' : elevation <= STRESS_ELEVATION_HIGH ? 'ok' : 'poor',
     });
   }
 
   // ── Metric 4: Overall Stress Signal ─────────────────────────────────────────
   // Synthesised view combining all available signals
-  if (stressScore != null || hrv != null) {
-    const stressOk  = stressScore == null || stressScore <= 50;
-    const hrvOk     = hrv == null || (hrv - hrvBaseline) >= -5;
-    const bothOk    = stressOk && hrvOk;
-    const neitherOk = !stressOk && !hrvOk;
-    const sub       = bothOk
+  if (stressScore != null || hrv != null || daytimeAvgHR != null) {
+    // Only judge signals we actually have. Treating an absent signal as a
+    // healthy one produced "one indicator is elevated while another is within
+    // range" for a Garmin user with no stress score at all — while both
+    // metrics on screen were flagged red. Daytime heart rate was displayed as
+    // a metric but never counted here either.
+    const signals: boolean[] = [];   // true = elevated
+    if (stressScore  != null) signals.push(stressScore > 50);
+    if (hrv          != null) signals.push((hrv - hrvBaseline) < -5);
+    if (daytimeAvgHR != null) signals.push((daytimeAvgHR - rhrBaseline) > STRESS_ELEVATION_HIGH);
+
+    const elevated = signals.filter(Boolean).length;
+    const sub      = elevated === 0
       ? 'All available stress signals point toward a calm, manageable state'
-      : neitherOk
-      ? 'Multiple stress signals are elevated — your nervous system is under meaningful load from training, poor sleep, or daily stressors'
+      : elevated === signals.length
+      ? (signals.length === 1
+          ? 'Your one available stress signal is elevated — your nervous system is under meaningful load from training, poor sleep, or daily stressors'
+          : 'Multiple stress signals are elevated — your nervous system is under meaningful load from training, poor sleep, or daily stressors')
       : 'Mixed signals — one stress indicator is elevated while another is within range';
     metrics.push({
       label:  'Overall Stress Signal',
@@ -568,8 +601,8 @@ function buildStress(score: number, h: HealthData | null, rhrBaseline: number, h
     }
   } else if (daytimeAvgHR != null) {
     const elevation = daytimeAvgHR - rhrBaseline;
-    if (elevation <= 3) {
-      parts.push(`Your daytime heart rate (${daytimeAvgHR} bpm) is close to your resting baseline of ${rhrBaseline} bpm — a sign of a calm, low-stress day. A heart rate that stays near resting during normal daily activity reflects efficient autonomic regulation.`);
+    if (elevation <= STRESS_ELEVATION_LOW) {
+      parts.push(`Your daytime heart rate (${daytimeAvgHR} bpm) is only ${elevation} bpm above your resting baseline of ${rhrBaseline} bpm — a calm, low-stress day. Waking heart rate normally runs 10–20 bpm above resting, so staying under that reflects efficient autonomic regulation.`);
     } else {
       parts.push(`Your daytime heart rate (${daytimeAvgHR} bpm) is ${elevation} bpm above your ${rhrBaseline} bpm resting baseline. A persistently elevated daytime HR — beyond what physical activity alone explains — often reflects physiological stress, high training load, or incomplete overnight recovery.`);
     }
@@ -577,7 +610,7 @@ function buildStress(score: number, h: HealthData | null, rhrBaseline: number, h
 
   // Cross-reference sleep — sleep and stress are tightly coupled
   if (h?.sleepDuration != null) {
-    const sleepShortfall = 480 - h.sleepDuration;
+    const sleepShortfall = SLEEP_TARGET - h.sleepDuration;
     if (sleepShortfall >= 60) {
       parts.push(`Last night's sleep (${fmtDur(h.sleepDuration)}) is likely contributing to today's elevated stress readings. Sleep deprivation and physiological stress are tightly linked — poor sleep raises cortisol and prevents the overnight recovery that brings heart rate variability and stress scores back to baseline.`);
     }
@@ -687,16 +720,22 @@ function buildActivity(score: number, h: HealthData | null): BreakdownDetail {
 
   // ── Metric 4: Overall Activity Signal ────────────────────────────────────────
   if (steps != null || exerciseMinutes != null) {
-    const stepsOk = steps == null || steps >= 7_500;
-    const exOk    = exerciseMinutes == null || exerciseMinutes >= 20;
-    const sub     = stepsOk && exOk
+    // Judge only the signals present. Counting an absent one as on-target made
+    // a 5,389-step day with no exercise data read "Mixed — the other looks
+    // good" and rate itself Moderate, directly under a Reduced badge.
+    const signals: boolean[] = [];   // true = met target
+    if (steps           != null) signals.push(steps >= 7_500);
+    if (exerciseMinutes != null) signals.push(exerciseMinutes >= 20);
+
+    const met = signals.filter(Boolean).length;
+    const sub = met === signals.length
       ? 'Good movement volume — activity load from yesterday is a positive context signal for today\'s recovery'
-      : !stepsOk && !exOk
+      : met === 0
       ? 'Low movement day — a sedentary pattern can gradually reduce baseline fitness and slow recovery adaptation'
       : 'Mixed — one aspect of yesterday\'s activity is below target, but the other looks good';
     metrics.push({
       label:  'Overall Activity',
-      value:  stepsOk && exOk ? 'Active' : stepsOk || exOk ? 'Moderate' : 'Low',
+      value:  met === signals.length ? 'Active' : met > 0 ? 'Moderate' : 'Low',
       sub,
       status: score >= 65 ? 'good' : score >= 40 ? 'ok' : 'poor',
     });
@@ -758,7 +797,7 @@ function buildActivity(score: number, h: HealthData | null): BreakdownDetail {
   });
 
   return {
-    icon: '🏃', label: 'Activity', weight: 'Context · not scored',
+    icon: '🏃', label: 'Activity', weight: 'Context · doesn\'t affect your score',
     dateContext: `Yesterday · ${yesterdayLabel}`,
     score, statusLabel, statusColor,
     metrics, interpretation: parts.join(' '), advice,

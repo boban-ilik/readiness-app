@@ -12,11 +12,42 @@
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		96905EF65AED1B983A6B3ABC /* libPods-Readiness.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 58EEBF8E8E6FB1BC6CAF49B5 /* libPods-Readiness.a */; };
+		AB20000000000000000000A1 /* ReadinessDataBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000000000000000000A1 /* ReadinessDataBridge.swift */; };
+		AB20000000000000000000A2 /* ReadinessDataBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = AB10000000000000000000A2 /* ReadinessDataBridge.m */; };
+		AB20000000000000000000B1 /* ReadinessWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000000000000000000B1 /* ReadinessWidgetBundle.swift */; };
+		AB20000000000000000000B2 /* WidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000000000000000000B2 /* WidgetData.swift */; };
+		AB20000000000000000000B3 /* ReadinessProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000000000000000000B3 /* ReadinessProvider.swift */; };
+		AB20000000000000000000B4 /* ReadinessWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000000000000000000B4 /* ReadinessWidget.swift */; };
+		AB20000000000000000000C1 /* ReadinessWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = AB10000000000000000000C1 /* ReadinessWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		C0AC591836A14EDCBABFC03B /* noop-file.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11B79F3DFCF140D9AA06B70D /* noop-file.swift */; };
 		D717490CB33EA53637C9F70D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 6661D669DC570419918D2937 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		ABCD000000000000000000D9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = ABCD000000000000000000D1;
+			remoteInfo = ReadinessWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		ABCD000000000000000000D8 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				AB20000000000000000000C1 /* ReadinessWidget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		11B79F3DFCF140D9AA06B70D /* noop-file.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = "noop-file.swift"; path = "Readiness/noop-file.swift"; sourceTree = "<group>"; };
@@ -31,6 +62,15 @@
 		6C2E3173556A471DD304B334 /* Pods-Readiness.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Readiness.debug.xcconfig"; path = "Target Support Files/Pods-Readiness/Pods-Readiness.debug.xcconfig"; sourceTree = "<group>"; };
 		7A4D352CD337FB3A3BF06240 /* Pods-Readiness.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Readiness.release.xcconfig"; path = "Target Support Files/Pods-Readiness/Pods-Readiness.release.xcconfig"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Readiness/SplashScreen.storyboard; sourceTree = "<group>"; };
+		AB10000000000000000000A1 /* ReadinessDataBridge.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ReadinessDataBridge.swift; path = ReadinessDataBridge/ReadinessDataBridge.swift; sourceTree = "<group>"; };
+		AB10000000000000000000A2 /* ReadinessDataBridge.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = ReadinessDataBridge.m; path = ReadinessDataBridge/ReadinessDataBridge.m; sourceTree = "<group>"; };
+		AB10000000000000000000B1 /* ReadinessWidgetBundle.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ReadinessWidgetBundle.swift; path = ReadinessWidget/ReadinessWidgetBundle.swift; sourceTree = "<group>"; };
+		AB10000000000000000000B2 /* WidgetData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = WidgetData.swift; path = ReadinessWidget/WidgetData.swift; sourceTree = "<group>"; };
+		AB10000000000000000000B3 /* ReadinessProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ReadinessProvider.swift; path = ReadinessWidget/ReadinessProvider.swift; sourceTree = "<group>"; };
+		AB10000000000000000000B4 /* ReadinessWidget.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ReadinessWidget.swift; path = ReadinessWidget/ReadinessWidget.swift; sourceTree = "<group>"; };
+		AB10000000000000000000B5 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = ReadinessWidget/Info.plist; sourceTree = "<group>"; };
+		AB10000000000000000000B6 /* ReadinessWidget.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; name = ReadinessWidget.entitlements; path = ReadinessWidget/ReadinessWidget.entitlements; sourceTree = "<group>"; };
+		AB10000000000000000000C1 /* ReadinessWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ReadinessWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		ADF013B2BE5948D2A376F3FF /* Readiness-Bridging-Header.h */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.c.h; name = "Readiness-Bridging-Header.h"; path = "Readiness/Readiness-Bridging-Header.h"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
@@ -43,6 +83,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				96905EF65AED1B983A6B3ABC /* libPods-Readiness.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ABCD000000000000000000D3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -86,6 +133,8 @@
 			isa = PBXGroup;
 			children = (
 				13B07FAE1A68108700A75B9A /* Readiness */,
+				AB30000000000000000000A1 /* ReadinessDataBridge */,
+				AB30000000000000000000B1 /* ReadinessWidget */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
@@ -101,6 +150,7 @@
 			isa = PBXGroup;
 			children = (
 				13B07F961A680F5B00A75B9A /* Readiness.app */,
+				AB10000000000000000000C1 /* ReadinessWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -111,6 +161,28 @@
 				FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */,
 			);
 			name = Readiness;
+			sourceTree = "<group>";
+		};
+		AB30000000000000000000A1 /* ReadinessDataBridge */ = {
+			isa = PBXGroup;
+			children = (
+				AB10000000000000000000A1 /* ReadinessDataBridge.swift */,
+				AB10000000000000000000A2 /* ReadinessDataBridge.m */,
+			);
+			name = ReadinessDataBridge;
+			sourceTree = "<group>";
+		};
+		AB30000000000000000000B1 /* ReadinessWidget */ = {
+			isa = PBXGroup;
+			children = (
+				AB10000000000000000000B1 /* ReadinessWidgetBundle.swift */,
+				AB10000000000000000000B2 /* WidgetData.swift */,
+				AB10000000000000000000B3 /* ReadinessProvider.swift */,
+				AB10000000000000000000B4 /* ReadinessWidget.swift */,
+				AB10000000000000000000B5 /* Info.plist */,
+				AB10000000000000000000B6 /* ReadinessWidget.entitlements */,
+			);
+			name = ReadinessWidget;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -154,15 +226,34 @@
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
 				5D971420F2983615FA5075DE /* [CP] Embed Pods Frameworks */,
+				ABCD000000000000000000D8 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				ABCD000000000000000000DA /* PBXTargetDependency */,
 			);
 			name = Readiness;
 			productName = Readiness;
 			productReference = 13B07F961A680F5B00A75B9A /* Readiness.app */;
 			productType = "com.apple.product-type.application";
+		};
+		ABCD000000000000000000D1 /* ReadinessWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = ABCD000000000000000000D5 /* Build configuration list for PBXNativeTarget "ReadinessWidget" */;
+			buildPhases = (
+				ABCD000000000000000000D2 /* Sources */,
+				ABCD000000000000000000D3 /* Frameworks */,
+				ABCD000000000000000000D4 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ReadinessWidget;
+			productName = ReadinessWidget;
+			productReference = AB10000000000000000000C1 /* ReadinessWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -175,6 +266,10 @@
 					13B07F861A680F5B00A75B9A = {
 						DevelopmentTeam = M8QJGU33AU;
 						LastSwiftMigration = 1250;
+						ProvisioningStyle = Automatic;
+					};
+					ABCD000000000000000000D1 = {
+						DevelopmentTeam = M8QJGU33AU;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -193,6 +288,7 @@
 			projectRoot = "";
 			targets = (
 				13B07F861A680F5B00A75B9A /* Readiness */,
+				ABCD000000000000000000D1 /* ReadinessWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -206,6 +302,13 @@
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				D717490CB33EA53637C9F70D /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ABCD000000000000000000D4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -335,10 +438,31 @@
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 				B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */,
 				C0AC591836A14EDCBABFC03B /* noop-file.swift in Sources */,
+				AB20000000000000000000A1 /* ReadinessDataBridge.swift in Sources */,
+				AB20000000000000000000A2 /* ReadinessDataBridge.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ABCD000000000000000000D2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AB20000000000000000000B1 /* ReadinessWidgetBundle.swift in Sources */,
+				AB20000000000000000000B2 /* WidgetData.swift in Sources */,
+				AB20000000000000000000B3 /* ReadinessProvider.swift in Sources */,
+				AB20000000000000000000B4 /* ReadinessWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		ABCD000000000000000000DA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = ABCD000000000000000000D1 /* ReadinessWidget */;
+			targetProxy = ABCD000000000000000000D9 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
@@ -358,12 +482,12 @@
 					"FB_SONARKIT_ENABLED=1",
 				);
 				INFOPLIST_FILE = Readiness/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.2;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -392,12 +516,12 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = M8QJGU33AU;
 				INFOPLIST_FILE = Readiness/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.2;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -462,7 +586,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD = "";
 				LDPLUSPLUS = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -472,7 +596,10 @@
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_LDFLAGS = "$(inherited)  ";
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					" ",
+				);
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = true;
@@ -521,7 +648,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD = "";
 				LDPLUSPLUS = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -530,11 +657,68 @@
 				);
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_LDFLAGS = "$(inherited)  ";
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					" ",
+				);
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = true;
 				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		ABCD000000000000000000D6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = ReadinessWidget/ReadinessWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = M8QJGU33AU;
+				INFOPLIST_FILE = ReadinessWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.2;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
+				PRODUCT_BUNDLE_IDENTIFIER = com.bobanilikj.readiness.ReadinessWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		ABCD000000000000000000D7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = ReadinessWidget/ReadinessWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = M8QJGU33AU;
+				INFOPLIST_FILE = ReadinessWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.2;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
+				PRODUCT_BUNDLE_IDENTIFIER = com.bobanilikj.readiness.ReadinessWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -555,6 +739,15 @@
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,
 				83CBBA211A601CBA00E9B192 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		ABCD000000000000000000D5 /* Build configuration list for PBXNativeTarget "ReadinessWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ABCD000000000000000000D6 /* Debug */,
+				ABCD000000000000000000D7 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

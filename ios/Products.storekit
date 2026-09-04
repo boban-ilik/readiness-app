@@ -31,7 +31,69 @@
     "_timeRate" : 0
   },
   "subscriptionGroups" : [
+    {
+      "id" : "21974671",
+      "localizations" : [
 
+      ],
+      "name" : "Readiness Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "9.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6760478584",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Full access Readiness Coach features, billed monthly.",
+              "displayName" : "Readiness Pro Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Readiness Pro Monthly",
+          "subscriptionGroupID" : "21974671",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "69.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "6760478735",
+          "introductoryOffer" : {
+            "internalID" : "A1B2C3D4",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P2W"
+          },
+          "localizations" : [
+            {
+              "description" : "Full access Readiness Coach features, billed yearly.",
+              "displayName" : "Readiness Pro Yearly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Readiness Pro Yearly",
+          "subscriptionGroupID" : "21974671",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
   ],
   "version" : {
     "major" : 4,

@@ -21,6 +21,7 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 import { useHistoryData, type DayHistory } from '@hooks/useHistoryData';
+import { useStreak } from '@hooks/useStreak';
 import { useSubscription } from '@contexts/SubscriptionContext';
 import { ProGate } from '@components/common/ProGate';
 import CorrelationsCard from '@components/score/CorrelationsCard';
@@ -144,35 +145,6 @@ function buildCalendarGrid(
   return rows;
 }
 
-/** Consecutive days (ending today or yesterday) that have a real score. */
-function computeStreak(history: DayHistory[]): number {
-  if (history.length === 0) return 0;
-  const todayStr    = localDateStr(new Date());
-  const sorted      = [...history].sort((a, b) => b.date.localeCompare(a.date));
-  let streak        = 0;
-  let expectedDate  = todayStr;
-
-  for (const day of sorted) {
-    if (day.date !== expectedDate) {
-      // Allow one-day gap if we haven't started yet (yesterday is fine too)
-      if (streak === 0) {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        if (day.date !== localDateStr(yesterday)) break;
-        expectedDate = day.date;
-      } else {
-        break;
-      }
-    }
-    if (day.score === null) break;
-    streak++;
-    const prev = new Date(expectedDate + 'T12:00:00');
-    prev.setDate(prev.getDate() - 1);
-    expectedDate = localDateStr(prev);
-  }
-  return streak;
-}
-
 // ─── SVG Trend Chart ──────────────────────────────────────────────────────────
 
 interface ChartPt {
@@ -190,6 +162,7 @@ function buildPoints(
   padTop:      number,
   todayStr:    string,
   cfg:         MetricConfig,
+  padX:        number,
 ): ChartPt[] {
   const n = data.length;
   const range = cfg.yMax - cfg.yMin;
@@ -197,7 +170,7 @@ function buildPoints(
     const raw = cfg.getValue(d);
     const clamped = raw !== null ? Math.max(cfg.yMin, Math.min(cfg.yMax, raw)) : null;
     return {
-      x:        n <= 1 ? plotWidth / 2 : (i / (n - 1)) * plotWidth,
+      x:        padX + (n <= 1 ? plotWidth / 2 : (i / (n - 1)) * plotWidth),
       y:        clamped !== null ? padTop + (1 - (clamped - cfg.yMin) / range) * plotHeight : null,
       score:    raw,
       dayLabel: d.dayLabel,
@@ -220,10 +193,14 @@ function TrendChart({
   const PAD_BOT  = 30;
   const PLOT_H   = CHART_H - PAD_TOP - PAD_BOT;
   const BOTTOM_Y = PAD_TOP + PLOT_H;
+  // The first and last points used to sit exactly on x=0 and x=chartWidth.
+  // Their labels are centre-anchored, so half of each rendered outside the SVG
+  // and got clipped — "Sat" became "at" and today's "45" became "4".
+  const PAD_X    = 16;
 
   const cfg      = METRIC_CONFIG[metric];
-  const todayStr = new Date().toISOString().split('T')[0];
-  const pts      = buildPoints(data, chartWidth, PLOT_H, PAD_TOP, todayStr, cfg);
+  const todayStr = localDateStr(new Date());
+  const pts      = buildPoints(data, chartWidth - PAD_X * 2, PLOT_H, PAD_TOP, todayStr, cfg, PAD_X);
   const validPts = pts.filter(p => p.y !== null);
 
   let linePath = '';
@@ -731,19 +708,6 @@ function TodayCard({ today }: { today: DayHistory | undefined }) {
 
 // ─── Teaser banner (free users) ───────────────────────────────────────────────
 
-function TeaserBanner({ daysTracked }: { daysTracked: number }) {
-  const msg = daysTracked >= 7
-    ? `You've been tracking for ${daysTracked} days — see your trend`
-    : `${daysTracked} day${daysTracked !== 1 ? 's' : ''} tracked — your 7-day chart is ready`;
-  return (
-    <View style={styles.teaserBanner}>
-      <Text style={styles.teaserIcon}>📈</Text>
-      <Text style={styles.teaserText}>{msg}</Text>
-      <Text style={styles.teaserLock}>Pro</Text>
-    </View>
-  );
-}
-
 // ─── Range toggle ─────────────────────────────────────────────────────────────
 
 function MetricToggle({
@@ -850,7 +814,7 @@ export default function HistoryScreen() {
   const chartWidth = width - SCREEN_PAD * 2 - CARD_PAD * 2;
   const calCellSize = Math.floor((chartWidth - 6 * CAL_GAP) / 7);
 
-  const todayStr    = new Date().toISOString().split('T')[0];
+  const todayStr    = localDateStr(new Date());
   const today       = history.find(d => d.date === todayStr);
   const scores      = history.filter(d => d.score !== null).map(d => d.score!);
   const avgScore    = scores.length > 0
@@ -859,7 +823,11 @@ export default function HistoryScreen() {
   const bestScore   = scores.length > 0 ? Math.max(...scores) : null;
   const todayScore  = today?.score ?? null;
   const trendVsAvg  = todayScore !== null && avgScore !== null ? todayScore - avgScore : null;
-  const streak      = computeStreak(history);
+  // Shares useStreak with the Today banner. This screen used to derive its own
+  // streak from `history`, which only holds the selected range — so 7D mode
+  // capped it at 7 and the two screens reported different numbers for the
+  // same thing.
+  const { current: streak } = useStreak();
 
   const dateRangeText =
     history.length >= 2
@@ -994,28 +962,31 @@ export default function HistoryScreen() {
         </View>
 
         <TodayCard today={today} />
-        <TeaserBanner daysTracked={daysTracked} />
+
+        {/* The 7-day chart is free: it is what turns a one-glance score into a
+            daily habit, and the habit is what conversion is downstream of. The
+            deeper analysis below it stays Pro. */}
+        <View style={styles.chartCard}>
+          <Text style={styles.chartLabel}>READINESS · 7 DAYS</Text>
+          {history.length > 0
+            ? <TrendChart data={history} chartWidth={chartWidth} />
+            : <View style={styles.chartEmpty}><Text style={styles.chartEmptyText}>No data yet</Text></View>
+          }
+        </View>
+
+        <View style={styles.statsRow}>
+          <StatChip label="7-DAY AVG" value={avgScore} />
+          <View style={styles.statDivider} />
+          <StatChip label="BEST" value={bestScore} />
+          <View style={styles.statDivider} />
+          <StatChip label="TODAY" value={todayScore} trend={trendVsAvg} />
+        </View>
 
         <ProGate
-          feature="7-Day History & Trends"
-          description="Track how your readiness evolves day by day and spot patterns in your recovery."
+          feature="Daily Log & Deep History"
+          description="Per-day breakdowns, 28-day trends, patterns and CSV export of your own data."
           style={styles.proGateBlock}
         >
-          <View style={styles.chartCard}>
-            <Text style={styles.chartLabel}>READINESS · 7 DAYS</Text>
-            {history.length > 0
-              ? <TrendChart data={history} chartWidth={chartWidth} />
-              : <View style={styles.chartEmpty}><Text style={styles.chartEmptyText}>No data yet</Text></View>
-            }
-          </View>
-
-          <View style={styles.statsRow}>
-            <StatChip label="7-DAY AVG" value={avgScore} />
-            <View style={styles.statDivider} />
-            <StatChip label="BEST" value={bestScore} />
-            <View style={styles.statDivider} />
-            <StatChip label="TODAY" value={todayScore} trend={trendVsAvg} />
-          </View>
 
           <View style={styles.dayList}>
             <Text style={styles.sectionTitle}>DAILY LOG</Text>
@@ -1241,36 +1212,6 @@ const styles = StyleSheet.create({
   },
 
   // Teaser
-  teaserBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.bg.tertiary,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    marginBottom: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    gap: spacing[2],
-  },
-  teaserIcon: {
-    fontSize: 16,
-  },
-  teaserText: {
-    flex: 1,
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
-  },
-  teaserLock: {
-    backgroundColor: colors.amber[400],
-    color: colors.text.inverse,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-    paddingHorizontal: spacing[2],
-    paddingVertical: 2,
-    borderRadius: radius.xs,
-    overflow: 'hidden',
-  },
 
   proGateBlock: {
     marginBottom: spacing[3],

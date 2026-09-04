@@ -11,6 +11,7 @@
  */
 
 import { Platform } from 'react-native';
+import { summariseTodayHRV, dailyOvernightHRV, OVERNIGHT_START_HOUR, type HRVSample } from '@utils/hrvSamples';
 import type { HealthData } from '@/types/index';
 
 // react-native-health is only available on iOS native builds.
@@ -107,7 +108,7 @@ export async function fetchTodaysHealthData(): Promise<HealthData | null> {
   ]);
 
   const result: HealthData = {
-    date: now.toISOString().split('T')[0],
+    date: localDateStr(now),
     hrv:             hrv.status       === 'fulfilled' ? hrv.value               : null,
     restingHeartRate: rhr.status      === 'fulfilled' ? rhr.value               : null,
     sleepDuration:   sleep.status     === 'fulfilled' ? sleep.value?.duration   ?? null : null,
@@ -129,16 +130,17 @@ export async function fetchTodaysHealthData(): Promise<HealthData | null> {
 // ─── Individual metric fetchers ───────────────────────────────────────────────
 
 function fetchLatestHRV(): Promise<number | null> {
-  // Look back 7 days — catches infrequent syncs and tests if SDNN exists at all.
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - 7);
+  // 36 h covers "yesterday 8 pm to today noon" plus the 24 h daytime
+  // fallback. Selection lives in summariseTodayHRV (pure, unit-tested).
+  const now       = new Date();
+  const startDate = new Date(now.getTime() - 36 * 60 * 60 * 1000);
 
   return new Promise((resolve) => {
     AppleHealthKit.getHeartRateVariabilitySamples(
       {
         startDate: startDate.toISOString(),
+        endDate:   now.toISOString(),
         ascending: false,
-        limit: 5, // grab a few so we can log them
       },
       (err: any, results: any[]) => {
         if (err) {
@@ -146,16 +148,16 @@ function fetchLatestHRV(): Promise<number | null> {
           return resolve(null);
         }
         if (!results?.length) {
-          console.log('[Readiness] HRV: no samples in last 7 days');
+          console.log('[Readiness] HRV: no samples in last 36 h');
           return resolve(null);
         }
-        console.log('[Readiness] HRV samples (raw):', results.slice(0, 2));
-        // HealthKit stores HRV SDNN in seconds; convert to ms
-        const valueSeconds = results[0].value;
-        const valueMs = valueSeconds > 1
-          ? Math.round(valueSeconds)          // already in ms (some wrappers convert)
-          : Math.round(valueSeconds * 1000);  // raw seconds → ms
-        resolve(valueMs);
+        const today = summariseTodayHRV(results as HRVSample[], now);
+        if (!today) {
+          console.log('[Readiness] HRV: samples exist but none from the last day');
+          return resolve(null);
+        }
+        console.log(`[Readiness] HRV ${today.value} ms from ${today.count} ${today.daytime ? 'daytime' : 'overnight'} sample(s)`);
+        resolve(today.value);
       }
     );
   });
@@ -191,57 +193,66 @@ export function fetchRHRHistory(days = 30): Promise<number[]> {
       {
         startDate: start.toISOString(),
         endDate:   end.toISOString(),
-        ascending: true,
-        limit: days,
+        ascending: false,
       },
       (err: any, results: any[]) => {
         if (err || !results?.length) return resolve([]);
-        resolve(results.map((r: any) => Math.round(r.value)));
+        // One value per local day. With two sources (Garmin + Apple Watch)
+        // the old `limit: days` ascending query returned the oldest half of
+        // the window twice and never the recent two weeks.
+        const byDay: Record<string, number[]> = {};
+        for (const r of results) {
+          const key = localDateStr(new Date(r.startDate ?? r.endDate));
+          (byDay[key] ??= []).push(r.value as number);
+        }
+        resolve(Object.values(byDay).map(v => Math.round(v.reduce((a, b) => a + b, 0) / v.length)));
       }
     );
   });
 }
 
 /**
- * Returns up to `days` daily HRV SDNN values (ms).
- * Used to compute a personal HRV baseline (trimmed median of last 30 days).
- * Multiple samples per day are de-duplicated — we keep the most recent reading
- * each day, matching the overnight measurement that `fetchLatestHRV` uses.
+ * HRV SDNN samples for the last N days, grouped into one overnight mean per
+ * local day (see dailyOvernightHRV). No result limit: Apple Watch writes
+ * 4–8 samples a day, so the old `days * 2` cap covered one to two weeks of
+ * a "30-day" baseline.
  */
-export function fetchHRVHistory(days = 30): Promise<number[]> {
+function fetchHRVSamples(days: number): Promise<HRVSample[]> {
   if (Platform.OS !== 'ios' || !AppleHealthKit) return Promise.resolve([]);
 
   const end = new Date();
   const start = new Date();
   start.setDate(start.getDate() - days);
+  start.setHours(OVERNIGHT_START_HOUR, 0, 0, 0);
 
   return new Promise((resolve) => {
     AppleHealthKit.getHeartRateVariabilitySamples(
       {
         startDate: start.toISOString(),
         endDate:   end.toISOString(),
-        ascending: false,           // most-recent first so we keep the latest per day
-        limit:     days * 2,        // buffer for days with multiple samples
+        ascending: false,
       },
       (err: any, results: any[]) => {
         if (err || !results?.length) return resolve([]);
-
-        // One value per calendar day (already descending → first hit per date wins)
-        const byDay: Record<string, number> = {};
-        for (const r of results) {
-          const key = localDateStr(new Date(r.startDate ?? r.endDate));
-          if (!(key in byDay)) {
-            // Apply the same unit check as fetchLatestHRV:
-            // raw seconds → multiply by 1000; already in ms → keep as-is
-            const s = r.value as number;
-            byDay[key] = s > 1 ? Math.round(s) : Math.round(s * 1000);
-          }
-        }
-        console.log('[Readiness] HRV history samples:', Object.keys(byDay).length);
-        resolve(Object.values(byDay));
+        resolve(results as HRVSample[]);
       },
     );
   });
+}
+
+/** Daily overnight HRV (ms) keyed by local date, for History and correlations. */
+export async function fetchHRVByDay(days: number): Promise<Record<string, number>> {
+  const byDay = dailyOvernightHRV(await fetchHRVSamples(days));
+  console.log('[Readiness] HRV history days:', Object.keys(byDay).length);
+  return byDay;
+}
+
+/**
+ * Returns up to `days` daily overnight HRV values (ms).
+ * Used to compute a personal HRV baseline (trimmed median of last 30 days).
+ */
+export async function fetchHRVHistory(days = 30): Promise<number[]> {
+  return Object.values(await fetchHRVByDay(days));
 }
 
 // ─── History fetchers ─────────────────────────────────────────────────────────

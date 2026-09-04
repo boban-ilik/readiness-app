@@ -82,6 +82,11 @@ const FEATURE_BULLETS: Record<string, string[]> = {
     'Correlation insights (sleep, alcohol, etc.)',
     'Shareable weekly summary card',
   ],
+  'Coach Chat': [
+    'Answers grounded in today\'s HRV, sleep and load',
+    'Remembers the thread across the day',
+    'Reads your cycle phase when tracking is on',
+  ],
 };
 
 const DEFAULT_BULLETS = [
@@ -93,8 +98,16 @@ const DEFAULT_BULLETS = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function ProGate({ feature, description, children, style }: ProGateProps) {
-  const { isPro } = useSubscription();
-  const router    = useRouter();
+  const { isPro, isLoading, identityReady } = useSubscription();
+  const router                              = useRouter();
+
+  // isPro starts false while RevenueCat resolves, so rendering the gate straight
+  // away flashed the upgrade panel at paying subscribers on every cold start —
+  // their own app appearing to have downgraded them. isLoading alone was not
+  // enough: it clears after the initial (anonymous) customer fetch, before
+  // Purchases.logIn() resolves the signed-in customer, which reopened the same
+  // flash for one beat. Wait for both.
+  if (isLoading || !identityReady) return null;
 
   // Pro users — render children with zero overhead
   if (isPro) return <>{children}</>;
@@ -139,7 +152,7 @@ export function ProGate({ feature, description, children, style }: ProGateProps)
 
         {/* Price pill */}
         <View style={styles.pricePill}>
-          <Text style={styles.priceText}>Readiness Pro · $6.99 / month</Text>
+          <Text style={styles.priceText}>Readiness Pro · $9.99 / month</Text>
         </View>
 
         {/* CTA */}
@@ -151,8 +164,11 @@ export function ProGate({ feature, description, children, style }: ProGateProps)
           <Text style={styles.ctaText}>Upgrade to Pro</Text>
         </TouchableOpacity>
 
+        {/* The introductory offer exists on the annual subscription only, so
+            this used to advertise a free trial directly above a monthly price
+            that does not carry one. */}
         <Text style={styles.footerNote}>
-          7-day free trial · Cancel anytime
+          14-day free trial on the annual plan · Cancel anytime
         </Text>
 
       </View>

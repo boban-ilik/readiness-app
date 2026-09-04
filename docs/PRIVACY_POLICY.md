@@ -1,5 +1,10 @@
 # Privacy Policy — Readiness: AI Training Coach
 
+> **⚠️ Superseded — do not publish this file.**
+> `privacy-policy.html` in the repo root is the canonical policy and the one
+> deployed to thereadiness.app/privacy. This Markdown version is kept for
+> reference only; it has drifted from the published text before. Edit the HTML.
+
 **Effective date:** March 2026
 **Developer:** Boban Ilikj
 **Contact:** boban.ilik08@gmail.com

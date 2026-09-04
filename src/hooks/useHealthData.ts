@@ -14,6 +14,7 @@ import type { HealthData } from '../types';
 import { supabase } from '@services/supabase';
 import { upsertTodayScore } from '@services/scoreSync';
 import { pushScoreToWidget } from '@services/widgetBridge';
+import { localDateStr } from '@utils/index';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -147,7 +148,7 @@ export async function getPersonalHRVBaseline(): Promise<number> {
 // ─── Mock data (Expo Go / web dev) ────────────────────────────────────────────
 
 const MOCK_HEALTH_DATA: HealthData = {
-  date: new Date().toISOString().split('T')[0],
+  date: localDateStr(),
   hrv: 58,
   restingHeartRate: 52,
   sleepDuration: 427,
@@ -175,7 +176,7 @@ const MIN_SILENT_REFETCH_MS = 5 * 60 * 1000; // 5 minutes
 // HealthKit callbacks can silently hang (permission edge-cases, simulator quirks,
 // background-app-refresh disabled, etc.). Wrap any async HealthKit call so we
 // always get a fallback value rather than leaving isLoading=true forever.
-function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+export function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>(resolve => {
@@ -284,7 +285,10 @@ export function useHealthData(): UseHealthDataReturn {
         // source of truth and the app works fine without a network.
         supabase.auth.getUser()
           .then(({ data }) => {
-            if (data.user) {
+            // A score computed with no overnight signal at all is the
+            // population default, not a measurement. The home screen no
+            // longer shows it, so it must not become a history row either.
+            if (data.user && !result.dataQuality.isInsufficient) {
               upsertTodayScore(result, data.user.id).catch(err =>
                 console.warn('[Readiness] Supabase sync failed (non-fatal):', err.message),
               );
@@ -324,13 +328,18 @@ export function useHealthData(): UseHealthDataReturn {
   // ── Nuclear fallback — guarantee isLoading never stays true forever ─────────
   // On iOS 26 beta, HealthKit callbacks and/or setTimeout can silently stall.
   // This hard wall ensures the app UI always appears within 20 seconds.
+  //
+  // Depends on isLoading so the timer is torn down the moment loading finishes.
+  // Previously it ran once on mount and always fired at 20s, logging a fallback
+  // warning even on healthy launches that had rendered long before.
   useEffect(() => {
+    if (!isLoading) return;
     const t = setTimeout(() => {
       console.warn('[Readiness] ☢️  Nuclear fallback — forcing isLoading=false after 20s');
       setIsLoading(false);
     }, 20_000);
     return () => clearTimeout(t);
-  }, []);
+  }, [isLoading]);
 
   // ── Initial load ────────────────────────────────────────────────────────────
   useEffect(() => {

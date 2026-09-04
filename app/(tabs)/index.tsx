@@ -21,20 +21,25 @@ import ForecastStrip from '@components/score/ForecastStrip';
 import LifeEventTagger from '@components/score/LifeEventTagger';
 import BreakdownModal from '@components/score/BreakdownModal';
 import DailyBriefingModal from '@components/score/DailyBriefingModal';
+import CalibrationReportModal from '@components/score/CalibrationReportModal';
+import { hasSeenCalibrationReport, markCalibrationReportSeen } from '@services/calibrationReport';
+import { canUseFreeBriefing, markFreeBriefingUsed } from '@services/freeBriefing';
 import ShareCard from '@components/score/ShareCard';
-import { ProGate } from '@components/common/ProGate';
 import { colors, fontSize, fontWeight, spacing, radius, getScoreColor, getScoreLabel } from '@constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { useHealthData } from '@hooks/useHealthData';
 import { useRecentWorkouts } from '@hooks/useRecentWorkouts';
 import { useStravaActivities } from '@hooks/useStravaActivities';
 import { useSubscription } from '@contexts/SubscriptionContext';
 import { useNotifications } from '@hooks/useNotifications';
 import { useCalibrationStatus } from '@hooks/useCalibrationStatus';
+import { useRatingPrompt } from '@hooks/useRatingPrompt';
 import { useCycleTracking } from '@hooks/useCycleTracking';
 import { useOvertrainingWarning } from '@hooks/useOvertrainingWarning';
 import { PROFILE_SEX_KEY } from '@services/userProfile';
 import { formatDisplayDate } from '@utils/index';
 import { computeActivityScore } from '@utils/breakdown';
+import { STRESS_ELEVATION_LOW, STRESS_ELEVATION_HIGH } from '@utils/readiness';
 import { fetchTodayActivity, type TodayActivity } from '@services/healthkit';
 import { analyzePatterns } from '@services/patternAnalysis';
 import { analyzeWorkload } from '@services/workloadAnalysis';
@@ -43,6 +48,8 @@ import { fetchRecentEvents, type LifeEvent } from '@services/lifeEvents';
 import { supabase } from '@services/supabase';
 import type { HealthData } from '@/types/index';
 import { NAME_KEY } from '../onboarding';
+import { localDateStr } from '@utils/index';
+import { track, trackDaily } from '@services/analytics';
 
 // ─── Greeting helper ──────────────────────────────────────────────────────────
 
@@ -51,6 +58,36 @@ function getGreeting(): string {
   if (hour < 12) return 'Good morning';
   if (hour < 17) return 'Good afternoon';
   return 'Good evening';
+}
+
+function InsufficientDataCard({ onRefresh }: { onRefresh: () => void }) {
+  return (
+    <View style={styles.insufficientCard}>
+      <Text style={styles.insufficientEyebrow}>WAITING FOR YOUR FIRST SYNC</Text>
+      <Text style={styles.noDataTitle}>Not enough data for a score</Text>
+      <Text style={styles.noDataBody}>
+        Wear your watch overnight and sync sleep or heart-rate data. Your readiness score and training recommendation will appear as soon as we have a usable signal.
+      </Text>
+      <TouchableOpacity style={styles.refreshDataButton} onPress={onRefresh} activeOpacity={0.8}>
+        <Text style={styles.refreshDataButtonText}>Check again</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function ProSummaryCard({ onPress }: { onPress: () => void }) {
+  return (
+    <TouchableOpacity style={styles.proSummaryCard} onPress={onPress} activeOpacity={0.85}>
+      <View style={styles.proSummaryHeader}>
+        <View style={styles.proSummaryBadge}><Text style={styles.proSummaryBadgeText}>PRO</Text></View>
+        <Text style={styles.proSummaryTitle}>Go beyond the score</Text>
+      </View>
+      <Text style={styles.proSummaryBody}>
+        Unlock deeper recovery, nutrition guidance, weekly trends, the 3-day forecast, coach chat and full activity context in one place.
+      </Text>
+      <Text style={styles.proSummaryCta}>See what’s included · $9.99/mo →</Text>
+    </TouchableOpacity>
+  );
 }
 
 // Returns a short "Last night · Mon, Mar 9" prefix for overnight metrics.
@@ -106,9 +143,9 @@ function buildStressDetail(h: HealthData | null, rhrBaseline: number, hrvBaselin
   if (h.daytimeAvgHR != null) {
     const elevation = h.daytimeAvgHR - rhrBaseline;
     const sign      = elevation >= 0 ? '+' : '';
-    const trend     = elevation <= 3  ? 'Low stress'
-                    : elevation <= 10 ? 'Mild elevation'
-                    :                   'Elevated';
+    const trend     = elevation <= STRESS_ELEVATION_LOW  ? 'Low stress'
+                    : elevation <= STRESS_ELEVATION_HIGH ? 'Typical'
+                    :                                      'Elevated';
     return `${prefix} · Daytime HR ${h.daytimeAvgHR}bpm (${sign}${elevation} vs ${rhrBaseline}bpm rest) · ${trend}`;
   }
   return `${prefix} · Sync your device to see stress data`;
@@ -156,8 +193,48 @@ function buildSleepDetail(h: HealthData | null): string | undefined {
 export default function HomeScreen() {
   const router = useRouter();
   const { readiness, isLoading, isRefreshing, error, refresh, rhrBaseline, hrvBaseline, setManualHRV } = useHealthData();
-  const { isPro, presentPaywall } = useSubscription();
+  const { isPro, isTrialActive, presentPaywall } = useSubscription();
   const calibration = useCalibrationStatus();
+
+  useEffect(() => { trackDaily('app_open'); }, []);
+
+  // Day-7 choreography: the calibration report owns the moment; the rating
+  // prompt waits until it has been seen so the two sheets never collide.
+  const [reportVisible,  setReportVisible]  = useState(false);
+  const [reportResolved, setReportResolved] = useState(false);
+  const [ratingArmed,    setRatingArmed]    = useState(false);
+  useEffect(() => {
+    if (calibration.isLoading || calibration.daysComplete < 7 || reportResolved || reportVisible) return;
+    // The report is a day-7 moment, not a "has been here at least a week"
+    // moment: the seen-flag is new, so without this window every account
+    // that predates it (and every reinstall of an old account) would get a
+    // "calibration complete" sheet on first launch.
+    const since    = calibration.daysSinceJoined;
+    const inWindow = since !== null && since >= 7 && since <= 9;
+    let cancelled = false;
+    hasSeenCalibrationReport().then(seen => {
+      if (cancelled) return;
+      if (seen || !inWindow) {
+        if (!seen) markCalibrationReportSeen();
+        setReportResolved(true);
+        setRatingArmed(true);
+      } else {
+        track('calibration_report_shown');
+        setReportVisible(true);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [calibration.isLoading, calibration.daysComplete, calibration.daysSinceJoined, reportResolved, reportVisible]);
+  // The rating sheet only arms on the dismiss path. Someone who just tapped
+  // "Keep Pro" is on their way to the paywall, and iOS's review dialog
+  // sliding over it is the last thing that screen needs.
+  const closeReport = (armRating: boolean) => {
+    markCalibrationReportSeen();
+    setReportVisible(false);
+    setReportResolved(true);
+    if (armRating) setRatingArmed(true);
+  };
+  useRatingPrompt(ratingArmed ? calibration.daysComplete : 0);
   const {
     checkAndAlertScore,
     rescheduleDigestWithScore,
@@ -300,7 +377,7 @@ export default function HomeScreen() {
         const yesterdayStr = (() => {
           const d = new Date();
           d.setDate(d.getDate() - 1);
-          return d.toISOString().split('T')[0];
+          return localDateStr(d);
         })();
         const { data: yesterdayRow } = await supabase
           .from('readiness_scores')
@@ -325,6 +402,11 @@ export default function HomeScreen() {
         }
         if (scoreForForecast <= 0) return; // brand-new user — nothing to forecast from yet
 
+        if (readiness?.dataQuality?.isInsufficient) {
+          setForecast(null);
+          return;
+        }
+
         setForecast(computeForecast(scoreForForecast, patterns, workload));
       } catch (e) {
         console.warn('[HomeScreen] contextual data load error:', e);
@@ -336,18 +418,31 @@ export default function HomeScreen() {
   }, [isLoading, isRefreshing, readiness?.score]);
 
   const score         = readiness?.score ?? 0;
-  const scoreColor    = getScoreColor(score);
-  const scoreLabel    = getScoreLabel(score);
+  const hasInsufficientData = readiness?.dataQuality?.isInsufficient ?? false;
+  const hasUsableScore = score > 0 && !hasInsufficientData;
+  const displayScore   = hasInsufficientData ? 0 : score;
+  const scoreColor    = hasUsableScore ? getScoreColor(score) : colors.text.tertiary;
+  const scoreLabel    = !hasUsableScore ? 'Not enough data' : getScoreLabel(score);
   const activityScore = computeActivityScore(readiness?.healthData ?? null);
+
+  useEffect(() => {
+    if (!isLoading && !isRefreshing && hasInsufficientData) trackDaily('insufficient_data');
+  }, [isLoading, isRefreshing, hasInsufficientData]);
 
   // Fire all notification checks once data is settled.
   // Each guard inside the hook handles Expo Go / missing permissions / toggle off
   // so these are always safe to call unconditionally.
   useEffect(() => {
-    if (isLoading || isRefreshing || score <= 0) return;
+    if (isLoading || isRefreshing || !hasUsableScore) return;
 
     const hrv = readiness?.healthData?.hrv              ?? null;
     const rhr = readiness?.healthData?.restingHeartRate ?? null;
+
+    trackDaily('score_shown', {
+      score:      Math.round(score),
+      confidence: readiness?.dataQuality?.confidence ?? 'unknown',
+      pro:        isPro,
+    });
 
     // Standard alerts
     checkAndAlertScore(score);
@@ -393,7 +488,7 @@ export default function HomeScreen() {
             <Text style={styles.dateText}>{formatDisplayDate()}</Text>
           </View>
           <View style={styles.headerRight}>
-            {score > 0 && (
+            {hasUsableScore && (
               <TouchableOpacity
                 style={[styles.shareBtn, isSharing && { opacity: 0.4 }]}
                 onPress={handleShare}
@@ -411,26 +506,36 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Score ring — tappable for Pro daily briefing */}
+        {/* Score ring — tappable for the daily briefing. Pro gets it daily;
+            free users keep one per week after the trial, because a briefing
+            written from their own numbers is the best ad for the daily one. */}
         <TouchableOpacity
           style={styles.ringContainer}
-          activeOpacity={isPro && score > 0 ? 0.7 : 1}
-          onPress={() => {
-            if (!isPro)     { presentPaywall(); return; }
-            if (score <= 0) return;
-            setBriefingVisible(true);
+          activeOpacity={hasUsableScore ? 0.7 : 1}
+          onPress={async () => {
+            if (!hasUsableScore) return;
+            if (!isPro) {
+              if (await canUseFreeBriefing()) {
+                await markFreeBriefingUsed();
+                track('briefing_opened', { pro: isPro }); setBriefingVisible(true);
+              } else {
+                presentPaywall();
+              }
+              return;
+            }
+            track('briefing_opened', { pro: isPro }); setBriefingVisible(true);
           }}
         >
-          <ScoreRing score={score} color={scoreColor} size={240} strokeWidth={14} />
+          <ScoreRing score={displayScore} color={scoreColor} size={240} strokeWidth={14} />
 
           {/* Score number overlaid in the ring center */}
           <View style={styles.scoreOverlay} pointerEvents="none">
             <Text style={[styles.scoreNumber, { color: scoreColor }]}>
-              {score > 0 ? Math.round(score) : '—'}
+              {hasUsableScore ? Math.round(score) : '—'}
             </Text>
             <Text style={styles.scoreLabel}>{scoreLabel}</Text>
             {/* Delta vs yesterday */}
-            {score > 0 && yesterdayScore !== null && (() => {
+            {hasUsableScore && yesterdayScore !== null && (() => {
               const delta = score - yesterdayScore;
               if (Math.abs(delta) < 2) return null;
               const up = delta >= 0;
@@ -441,20 +546,33 @@ export default function HomeScreen() {
                 </Text>
               );
             })()}
-            {score > 0 && (
+            {hasUsableScore && (
               <Text style={styles.tapHint}>
                 {isPro
                   ? (yesterdayScore !== null && score - yesterdayScore < -7
                       ? 'Tap to understand today\'s drop'
                       : 'Tap for briefing')
-                  : '🔒 Pro'}
+                  : 'Tap for briefing'}
               </Text>
             )}
           </View>
         </TouchableOpacity>
 
+        {/* Today's recommendation — the answer to "what do I do today?", so it
+            sits directly under the score and is free: users act on the score
+            before deciding whether they need the deeper Pro analysis. */}
+        {hasUsableScore && (
+          <View style={styles.trainingSection}>
+            <Text style={styles.sectionTitle}>TODAY'S RECOMMENDATION</Text>
+            <TrainingLoadCard
+              score={score}
+              components={readiness?.components ?? { recovery: 50, sleep: 50, stress: 50 }}
+            />
+          </View>
+        )}
+
         {/* Streak banner */}
-        <StreakBanner score={score} />
+        {hasUsableScore && <StreakBanner score={score} />}
 
         {/* Yesterday's workout context — shows load tier + HRV suppression note */}
         <WorkoutContextBanner loadSummary={workoutLoad} isLoading={workoutsLoading} />
@@ -486,13 +604,33 @@ export default function HomeScreen() {
         {/* Overtraining early warning — shown when pattern analysis detects fatigue risk */}
         <OvertrainingWarningCard warning={overtraining} />
 
-        {/* Data confidence banner — shown when Apple Watch data is missing or partial */}
-        {score > 0 && readiness?.dataQuality?.confidence !== 'high' &&
+        {/* Data confidence banner — shown when wearable data is missing or partial.
+            Tappable when HRV is what's missing, since that's the one gap the user
+            can close by hand: Garmin, Whoop, Polar and Oura don't write HRV to
+            Apple Health, so manual entry is their only route. */}
+        {hasUsableScore && readiness?.dataQuality?.confidence !== 'high' &&
           readiness?.dataQuality?.warningMessage && (
-          <View style={styles.confidenceBanner}>
-            <Text style={styles.confidenceIcon}>⚠</Text>
+          <TouchableOpacity
+            style={styles.confidenceBanner}
+            onPress={handleEnterManualHRV}
+            disabled={readiness.dataQuality.hasHRV}
+            activeOpacity={readiness.dataQuality.hasHRV ? 1 : 0.7}
+            accessibilityRole={readiness.dataQuality.hasHRV ? undefined : 'button'}
+            accessibilityLabel={
+              readiness.dataQuality.hasHRV ? undefined : 'Enter your HRV manually'
+            }
+          >
+            <Text style={styles.confidenceIcon}>⌚</Text>
             <Text style={styles.confidenceText}>{readiness.dataQuality.warningMessage}</Text>
-          </View>
+            {!readiness.dataQuality.hasHRV && (
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={colors.text.tertiary}
+                style={styles.confidenceChevron}
+              />
+            )}
+          </TouchableOpacity>
         )}
 
         {/* Error state */}
@@ -502,21 +640,16 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* No data state */}
-        {!isLoading && score === 0 && !error && (
-          <View style={styles.noDataCard}>
-            <Text style={styles.noDataTitle}>No health data yet</Text>
-            <Text style={styles.noDataBody}>
-              Make sure your Apple Watch or Garmin is synced to Apple Health, then pull down to refresh.
-            </Text>
-          </View>
+        {/* Honest empty state — never show a fabricated numeric score. */}
+        {!isLoading && !error && (hasInsufficientData || score === 0) && (
+          <InsufficientDataCard onRefresh={refresh} />
         )}
 
         {/* Calibration week banner — shown for first 7 days after onboarding */}
         <CalibrationBanner status={calibration} />
 
         {/* Breakdown */}
-        {score > 0 && (
+        {hasUsableScore && (
           <View style={styles.breakdown}>
             <Text style={styles.sectionTitle}>BREAKDOWN</Text>
 
@@ -557,73 +690,46 @@ export default function HomeScreen() {
             </Animated.View>
 
             <Animated.View entering={FadeInDown.delay(240).duration(400).springify()}>
-              <ProGate
-                feature="Activity Context"
-                description="See how yesterday's movement and exercise compare to targets, and what it means for today's recovery."
-              >
-                <ScoreBreakdownCard
-                  label="Activity"
-                  score={activityScore}
-                  weight="Context"
-                  icon="🏃"
-                  detail={buildActivityDetail(readiness?.healthData ?? null, todayActivity)}
-                  isLocked={false}
-                  onPress={() => setSelectedCard('activity')}
-                />
-              </ProGate>
+              <ScoreBreakdownCard
+                label="Activity"
+                score={activityScore}
+                weight="Context"
+                icon="🏃"
+                detail={buildActivityDetail(readiness?.healthData ?? null, todayActivity)}
+                isLocked={!isPro}
+                onPress={() => isPro ? setSelectedCard('activity') : presentPaywall()}
+              />
             </Animated.View>
           </View>
         )}
 
-        {/* Training Load — Pro feature */}
-        {score > 0 && (
-          <View style={styles.trainingSection}>
-            <Text style={styles.sectionTitle}>TODAY'S TRAINING</Text>
-            <ProGate
-              feature="Training Load Recommendations"
-              description="Get a daily training prescription — zone, duration, and RPE — tailored to how recovered you actually are."
-            >
-              <TrainingLoadCard
-                score={score}
-                components={readiness?.components ?? { recovery: 50, sleep: 50, stress: 50 }}
-              />
-            </ProGate>
-          </View>
-        )}
+        {/* One consolidated upgrade message replaces separate feature gates. */}
+        {!isPro && hasUsableScore && <ProSummaryCard onPress={presentPaywall} />}
 
         {/* Nutrition — Pro feature */}
-        {score > 0 && (
+        {isPro && hasUsableScore && (
           <View style={styles.trainingSection}>
             <Text style={styles.sectionTitle}>NUTRITION TODAY</Text>
-            <ProGate
-              feature="Nutrition Recommendations"
-              description="Get personalised food and hydration guidance based on your HRV, sleep quality, and today's readiness score."
-            >
-              <NutritionCard
-                score={score}
-                components={readiness?.components ?? { recovery: 50, sleep: 50, stress: 50 }}
-                healthData={readiness?.healthData ?? null}
-                hrvBaseline={hrvBaseline}
-              />
-            </ProGate>
+            <NutritionCard
+              score={score}
+              components={readiness?.components ?? { recovery: 50, sleep: 50, stress: 50 }}
+              healthData={readiness?.healthData ?? null}
+              hrvBaseline={hrvBaseline}
+            />
           </View>
         )}
 
         {/* Recovery Trend — Pro feature */}
-        {score > 0 && (
+        {isPro && hasUsableScore && (
           <View style={styles.trainingSection}>
             <Text style={styles.sectionTitle}>WEEKLY TREND</Text>
-            <ProGate
-              feature="Weekly Recovery Trend"
-              description="See your 7-day recovery trajectory and get a daily insight on whether your body is adapting or accumulating fatigue."
-            >
-              <TrendInsightCard />
-            </ProGate>
+            <TrendInsightCard />
           </View>
         )}
 
-        {/* 3-Day Readiness Forecast */}
-        {forecast && (
+        {/* 3-Day Readiness Forecast — Pro feature, covered by the single
+            upgrade card above rather than its own gate */}
+        {isPro && forecast && hasUsableScore && (
           <View style={styles.trainingSection}>
             <Text style={styles.sectionTitle}>3-DAY FORECAST</Text>
             <ForecastStrip forecast={forecast} />
@@ -631,7 +737,7 @@ export default function HomeScreen() {
         )}
 
         {/* Life Event Tagger */}
-        {score > 0 && (
+        {hasUsableScore && (
           <View style={styles.trainingSection}>
             <Text style={styles.sectionTitle}>WHAT'S AFFECTING YOU</Text>
             <LifeEventTagger events={lifeEvents} onTagged={setLifeEvents} />
@@ -665,6 +771,16 @@ export default function HomeScreen() {
       />
 
       {/* ── Daily briefing modal (Pro only) ── */}
+      <CalibrationReportModal
+        visible={reportVisible}
+        onClose={() => closeReport(true)}
+        hrvBaseline={hrvBaseline}
+        rhrBaseline={rhrBaseline}
+        isPro={isPro}
+        isTrialActive={isTrialActive}
+        onKeepPro={() => { track('calibration_keep_pro'); closeReport(false); presentPaywall(); }}
+      />
+
       <DailyBriefingModal
         visible={briefingVisible}
         onClose={() => setBriefingVisible(false)}
@@ -799,21 +915,22 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   // Subtle amber strip shown when Apple Watch data quality is medium or low
+  // Neutral, not amber: missing wearable data is a setup step, not a fault.
+  // Alarm styling here made a normal first run look like an error state.
   confidenceBanner: {
     flexDirection:  'row',
     alignItems:     'flex-start',
     gap:            spacing[2],
-    backgroundColor: 'rgba(251, 191, 36, 0.10)',
+    backgroundColor: colors.bg.secondary,
     borderRadius:   radius.md,
     borderWidth:    1,
-    borderColor:    'rgba(251, 191, 36, 0.25)',
+    borderColor:    colors.border.subtle,
     paddingHorizontal: spacing[3],
     paddingVertical:   spacing[2],
     marginBottom:   spacing[4],
   },
   confidenceIcon: {
     fontSize:   13,
-    color:      colors.amber[400],
     lineHeight: 18,
   },
   confidenceText: {
@@ -821,6 +938,9 @@ const styles = StyleSheet.create({
     fontSize:   fontSize.xs,
     color:      colors.text.secondary,
     lineHeight: 16,
+  },
+  confidenceChevron: {
+    marginTop: 1,
   },
   errorBanner: {
     backgroundColor: colors.bg.tertiary,
@@ -852,6 +972,75 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     fontSize: fontSize.sm,
     lineHeight: 20,
+  },
+  insufficientCard: {
+    backgroundColor: colors.bg.elevated,
+    borderRadius: radius.lg,
+    padding: spacing[5],
+    marginBottom: spacing[4],
+    gap: spacing[2],
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  insufficientEyebrow: {
+    color: colors.amber[400],
+    fontSize: 10,
+    fontWeight: fontWeight.semiBold,
+    letterSpacing: 1.5,
+  },
+  refreshDataButton: {
+    alignSelf: 'flex-start',
+    marginTop: spacing[1],
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[3],
+    borderRadius: radius.md,
+    backgroundColor: colors.bg.tertiary,
+  },
+  refreshDataButtonText: {
+    color: colors.amber[400],
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semiBold,
+  },
+  proSummaryCard: {
+    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    borderRadius: radius.lg,
+    padding: spacing[5],
+    marginBottom: spacing[5],
+    gap: spacing[3],
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.28)',
+  },
+  proSummaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  proSummaryBadge: {
+    backgroundColor: colors.amber[400],
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
+  },
+  proSummaryBadgeText: {
+    color: colors.bg.primary,
+    fontSize: 10,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 1,
+  },
+  proSummaryTitle: {
+    color: colors.text.primary,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semiBold,
+  },
+  proSummaryBody: {
+    color: colors.text.secondary,
+    fontSize: fontSize.sm,
+    lineHeight: 20,
+  },
+  proSummaryCta: {
+    color: colors.amber[400],
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semiBold,
   },
   breakdown: {
     gap: spacing[3],

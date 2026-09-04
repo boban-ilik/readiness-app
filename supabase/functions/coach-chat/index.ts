@@ -17,6 +17,7 @@
  */
 
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
+import { gate, readJsonBody } from '../_shared/entitlement.ts';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin':  '*',
@@ -83,12 +84,22 @@ interface CoachChatInput {
   workload:     WorkloadResult | null;
   lifeEvents:   LifeEvent[];       // recent tagged events (last 7 days)
   history:      ChatMessage[];     // last 6 turns for context
+  /** Menstrual cycle context. Sent only when the user has enabled cycle tracking. */
+  cycle?: {
+    phase:           'menstrual' | 'follicular' | 'ovulatory' | 'luteal' | 'late_luteal';
+    dayOfCycle:      number;
+    cycleLengthDays: number;
+  } | null;
   profile?:     UserProfile;       // personal details from profile screen
 }
 
 // ─── System prompt ────────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `You are the user's personal health coach inside the Readiness app.
+
+Spelling: British English throughout, matching the rest of the app. Prefer -ise to -ize and doubled consonants: Prioritise, Signalling, Recognise, Minimise. These examples are capitalised only to show the spelling; capitalise the first word of every sentence as normal and never open a sentence in lower case.
+
+Punctuation: never use em dashes or en dashes. Use a comma, a full stop or a colon instead.
 
 You have real-time access to their biometric data, personal profile (age, sex, height, weight, training goal), detected patterns from the past 30 days, and any life events they have tagged (illness, travel, poor sleep, etc.). Use all of this to give specific, personalised answers — not generic advice.
 
@@ -139,6 +150,12 @@ function buildContext(input: CoachChatInput): string {
       for (const part of parts) lines.push(`  ${part}`);
       lines.push('');
     }
+  }
+
+  if (input.cycle) {
+    lines.push(`Menstrual cycle: day ${input.cycle.dayOfCycle} of ~${input.cycle.cycleLengthDays}, ${input.cycle.phase.replace('_', ' ')} phase.`);
+    lines.push('  Interpret HRV, RHR and sleep in the light of this phase: lower HRV and slightly higher RHR are common in the luteal and late luteal phases, and higher HRV in the follicular and ovulatory phases. Phase effects vary between individuals, so use "commonly" or "often", never certainty. Do not attribute phase-typical shifts to overtraining. Never give medical, fertility, or contraception advice.');
+    lines.push('');
   }
 
   lines.push(
@@ -194,6 +211,7 @@ function buildContext(input: CoachChatInput): string {
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS });
@@ -204,8 +222,32 @@ serve(async (req: Request) => {
     });
   }
 
+  // Session, tier (trial / RevenueCat pro / free), free-week rule and the
+  // daily cap all live in _shared/entitlement.ts.
+  const gated = await gate(req, { fn: 'coach-chat', dailyCap: 60 }, CORS_HEADERS);
+  if (!gated.ok) return gated.response;
+
   try {
-    const input: CoachChatInput = await req.json();
+    const parsed = await readJsonBody<CoachChatInput>(req);
+    if (parsed === 'too_large') {
+      return new Response(JSON.stringify({ error: 'Request too large' }), {
+        status: 413, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      });
+    }
+    if (parsed === 'invalid') {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+        status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      });
+    }
+    const input: CoachChatInput = parsed;
+
+    // Never trust the caller's transcript shape or size: keep only well-formed
+    // user/assistant turns, bound each one, and let the model see at most six.
+    input.question = input.question?.slice(0, 500);
+    input.history = (Array.isArray(input.history) ? input.history : [])
+      .filter((m) => (m?.role === 'user' || m?.role === 'assistant') && typeof m.content === 'string')
+      .map((m) => ({ role: m.role, content: m.content.slice(0, 2_000) }))
+      .slice(-6);
 
     if (!input.question?.trim() || typeof input.score !== 'number') {
       return new Response(JSON.stringify({ error: 'Invalid input' }), {

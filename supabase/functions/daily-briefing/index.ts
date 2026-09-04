@@ -17,6 +17,7 @@
  */
 
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
+import { gate, readJsonBody } from '../_shared/entitlement.ts';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin':  '*',
@@ -88,37 +89,54 @@ interface DailyBriefingInput {
   workload:     WorkloadResult | null;
   /** Life events tagged by the user in the last 7 days. */
   lifeEvents?:        LifeEvent[];
+  /** Menstrual cycle context. Sent only when the user has enabled cycle tracking. */
+  cycle?: {
+    phase:           'menstrual' | 'follicular' | 'ovulatory' | 'luteal' | 'late_luteal';
+    dayOfCycle:      number;
+    cycleLengthDays: number;
+  } | null;
   /** User's rating of yesterday's briefing. Used to calibrate today's specificity. */
   yesterdayFeedback?: BriefingFeedback | null;
 }
 
 interface DailyBriefing {
-  headline:    string;   // One punchy sentence — the TL;DR
-  overview:    string;   // 2–3 sentences: what's happening in the body today
-  focusAreas:  string[]; // 2–3 bullet points: what needs attention
-  actionPlan:  string;   // 2–3 sentences: what to concretely do today
+  headline:    string;   // One sentence — the TL;DR
+  overview:    string;   // 2 sentences: what's happening in the body today
+  doToday:     string[]; // 2–3 concrete actions
 }
 
 // ─── Prompt ───────────────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `You are a knowledgeable, warm health coach inside a readiness app.
 
-Given a user's readiness score, component breakdown, biometric data, and detected longitudinal patterns from the past 30 days, generate a concise but rich daily briefing. Write like a smart friend who understands sports science — clear, direct, no fluff, no generic platitudes.
+You are given a user's readiness score, component breakdown, biometrics against their own personal baselines, and any patterns detected over the past 30 days. Write a short daily briefing.
 
-When longitudinal patterns are present, weave them naturally into the briefing. Do NOT list the patterns verbatim — synthesise them into coaching language. For example, "This is the third consecutive day your HRV has dropped, which is a classic early-warning signal." is better than robotically repeating the pattern message.
+Voice: a smart friend who understands sports science. Clear, direct, warm. No platitudes, no hype, no filler.
+
+Spelling: British English throughout, matching the rest of the app. Prefer -ise to -ize and doubled consonants: Prioritise, Signalling, Recognise, Minimise. These examples are capitalised only to show the spelling; capitalise the first word of every sentence as normal and never open a sentence in lower case.
+
+Punctuation: never use em dashes or en dashes. Use a comma, a full stop or a colon instead. Write "HRV is down 15 ms, a classic sign of fatigue", not "HRV is down 15 ms — a classic sign of fatigue".
+
+Ground every claim in the data you were actually given. You know their sleep, HRV, resting and daytime heart rate, steps, workouts, and any life events they tagged. You do NOT know what they eat, their bodyweight, their training zones, or their schedule — never invent those. Describe intensity in plain terms the user can feel ("conversational pace", "stop a couple of reps short") rather than heart-rate zones or paces you have no way to calculate.
+
+When patterns are present, synthesise them into coaching rather than restating them. "Third straight day your HRV has dropped, which is usually an early warning" beats repeating the pattern text.
+
+Keep it tight. The user reads this on a phone every morning, and reads a fresh one tomorrow — vary how you open, and do not pad.
 
 Respond with EXACTLY this format (no extra text, no markdown):
 
-HEADLINE: <one punchy sentence summarising the day — e.g. "Strong recovery, but sleep quality held you back.">
+HEADLINE: <one sentence, max 12 words, summarising the day — e.g. "Strong recovery, but short sleep is holding you back.">
 
-OVERVIEW: <2–3 sentences explaining what's happening in the body today. Reference specific numbers (HRV, RHR, sleep duration etc.) vs their personal baselines where available. Be specific, not generic.>
+OVERVIEW: <exactly 2 sentences, 45 words maximum in total. What is happening in the body today and why. Cite only the one or two numbers that matter most, against their baseline. Do not recite every metric — the user can already see them.>
 
-FOCUS:
-1. <first specific focus area for today — one sentence>
-2. <second specific focus area — one sentence>
-3. <third specific focus area — one sentence, or omit if only 2 are relevant>
+DO_TODAY:
+1. <a concrete action for today, max 18 words>
+2. <a concrete action for today, max 18 words>
+3. <a concrete action for today, max 18 words — omit this line entirely if two are enough>
 
-ACTION_PLAN: <2–3 sentences of concrete things to do today. Be specific — mention training zones, sleep times, stress management techniques, nutrition timing, etc. based on the actual data.>`;
+Every DO_TODAY item must be something the user can actually do today and must follow from the data above. Do not restate the overview.
+
+If you recommend a sleep duration, use the 7 hour guideline the app scores against. Do not invent a different figure.`;
 
 function buildPrompt(input: DailyBriefingInput): string {
   const { score, scoreLabel, components, healthData: h, rhrBaseline, hrvBaseline, patterns, workload } = input;
@@ -140,7 +158,15 @@ function buildPrompt(input: DailyBriefingInput): string {
   }
   if (h.sleepDuration !== null) {
     const hrs = (h.sleepDuration / 60).toFixed(1);
-    lines.push(`  Sleep duration: ${hrs} hours`);
+    // Without an anchor the model called 6.3 hours "decent in duration". The
+    // shortfall and its tiers mirror OPTIMAL_SLEEP (7h) and the breakdown copy, so
+    // the coach and the sleep detail describe the same night the same way.
+    const shortfall = 420 - h.sleepDuration;
+    const note =
+      shortfall <= 0  ? '  (at or above the 7 hour guideline)'
+    : shortfall <= 60 ? `  (${Math.round(shortfall)} min below the 7 hour guideline: a mild shortfall)`
+    :                   `  (${Math.round(shortfall)} min below the 7 hour guideline. Do not call this decent, solid or adequate.)`;
+    lines.push(`  Sleep duration: ${hrs} hours${note}`);
   }
   if (h.sleepEfficiency !== null) {
     lines.push(`  Sleep efficiency: ${Math.round(h.sleepEfficiency * 100)}%`);
@@ -193,13 +219,29 @@ function buildPrompt(input: DailyBriefingInput): string {
     lines.push('  Factor these into your coaching: if a life event aligns with a data drop (e.g. alcohol → low HRV), name the connection explicitly. If multiple events cluster, note the pattern.');
   }
 
+  // ── Menstrual cycle context ─────────────────────────────────────────────────
+  if (input.cycle) {
+    const CYCLE_GUIDANCE: Record<string, string> = {
+      menstrual:   'HRV often dips and RHR can be slightly elevated in the first days of menstruation; both typically return to baseline afterwards. Fatigue is common, so treat a modest score dip as expected physiology, not lost fitness.',
+      follicular:  'Rising estrogen commonly supports higher HRV and faster recovery. This is often a good window for harder sessions if the data agrees.',
+      ovulatory:   'HRV is often near its cycle peak. If the numbers look strong, this is a reasonable window for intensity or key sessions.',
+      luteal:      'Progesterone commonly raises resting heart rate by roughly 2 to 3 bpm and lowers HRV compared to the follicular phase. A modestly lower score here is normal hormonal physiology, not necessarily fatigue or overtraining. Judge the user against what is typical for their luteal phase, not against their monthly best.',
+      late_luteal: 'This is the PMS window: sleep disruption and lower HRV are common. If sleep and HRV are both down, hormones are a likely contributor. Favour recovery-leaning guidance without alarmism.',
+    };
+    lines.push('');
+    lines.push('Menstrual cycle context (the user tracks their cycle in this app):');
+    lines.push(`  • Day ${input.cycle.dayOfCycle} of a roughly ${input.cycle.cycleLengthDays}-day cycle, currently in the ${input.cycle.phase.replace('_', ' ')} phase.`);
+    lines.push(`  • ${CYCLE_GUIDANCE[input.cycle.phase] ?? ''}`);
+    lines.push('  Use this to interpret the data, never to override it. If HRV or RHR shifts match the expected pattern for this phase, say so plainly and do not attribute them to overtraining or poor recovery. Phase effects vary between individuals, so frame them with "commonly" or "often", never as certainty. Never give medical, fertility, or contraception advice.');
+  }
+
   // ── Yesterday's briefing feedback ───────────────────────────────────────────
   if (input.yesterdayFeedback?.rating === 'unhelpful') {
     lines.push('');
     lines.push('User feedback: The user rated yesterday\'s briefing as NOT HELPFUL.');
     lines.push('Today, raise the specificity bar significantly:');
     lines.push('  • Quote exact numbers (e.g. "Your HRV of 42 ms is 18% below your 51 ms baseline")');
-    lines.push('  • Name concrete actions with timing (e.g. "Keep intensity below 140 bpm for the first 20 min")');
+    lines.push('  • Name concrete actions with timing (e.g. "Keep the first 20 min easy enough to hold a conversation")');
     lines.push('  • Tie every recommendation directly to a specific data point — no generic advice');
     lines.push('  • If a pattern is present, name the trend explicitly (e.g. "third consecutive drop")');
   }
@@ -212,25 +254,25 @@ function parseBriefing(raw: string): DailyBriefing {
   const getField = (key: string) =>
     raw.match(new RegExp(`${key}:\\s*(.+?)(?=\\n[A-Z_]+:|$)`, 's'))?.[1]?.trim() ?? '';
 
-  const headline   = getField('HEADLINE');
-  const overview   = getField('OVERVIEW');
-  const actionPlan = getField('ACTION_PLAN');
+  const headline = getField('HEADLINE');
+  const overview = getField('OVERVIEW');
 
-  // Extract the FOCUS block (everything between "FOCUS:" and the next ALL_CAPS key)
-  const focusBlock  = raw.match(/FOCUS:\s*\n([\s\S]+?)(?=\n[A-Z_]+:|$)/)?.[1] ?? '';
-  const focusAreas  = focusBlock
+  // Extract the DO_TODAY block (everything after "DO_TODAY:" up to the next key)
+  const block   = raw.match(/DO_TODAY:\s*\n([\s\S]+?)(?=\n[A-Z_]+:|$)/)?.[1] ?? '';
+  const doToday = block
     .split('\n')
     .map(line => line.replace(/^\d+\.\s*/, '').trim())   // strip "1. " / "2. " / "3. "
     .filter(Boolean);
 
-  if (!headline || !overview || focusAreas.length === 0 || !actionPlan) {
+  if (!headline || !overview || doToday.length === 0) {
     throw new Error('Unexpected AI response format');
   }
 
-  return { headline, overview, focusAreas, actionPlan };
+  return { headline, overview, doToday };
 }
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
+
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -242,8 +284,24 @@ serve(async (req: Request) => {
     });
   }
 
+  // Session, tier (trial / RevenueCat pro / free), free-week rule and the
+  // daily cap all live in _shared/entitlement.ts.
+  const gated = await gate(req, { fn: 'daily-briefing', dailyCap: 12, freeWeeklyAllowance: true }, CORS_HEADERS);
+  if (!gated.ok) return gated.response;
+
   try {
-    const input: DailyBriefingInput = await req.json();
+    const parsed = await readJsonBody<DailyBriefingInput>(req);
+    if (parsed === 'too_large') {
+      return new Response(JSON.stringify({ error: 'Request too large' }), {
+        status: 413, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      });
+    }
+    if (parsed === 'invalid') {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+        status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      });
+    }
+    const input: DailyBriefingInput = parsed;
 
     if (typeof input.score !== 'number' || !input.components || !input.healthData) {
       return new Response(JSON.stringify({ error: 'Invalid input' }), {
@@ -267,7 +325,7 @@ serve(async (req: Request) => {
       },
       body: JSON.stringify({
         model:      'claude-haiku-4-5-20251001',
-        max_tokens: 650,
+        max_tokens: 350,
         system:     SYSTEM_PROMPT,
         messages:   [{ role: 'user', content: buildPrompt(input) }],
       }),

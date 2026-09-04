@@ -16,9 +16,12 @@
  *   Late luteal (last 6d)  PMS window — sleep disruption, mood shifts common
  *
  * ── Privacy ───────────────────────────────────────────────────────────────────
- * All cycle data is stored exclusively in AsyncStorage (on-device only).
- * Nothing is synced to any server. Data is cleared when the user signs out
- * or uninstalls the app.
+ * Period dates and settings live only in AsyncStorage; nothing is written to
+ * Supabase. The one thing that leaves the device is the derived context from
+ * getCycleContext() (phase, day of cycle, cycle length), which the briefing
+ * and coach services attach to their Anthropic requests while tracking is on.
+ * The privacy policy and the in-app cycle copy both disclose exactly that.
+ * Data is cleared when the user signs out or uninstalls the app.
  *
  * ── Storage ───────────────────────────────────────────────────────────────────
  *   @readiness/cycle_enabled           'true' | 'false'
@@ -28,6 +31,9 @@
  */
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { localDateStr } from '@utils/index';
 
 export type CyclePhase =
   | 'menstrual'
@@ -152,7 +158,11 @@ export function computeCycleState(
   lastPeriodStart: string,    // ISO date string
   settings: CycleSettings,
 ): CycleState {
-  const start  = new Date(lastPeriodStart);
+  // Entries are stored as local "YYYY-MM-DD". `new Date('YYYY-MM-DD')` would
+  // parse that as UTC midnight, which is still the previous evening in the
+  // Americas, so build the date from its parts instead.
+  const [sy, sm, sd] = lastPeriodStart.slice(0, 10).split('-').map(Number);
+  const start  = new Date(sy, sm - 1, sd);
   const today  = new Date();
 
   // Strip time — work with calendar days only
@@ -213,7 +223,7 @@ export function latestEntry(entries: string[]): string | null {
 
 /** Add today as a new period start. Returns updated entries array. */
 export function logPeriodStart(entries: string[]): string[] {
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr();
   const filtered = entries.filter(e => e !== today);
   return [...filtered, today].sort();
 }
@@ -229,4 +239,49 @@ export function nextPeriodLabel(daysUntilNext: number): string {
   if (daysUntilNext <= 7)  return `In ${daysUntilNext} days`;
   if (daysUntilNext <= 14) return `In ${Math.round(daysUntilNext / 7)} week`;
   return `In ${daysUntilNext} days`;
+}
+
+// ─── AI context ───────────────────────────────────────────────────────────────
+
+/** Compact phase snapshot sent to the AI briefing and coach. */
+export interface CycleContext {
+  phase:           CyclePhase;
+  dayOfCycle:      number;
+  cycleLengthDays: number;
+}
+
+/**
+ * Load the current cycle context directly from storage, for services that run
+ * outside React. Returns null unless the user has enabled cycle tracking and
+ * logged at least one period start, so the AI never sees cycle data the user
+ * has not opted into sharing with it.
+ */
+export async function getCycleContext(): Promise<CycleContext | null> {
+  try {
+    const pairs = await AsyncStorage.multiGet([
+      CYCLE_ENABLED_KEY, CYCLE_LENGTH_KEY, CYCLE_PERIOD_KEY, CYCLE_ENTRIES_KEY,
+    ]);
+    const get = (key: string) => pairs.find(([k]) => k === key)?.[1] ?? null;
+
+    if (get(CYCLE_ENABLED_KEY) !== 'true') return null;
+
+    const entries = parseEntries(get(CYCLE_ENTRIES_KEY));
+    const last    = latestEntry(entries);
+    if (!last) return null;
+
+    const settings: CycleSettings = {
+      enabled:          true,
+      cycleLengthDays:  parseInt(get(CYCLE_LENGTH_KEY)  ?? '', 10) || DEFAULT_CYCLE_SETTINGS.cycleLengthDays,
+      periodLengthDays: parseInt(get(CYCLE_PERIOD_KEY) ?? '', 10) || DEFAULT_CYCLE_SETTINGS.periodLengthDays,
+    };
+
+    const state = computeCycleState(last, settings);
+    return {
+      phase:           state.phase,
+      dayOfCycle:      state.dayOfCycle,
+      cycleLengthDays: settings.cycleLengthDays,
+    };
+  } catch {
+    return null; // cycle context is an enhancement, never a blocker
+  }
 }

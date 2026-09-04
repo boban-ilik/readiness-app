@@ -18,13 +18,14 @@ import {
   Animated,
 } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { fetchDailyBriefing, saveBriefingFeedback, type DailyBriefing } from '@services/dailyBriefing';
 import { analyzePatterns, type PatternInsight } from '@services/patternAnalysis';
 import { analyzeWorkload, type WorkloadResult } from '@services/workloadAnalysis';
 import { fetchRecentEvents, type LifeEvent } from '@services/lifeEvents';
 import { setCoachSession } from '@services/coachSession';
+import { useSubscription } from '@contexts/SubscriptionContext';
 import type { ReadinessResult } from '@utils/readiness';
 import type { HealthData } from '@/types/index';
 import { supabase } from '@services/supabase';
@@ -66,17 +67,20 @@ function getRecoveryProtocol(
 
   // Pick the most actionable items based on which component is lowest
   if (recovery < sleep && recovery < stress) {
-    items.push('Skip caffeine until at least 10am — your body is still processing overnight stress hormones');
-    items.push('If you train today, keep it Zone 1–2 only (conversational pace, 30–40 min max)');
-    items.push('Aim for 20g of protein within 30 minutes of waking to kickstart muscle repair');
+    // No heart-rate zones or protein amounts here: the app knows neither this
+    // user's zones nor what they eat, and the nutrition card already sets a
+    // protein target scaled to their bodyweight. A fixed "20 g" contradicted it.
+    items.push('Skip caffeine until at least 10am, while your body is still processing overnight stress hormones');
+    items.push('If you train today, keep it easy enough to hold a conversation, and cap it around 30 to 40 minutes');
+    items.push('Eat a protein-rich breakfast within an hour of waking rather than delaying your first meal');
   } else if (sleep < recovery && sleep < stress) {
-    items.push('Prioritise a consistent wind-down tonight — screens off by 9:30pm if possible');
-    items.push('A 10–20 min nap before 2pm can partially offset last night\'s deficit without disrupting tonight');
-    items.push('Avoid alcohol today — even one drink will suppress the deep sleep you need to recover');
+    items.push('Prioritise a consistent wind-down tonight, with screens off by 9:30pm if possible');
+    items.push('A 10 to 20 min nap before 2pm can partially offset last night\'s deficit without disrupting tonight');
+    items.push('Avoid alcohol today: even one drink will suppress the deep sleep you need to recover');
   } else {
     items.push('Try 5 minutes of box breathing (4s in, 4s hold, 4s out, 4s hold) before your first task');
-    items.push('Block at least one 30-min window with zero notifications today — your nervous system needs quiet');
-    items.push('Move, but gently — a 20-min walk lowers cortisol more effectively than skipping activity entirely');
+    items.push('Block at least one 30-min window with zero notifications today, so your nervous system gets some quiet');
+    items.push('Move, but gently: a 20-min walk lowers cortisol more effectively than skipping activity entirely');
   }
 
   return items;
@@ -110,7 +114,7 @@ function SkeletonContent() {
       <SkeletonLine /><View style={{ height: spacing[1] }} />
       <SkeletonLine width="60%" />
       <View style={{ height: spacing[5] }} />
-      <Text style={styles.sectionLabel}>TODAY'S FOCUS</Text>
+      <Text style={styles.sectionLabel}>DO TODAY</Text>
       <View style={{ height: spacing[2] }} />
       <SkeletonLine width="90%" /><View style={{ height: spacing[1] }} />
       <SkeletonLine width="80%" /><View style={{ height: spacing[1] }} />
@@ -192,6 +196,7 @@ export default function DailyBriefingModal({
   hrvBaseline,
 }: DailyBriefingModalProps) {
   const router = useRouter();
+  const { isPro, presentPaywall } = useSubscription();
   const [briefing,     setBriefing]     = useState<DailyBriefing | null>(null);
   const [isLoading,    setIsLoading]    = useState(false);
   const [error,        setError]        = useState<string | null>(null);
@@ -257,6 +262,9 @@ export default function DailyBriefingModal({
   }
 
   function handleOpenCoach() {
+    // The weekly free briefing opens this modal for free users, but the coach
+    // itself stays Pro: every chat turn is a metered API call.
+    if (!isPro) { onClose(); presentPaywall(); return; }
     if (!readiness || !healthData) return;
     setCoachSession({
       readiness,
@@ -278,6 +286,11 @@ export default function DailyBriefingModal({
       presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
+      {/* A Modal renders in its own native view hierarchy, outside the app's
+          SafeAreaProvider, so SafeAreaView here resolved a top inset of zero
+          and drew the score straight under the status bar and notch. Seeding a
+          provider with the window metrics restores the real insets. */}
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
 
           {/* ── Score header ── */}
@@ -290,9 +303,12 @@ export default function DailyBriefingModal({
               </View>
             </View>
             <View style={styles.headerActions}>
-              <TouchableOpacity style={styles.iconBtn} onPress={() => load(true)} disabled={isLoading}>
-                <Text style={styles.iconBtnText}>↻</Text>
-              </TouchableOpacity>
+              {/* Regenerate is metered; the free weekly briefing is one call. */}
+              {isPro && (
+                <TouchableOpacity style={styles.iconBtn} onPress={() => load(true)} disabled={isLoading}>
+                  <Text style={styles.iconBtnText}>↻</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity style={styles.iconBtn} onPress={onClose}>
                 <Text style={styles.iconBtnText}>✕</Text>
               </TouchableOpacity>
@@ -344,10 +360,10 @@ export default function DailyBriefingModal({
                   <Text style={styles.body}>{briefing.overview}</Text>
                 </View>
 
-                {/* Focus areas */}
+                {/* What to do today */}
                 <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>TODAY'S FOCUS</Text>
-                  {briefing.focusAreas.map((item, i) => (
+                  <Text style={styles.sectionLabel}>DO TODAY</Text>
+                  {briefing.doToday.map((item, i) => (
                     <View key={i} style={styles.bulletRow}>
                       <Text style={[styles.bullet, { color: scoreColor }]}>●</Text>
                       <Text style={styles.bulletText}>{item}</Text>
@@ -355,13 +371,12 @@ export default function DailyBriefingModal({
                   ))}
                 </View>
 
-                {/* Action plan */}
-                <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>ACTION PLAN</Text>
-                  <View style={[styles.actionBox, { borderLeftColor: scoreColor }]}>
-                    <Text style={styles.body}>{briefing.actionPlan}</Text>
-                  </View>
-                </View>
+                {/* Sits above the Recovery Protocol, which is rules-based, not
+                    generated. Below it, the notice read as if it covered the
+                    protocol too. */}
+                <Text style={styles.disclaimer}>
+                  AI-generated · Based on your biometrics and personal baselines
+                </Text>
 
                 {/* ── Recovery Protocol (low score only) ── */}
                 {protocol && (
@@ -381,10 +396,6 @@ export default function DailyBriefingModal({
                     ))}
                   </View>
                 )}
-
-                <Text style={styles.disclaimer}>
-                  AI-generated · Based on your biometrics and personal baselines
-                </Text>
 
                 {/* ── Briefing feedback ── */}
                 <BriefingFeedbackRow date={healthData?.date ?? ''} />
@@ -415,6 +426,7 @@ export default function DailyBriefingModal({
             <View style={{ height: spacing[4] }} />
           </ScrollView>
       </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }
@@ -543,16 +555,20 @@ const styles = StyleSheet.create({
   },
 
   section:      { gap: spacing[2] },
+  // text.tertiary on the near-black canvas measures ~3.2:1, under the 4.5:1
+  // WCAG AA floor for small text — and these labels are the reading scaffold.
   sectionLabel: {
     fontSize:      fontSize.xs,
     fontWeight:    fontWeight.semiBold,
-    color:         colors.text.tertiary,
+    color:         colors.text.secondary,
     letterSpacing: 0.8,
   },
+  // Paragraph text sits at base, not sm: this is prose read every morning,
+  // not a metric label.
   body: {
-    fontSize:   fontSize.sm,
+    fontSize:   fontSize.base,
     color:      colors.text.secondary,
-    lineHeight: 20,
+    lineHeight: 23,
   },
 
   bulletRow: {
@@ -562,18 +578,13 @@ const styles = StyleSheet.create({
   },
   bullet: {
     fontSize:  8,
-    marginTop: 6,
+    marginTop: 8,
   },
   bulletText: {
     flex:       1,
-    fontSize:   fontSize.sm,
+    fontSize:   fontSize.base,
     color:      colors.text.secondary,
-    lineHeight: 20,
-  },
-
-  actionBox: {
-    borderLeftWidth: 3,
-    paddingLeft:     spacing[3],
+    lineHeight: 23,
   },
 
   disclaimer: {

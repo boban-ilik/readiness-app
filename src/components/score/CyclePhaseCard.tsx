@@ -232,7 +232,7 @@ export function CyclePhaseSection({
     <View style={sectionStyles.section}>
       <View style={sectionStyles.header}>
         <Text style={sectionStyles.label}>CYCLE PHASE</Text>
-        <Text style={sectionStyles.privacy}>🔒 stored on device only</Text>
+        <Text style={sectionStyles.privacy}>🔒 dates on device · phase shared with AI coach</Text>
       </View>
       <CyclePhaseCard cycleState={cycleState} onLogToday={onLogToday} />
     </View>

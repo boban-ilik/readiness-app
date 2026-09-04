@@ -119,8 +119,12 @@ export function CalibrationBanner({ status }: CalibrationBannerProps) {
             ]}
           />
         ))}
+        {/* Counts nights of data collected, which is one behind the day you
+            are on — you are on day 3 after two nights. Labelling this "2 / 7
+            days" beside a headline reading "Day 3 of 7" made the banner look
+            like it was contradicting itself. */}
         <Text style={styles.dotsLabel}>
-          {status.daysComplete} / {CALIBRATION_DAYS} days
+          {status.daysComplete} {status.daysComplete === 1 ? 'night' : 'nights'} collected
         </Text>
       </View>
 
