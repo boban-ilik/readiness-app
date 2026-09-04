@@ -4,9 +4,10 @@ import { Platform } from 'react-native';
 import {
   isHealthKitAvailable,
   fetchRHRByDay,
+  fetchHRVByDay,
   fetchSleepByDay,
 } from '@services/healthkit';
-import { getPersonalRHRBaseline } from '@hooks/useHealthData';
+import { getPersonalRHRBaseline, getPersonalHRVBaseline } from '@hooks/useHealthData';
 import { calculateReadiness } from '@utils/readiness';
 import { supabase } from '@services/supabase';
 import { fetchHistoryFromSupabase } from '@services/scoreSync';
@@ -126,18 +127,21 @@ export function useHistoryData(days: 7 | 28 = 7): {
         }
 
         // ── Real HealthKit path ────────────────────────────────────────────
-        const [rhrByDay, sleepByDay, baseline] = await Promise.all([
+        const [rhrByDay, sleepByDay, hrvByDay, baseline, hrvBaseline] = await Promise.all([
           fetchRHRByDay(days),
           fetchSleepByDay(days),
+          fetchHRVByDay(days),
           getPersonalRHRBaseline(),
+          getPersonalHRVBaseline(),
         ]);
 
         const dates  = buildDateRange(days);
         let result: DayHistory[] = dates.map((date) => {
           const rhr   = rhrByDay[date]   ?? null;
           const sleep = sleepByDay[date] ?? null;
+          const hrv   = hrvByDay[date]   ?? null;
 
-          if (rhr === null && sleep === null) {
+          if (rhr === null && sleep === null && hrv === null) {
             return {
               date,
               dayLabel:        toDayLabel(date),
@@ -152,11 +156,10 @@ export function useHistoryData(days: 7 | 28 = 7): {
 
           const hd: HealthData = {
             date,
-            hrv:              null,   // HRV history not available via HealthKit — Apple Health
-                                      // doesn't expose per-day SDNN samples for past dates
-                                      // the way it does for RHR/sleep.  History scores are
-                                      // therefore based on RHR + sleep only.
-                                      // Today's Supabase row will override this via enrichment.
+            // Overnight HRV per day from HealthKit, so past days are scored
+            // with the same model as today instead of an RHR-only one that
+            // pulled every unopened day towards 50.
+            hrv,
             restingHeartRate: rhr,
             sleepDuration:    sleep?.duration   ?? null,
             deepSleep:        sleep?.deep       ?? null,
@@ -169,15 +172,14 @@ export function useHistoryData(days: 7 | 28 = 7): {
             exerciseMinutes:  null,
           };
 
-          const r = calculateReadiness(hd, undefined, baseline);
+          const r = calculateReadiness(hd, hrvBaseline, baseline);
           return {
             date,
             dayLabel:        toDayLabel(date),
             score:           r.score,
             components:      r.components,
             rhr,
-            hrv:             null,   // HealthKit doesn't expose per-day HRV history;
-                                     // Supabase enrichment below may fill this in.
+            hrv,
             sleepMinutes:    sleep?.duration   ?? null,
             sleepEfficiency: sleep?.efficiency ?? null,
           };

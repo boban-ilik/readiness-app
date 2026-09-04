@@ -17,7 +17,7 @@
  */
 
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { gate, readJsonBody } from '../_shared/entitlement.ts';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin':  '*',
@@ -274,32 +274,6 @@ function parseBriefing(raw: string): DailyBriefing {
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
 
-// ─── Caller authentication ────────────────────────────────────────────────────
-// The gateway runs with JWT verification off, so the function must verify the
-// caller itself. Without this the endpoint is an unmetered proxy on our
-// Anthropic key for anyone holding the (public) project ref.
-
-const MAX_BODY_BYTES = 16_384;
-
-async function authenticate(req: Request): Promise<string | null> {
-  const authorization = req.headers.get('Authorization');
-  if (!authorization) return null;
-  const token = authorization.replace(/^Bearer\s+/i, '').trim();
-  if (!token) return null;
-  const client = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-  );
-  const { data: { user }, error } = await client.auth.getUser(token);
-  return error || !user ? null : user.id;
-}
-
-async function readJsonBody<T>(req: Request): Promise<T | 'too_large' | 'invalid'> {
-  const raw = await req.text();
-  if (raw.length > MAX_BODY_BYTES) return 'too_large';
-  try { return JSON.parse(raw) as T; } catch { return 'invalid'; }
-}
-
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS });
@@ -310,12 +284,10 @@ serve(async (req: Request) => {
     });
   }
 
-  const userId = await authenticate(req);
-  if (!userId) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-    });
-  }
+  // Session, tier (trial / RevenueCat pro / free), free-week rule and the
+  // daily cap all live in _shared/entitlement.ts.
+  const gated = await gate(req, { fn: 'daily-briefing', dailyCap: 12, freeWeeklyAllowance: true }, CORS_HEADERS);
+  if (!gated.ok) return gated.response;
 
   try {
     const parsed = await readJsonBody<DailyBriefingInput>(req);

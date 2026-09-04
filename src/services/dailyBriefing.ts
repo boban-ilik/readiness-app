@@ -204,6 +204,8 @@ export async function fetchDailyBriefing(
       }),
     });
 
+    if (res.status === 402) throw new Error('This needs Readiness Pro.');
+    if (res.status === 429) throw new Error('You have reached today\'s limit for this. Try again tomorrow.');
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.error ?? `HTTP ${res.status}`);

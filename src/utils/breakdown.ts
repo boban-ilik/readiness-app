@@ -14,7 +14,7 @@
 import type { HealthData } from '../types/index';
 // The sleep target lived here as a hardcoded 480 in five places. It now comes
 // from the scoring model, so copy and score can never drift apart again.
-import { DEFAULTS } from '@utils/readiness';
+import { STRESS_ELEVATION_LOW, STRESS_ELEVATION_HIGH, DEFAULTS } from '@utils/readiness';
 
 const SLEEP_TARGET = DEFAULTS.OPTIMAL_SLEEP;        // 420 min (7h)
 const SLEEP_TARGET_H = SLEEP_TARGET / 60;           // 7
@@ -509,16 +509,18 @@ function buildStress(score: number, h: HealthData | null, rhrBaseline: number, h
   if (daytimeAvgHR != null) {
     const elevation = daytimeAvgHR - rhrBaseline;
     const sign      = elevation >= 0 ? '+' : '';
-    const sub       = elevation <= 3
-      ? `${sign}${elevation} bpm above your ${rhrBaseline} bpm baseline — heart rate is close to rest, a low-stress signal`
-      : elevation <= 10
-      ? `${sign}${elevation} bpm above your ${rhrBaseline} bpm baseline — mild elevation from activity, caffeine, or moderate stress`
-      : `${sign}${elevation} bpm above your ${rhrBaseline} bpm baseline — significant elevation often signals high physiological stress or poor recovery`;
+    // Waking HR always sits above resting HR; the bands are shared with the
+    // scorer so this copy never calls an ordinary day "significant elevation".
+    const sub       = elevation <= STRESS_ELEVATION_LOW
+      ? `${sign}${elevation} bpm above your ${rhrBaseline} bpm baseline — within the normal daytime range, a low-stress signal`
+      : elevation <= STRESS_ELEVATION_HIGH
+      ? `${sign}${elevation} bpm above your ${rhrBaseline} bpm baseline — a typical waking day with some activity, caffeine, or moderate stress`
+      : `${sign}${elevation} bpm above your ${rhrBaseline} bpm baseline — well above a normal daytime average, which often signals physiological stress or poor recovery`;
     metrics.push({
       label:  'Daytime Avg Heart Rate',
       value:  `${daytimeAvgHR} bpm`,
       sub,
-      status: elevation <= 3 ? 'good' : elevation <= 10 ? 'ok' : 'poor',
+      status: elevation <= STRESS_ELEVATION_LOW ? 'good' : elevation <= STRESS_ELEVATION_HIGH ? 'ok' : 'poor',
     });
   }
 
@@ -533,7 +535,7 @@ function buildStress(score: number, h: HealthData | null, rhrBaseline: number, h
     const signals: boolean[] = [];   // true = elevated
     if (stressScore  != null) signals.push(stressScore > 50);
     if (hrv          != null) signals.push((hrv - hrvBaseline) < -5);
-    if (daytimeAvgHR != null) signals.push((daytimeAvgHR - rhrBaseline) > 10);
+    if (daytimeAvgHR != null) signals.push((daytimeAvgHR - rhrBaseline) > STRESS_ELEVATION_HIGH);
 
     const elevated = signals.filter(Boolean).length;
     const sub      = elevated === 0
@@ -599,8 +601,8 @@ function buildStress(score: number, h: HealthData | null, rhrBaseline: number, h
     }
   } else if (daytimeAvgHR != null) {
     const elevation = daytimeAvgHR - rhrBaseline;
-    if (elevation <= 3) {
-      parts.push(`Your daytime heart rate (${daytimeAvgHR} bpm) is close to your resting baseline of ${rhrBaseline} bpm — a sign of a calm, low-stress day. A heart rate that stays near resting during normal daily activity reflects efficient autonomic regulation.`);
+    if (elevation <= STRESS_ELEVATION_LOW) {
+      parts.push(`Your daytime heart rate (${daytimeAvgHR} bpm) is only ${elevation} bpm above your resting baseline of ${rhrBaseline} bpm — a calm, low-stress day. Waking heart rate normally runs 10–20 bpm above resting, so staying under that reflects efficient autonomic regulation.`);
     } else {
       parts.push(`Your daytime heart rate (${daytimeAvgHR} bpm) is ${elevation} bpm above your ${rhrBaseline} bpm resting baseline. A persistently elevated daytime HR — beyond what physical activity alone explains — often reflects physiological stress, high training load, or incomplete overnight recovery.`);
     }

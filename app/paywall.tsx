@@ -29,6 +29,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSubscription } from '@contexts/SubscriptionContext';
+import { track } from '@services/analytics';
 import {
   colors,
   fontSize,
@@ -58,14 +59,14 @@ const FEATURES: Array<{
   body:  string;
 }> = [
   {
-    icon:  'trending-up',
-    title: '7-Day Trends',
-    body:  'See your score chart, weekly average, and best day at a glance.',
+    icon:  'chatbubbles-outline',
+    title: 'Daily Briefing & Coach',
+    body:  'A morning briefing written from your own numbers, and a coach you can ask why.',
   },
   {
-    icon:  'barbell-outline',
-    title: 'Training Guide',
-    body:  'Daily workout prescription — zone, duration, and effort level explained in plain English.',
+    icon:  'trending-up',
+    title: '28-Day History & Forecast',
+    body:  'Four weeks of trend, correlations, nutrition guidance and a 3-day readiness forecast.',
   },
   {
     icon:  'notifications-outline',
@@ -294,6 +295,7 @@ export default function PaywallScreen() {
   }, []);
 
   useEffect(() => { loadPackages(); }, [loadPackages]);
+  useEffect(() => { track('paywall_shown'); }, []);
 
   const selectedPkg = packages[cycle];
 
@@ -330,6 +332,7 @@ export default function PaywallScreen() {
         );
 
         if (customerInfo.entitlements.active['pro']) {
+          track('purchase_success', { cycle });
           await refreshEntitlements();
           router.back();
         } else {
@@ -382,6 +385,7 @@ export default function PaywallScreen() {
       if (configured && Purchases) {
         const info = await Purchases.restorePurchases();
         if (info.entitlements.active['pro']) {
+          track('restore_success');
           await refreshEntitlements();
           Alert.alert('Restored!', 'Your Pro subscription has been restored.', [
             { text: 'OK', onPress: () => router.back() },

@@ -21,6 +21,7 @@ import { analyzeWorkload } from '@services/workloadAnalysis';
 import { fetchRecentEvents } from '@services/lifeEvents';
 import { supabase } from '@services/supabase';
 import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
+import { track } from '@services/analytics';
 
 function parseInline(text: string): React.ReactNode[] {
   const tokens = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
@@ -127,6 +128,7 @@ export default function CoachChatScreen() {
   }, [session, isHealthLoading, readiness, rhrBaseline, hrvBaseline]);
 
   useEffect(() => {
+    track('coach_opened');
     loadChatHistory().then(setHistory).catch(() => {});
     loadUserProfile().then(setProfile).catch(() => {});
   }, []);

@@ -26,6 +26,16 @@ export const DEFAULTS = {
   OPTIMAL_REM_PCT: 0.25,  // 25% of total sleep
 };
 
+/**
+ * Daytime-HR stress proxy (Tier 3). Waking average HR minus resting HR for
+ * an ordinary day; the copy and the score both treat this as "typical".
+ * Elevation up to LOW is a calm day, up to HIGH is moderate, above is
+ * elevated. Shared with the breakdown copy so the words match the number.
+ */
+export const STRESS_TYPICAL_ELEVATION = 15;
+export const STRESS_ELEVATION_LOW     = 12;
+export const STRESS_ELEVATION_HIGH    = 22;
+
 // ─── Recovery component (45%) ─────────────────────────────────────────────────
 
 function scoreRecovery(
@@ -136,11 +146,15 @@ function scoreStress(
   // rest periods above the personal RHR baseline signals physiological stress.
   if (daytimeAvgHR !== null && rhrBaseline > 0) {
     const elevation = daytimeAvgHR - rhrBaseline;
-    // elevation ≤ 3 bpm → low stress  (~80)
-    // elevation 3–8 bpm → typical     (~60)
-    // elevation 8–15 bpm → moderate   (~45)
-    // elevation > 15 bpm → elevated   (~30)
-    return clamp(75 - elevation * 3, 20, 90);
+    // Waking-hours HR sits well above resting HR for everyone: walking,
+    // stairs, meals and coffee put an ordinary day 10–20 bpm over RHR, so
+    // the scale is centred there rather than at zero elevation (which
+    // scored every Garmin user's normal day as "very high stress").
+    //   elevation ≤ 9 bpm  → ~90 (calm day)
+    //   elevation 15 bpm   →  75 (typical)
+    //   elevation 25 bpm   →  50 (moderate)
+    //   elevation ≥ 37 bpm →  20 (elevated)
+    return clamp(75 - (elevation - STRESS_TYPICAL_ELEVATION) * 2.5, 20, 90);
   }
 
   return 50; // neutral — no stress signal at all

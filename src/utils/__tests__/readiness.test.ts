@@ -1,4 +1,4 @@
-import { calculateReadiness } from '@utils/readiness';
+import { calculateReadiness, STRESS_TYPICAL_ELEVATION } from '@utils/readiness';
 import type { HealthData } from '@/types/index';
 
 function makeHealthData(overrides: Partial<HealthData> = {}): HealthData {
@@ -213,6 +213,30 @@ describe('calculateReadiness', () => {
         'sleep',
       ]);
       expect(result.dataQuality.warningMessage).toContain('estimate');
+    });
+  });
+
+  describe('Tier-3 stress proxy (daytime HR, no HRV)', () => {
+    // Pins the scale so an ordinary waking day is not scored as very high
+    // stress. rhrBaseline 54; daytime HR is the only stress signal.
+    const cases: Array<[elevation: number, expected: number, label: string]> = [
+      [5,  90, 'calm day clamps at the ceiling'],
+      [STRESS_TYPICAL_ELEVATION, 75, 'typical elevation scores 75'],
+      [25, 50, 'moderate elevation scores 50'],
+      [40, 20, 'large elevation clamps at the floor'],
+    ];
+    it.each(cases)('elevation +%i bpm → stress %i (%s)', (elevation, expected) => {
+      const result = calculateReadiness(
+        makeHealthData({ daytimeAvgHR: 54 + elevation, restingHeartRate: 54 }),
+        55,
+        54,
+      );
+      expect(result.components.stress).toBe(expected);
+    });
+
+    it('scores the demo data (+13 bpm) as calm, not elevated', () => {
+      const result = calculateReadiness(makeHealthData({ daytimeAvgHR: 67 }), 55, 54);
+      expect(result.components.stress).toBeGreaterThanOrEqual(75);
     });
   });
 });

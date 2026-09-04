@@ -39,6 +39,7 @@ import { useOvertrainingWarning } from '@hooks/useOvertrainingWarning';
 import { PROFILE_SEX_KEY } from '@services/userProfile';
 import { formatDisplayDate } from '@utils/index';
 import { computeActivityScore } from '@utils/breakdown';
+import { STRESS_ELEVATION_LOW, STRESS_ELEVATION_HIGH } from '@utils/readiness';
 import { fetchTodayActivity, type TodayActivity } from '@services/healthkit';
 import { analyzePatterns } from '@services/patternAnalysis';
 import { analyzeWorkload } from '@services/workloadAnalysis';
@@ -48,6 +49,7 @@ import { supabase } from '@services/supabase';
 import type { HealthData } from '@/types/index';
 import { NAME_KEY } from '../onboarding';
 import { localDateStr } from '@utils/index';
+import { track, trackDaily } from '@services/analytics';
 
 // ─── Greeting helper ──────────────────────────────────────────────────────────
 
@@ -141,9 +143,9 @@ function buildStressDetail(h: HealthData | null, rhrBaseline: number, hrvBaselin
   if (h.daytimeAvgHR != null) {
     const elevation = h.daytimeAvgHR - rhrBaseline;
     const sign      = elevation >= 0 ? '+' : '';
-    const trend     = elevation <= 3  ? 'Low stress'
-                    : elevation <= 10 ? 'Mild elevation'
-                    :                   'Elevated';
+    const trend     = elevation <= STRESS_ELEVATION_LOW  ? 'Low stress'
+                    : elevation <= STRESS_ELEVATION_HIGH ? 'Typical'
+                    :                                      'Elevated';
     return `${prefix} · Daytime HR ${h.daytimeAvgHR}bpm (${sign}${elevation} vs ${rhrBaseline}bpm rest) · ${trend}`;
   }
   return `${prefix} · Sync your device to see stress data`;
@@ -194,6 +196,8 @@ export default function HomeScreen() {
   const { isPro, isTrialActive, presentPaywall } = useSubscription();
   const calibration = useCalibrationStatus();
 
+  useEffect(() => { trackDaily('app_open'); }, []);
+
   // Day-7 choreography: the calibration report owns the moment; the rating
   // prompt waits until it has been seen so the two sheets never collide.
   const [reportVisible,  setReportVisible]  = useState(false);
@@ -215,6 +219,7 @@ export default function HomeScreen() {
         setReportResolved(true);
         setRatingArmed(true);
       } else {
+        track('calibration_report_shown');
         setReportVisible(true);
       }
     });
@@ -420,6 +425,10 @@ export default function HomeScreen() {
   const scoreLabel    = !hasUsableScore ? 'Not enough data' : getScoreLabel(score);
   const activityScore = computeActivityScore(readiness?.healthData ?? null);
 
+  useEffect(() => {
+    if (!isLoading && !isRefreshing && hasInsufficientData) trackDaily('insufficient_data');
+  }, [isLoading, isRefreshing, hasInsufficientData]);
+
   // Fire all notification checks once data is settled.
   // Each guard inside the hook handles Expo Go / missing permissions / toggle off
   // so these are always safe to call unconditionally.
@@ -428,6 +437,12 @@ export default function HomeScreen() {
 
     const hrv = readiness?.healthData?.hrv              ?? null;
     const rhr = readiness?.healthData?.restingHeartRate ?? null;
+
+    trackDaily('score_shown', {
+      score:      Math.round(score),
+      confidence: readiness?.dataQuality?.confidence ?? 'unknown',
+      pro:        isPro,
+    });
 
     // Standard alerts
     checkAndAlertScore(score);
@@ -502,13 +517,13 @@ export default function HomeScreen() {
             if (!isPro) {
               if (await canUseFreeBriefing()) {
                 await markFreeBriefingUsed();
-                setBriefingVisible(true);
+                track('briefing_opened', { pro: isPro }); setBriefingVisible(true);
               } else {
                 presentPaywall();
               }
               return;
             }
-            setBriefingVisible(true);
+            track('briefing_opened', { pro: isPro }); setBriefingVisible(true);
           }}
         >
           <ScoreRing score={displayScore} color={scoreColor} size={240} strokeWidth={14} />
@@ -763,7 +778,7 @@ export default function HomeScreen() {
         rhrBaseline={rhrBaseline}
         isPro={isPro}
         isTrialActive={isTrialActive}
-        onKeepPro={() => { closeReport(false); presentPaywall(); }}
+        onKeepPro={() => { track('calibration_keep_pro'); closeReport(false); presentPaywall(); }}
       />
 
       <DailyBriefingModal

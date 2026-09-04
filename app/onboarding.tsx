@@ -21,6 +21,7 @@ import {
   Platform,
   Keyboard,
   KeyboardAvoidingView,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -31,7 +32,9 @@ import {
   requestHealthKitPermissions,
   isHealthKitAvailable,
 } from '@services/healthkit';
+import * as Notifications from 'expo-notifications';
 import { getPersonalRHRBaseline, withTimeout } from '@hooks/useHealthData';
+import { track } from '@services/analytics';
 import { pushProfile } from '@services/profileSync';
 import {
   colors,
@@ -54,12 +57,18 @@ export const JOINED_AT_KEY = '@readiness/joined_at';
 // Profile keys (mirrored from src/services/userProfile.ts — kept here to avoid
 // circular imports between onboarding.tsx and userProfile.ts)
 const PROFILE_GOAL_KEY   = '@readiness/profile_goal';
+const PROFILE_SEX_KEY    = '@readiness/profile_sex';
+const NOTIF_ENABLED_KEY  = '@readiness/notif_digest_enabled';
+const NOTIF_HOUR_KEY     = '@readiness/notif_digest_hour';
+const NOTIF_MINUTE_KEY   = '@readiness/notif_digest_minute';
+const DEFAULT_DIGEST_HOUR = 8;
 
 const TOTAL_STEPS = 5;  // steps 0–4 show progress dots; step 5 = auto setup
 
 type DeviceType       = 'garmin' | 'apple_watch' | 'both';
 type TrainingFrequency = 'light' | 'moderate' | 'high';
 type TrainingGoal      = 'performance' | 'recovery' | 'weight_loss' | 'general_health';
+type BiologicalSex     = 'male' | 'female' | 'prefer_not_to_say';
 
 function pause(ms: number) {
   return new Promise<void>(r => setTimeout(r, ms));
@@ -306,21 +315,56 @@ const GOAL_OPTIONS: {
   { key: 'general_health', icon: '💪', label: 'General Health',     sub: 'Stay active, feel great' },
 ];
 
+const SEX_OPTIONS: { key: BiologicalSex; label: string }[] = [
+  { key: 'female',            label: 'Female' },
+  { key: 'male',              label: 'Male' },
+  { key: 'prefer_not_to_say', label: 'Prefer not to say' },
+];
+
 function StepTrainingProfile({
   freq,
   setFreq,
   goal,
   setGoal,
+  sex,
+  setSex,
+  digestOn,
+  setDigestOn,
   onNext,
   onBack,
 }: {
-  freq:    TrainingFrequency;
-  setFreq: (f: TrainingFrequency) => void;
-  goal:    TrainingGoal;
-  setGoal: (g: TrainingGoal) => void;
-  onNext:  () => void;
-  onBack:  () => void;
+  freq:        TrainingFrequency;
+  setFreq:     (f: TrainingFrequency) => void;
+  goal:        TrainingGoal;
+  setGoal:     (g: TrainingGoal) => void;
+  sex:         BiologicalSex | null;
+  setSex:      (s: BiologicalSex | null) => void;
+  digestOn:    boolean;
+  setDigestOn: (v: boolean) => void;
+  onNext:      () => void;
+  onBack:      () => void;
 }) {
+  // The digest toggle is the priming for the iOS notification prompt: ask
+  // on Continue only if they opted in, so nobody sees a system dialog for
+  // a feature they said no to. Denied or Expo Go: carry on.
+  const [asking, setAsking] = useState(false);
+  async function handleNext() {
+    if (asking) return;
+    if (digestOn) {
+      setAsking(true);
+      try {
+        await Notifications.requestPermissionsAsync({
+          ios: { allowAlert: true, allowBadge: false, allowSound: false },
+        });
+      } catch {
+        // Native module absent or prompt failed: not blocking.
+      } finally {
+        setAsking(false);
+      }
+    }
+    onNext();
+  }
+
   return (
     <ScrollView
       style={styles.scrollStep}
@@ -388,11 +432,46 @@ function StepTrainingProfile({
         })}
       </View>
 
+      {/* ── About you (optional) ── */}
+      <Text style={[styles.sectionHeading, { marginTop: spacing[2] }]}>About you (optional)</Text>
+      <View style={styles.sexRow}>
+        {SEX_OPTIONS.map(opt => {
+          const active = sex === opt.key;
+          return (
+            <TouchableOpacity
+              key={opt.key}
+              style={[styles.sexChip, active && styles.sexChipActive]}
+              onPress={() => setSex(active ? null : opt.key)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.sexChipText, active && styles.sexChipTextActive]}>{opt.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      <Text style={styles.aboutHint}>
+        Female unlocks cycle-aware coaching. Age, height and weight can be added later in Profile.
+      </Text>
+
+      <View style={styles.aboutRow}>
+        <View style={styles.aboutRowText}>
+          <Text style={styles.aboutRowLabel}>Morning briefing notification</Text>
+          <Text style={styles.aboutRowSub}>Daily at {DEFAULT_DIGEST_HOUR}:00 AM once your watch has synced. Change the time in Profile.</Text>
+        </View>
+        <Switch
+          value={digestOn}
+          onValueChange={setDigestOn}
+          trackColor={{ false: colors.border.default, true: colors.amber[400] }}
+          thumbColor={colors.white}
+          ios_backgroundColor={colors.border.default}
+        />
+      </View>
+
       <View style={styles.navRow}>
         <TouchableOpacity style={styles.backBtn} onPress={onBack}>
           <Text style={styles.backBtnText}>← Back</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.primaryBtnSmall} onPress={onNext} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.primaryBtnSmall} onPress={handleNext} disabled={asking} activeOpacity={0.85}>
           <Text style={styles.primaryBtnText}>Continue →</Text>
         </TouchableOpacity>
       </View>
@@ -526,6 +605,8 @@ function StepSetup({
   userName,
   trainingFreq,
   goal,
+  sex,
+  digestOn,
   onComplete,
 }: {
   permissionGranted: boolean;
@@ -533,6 +614,8 @@ function StepSetup({
   userName:          string;
   trainingFreq:      TrainingFrequency;
   goal:              TrainingGoal;
+  sex:               BiologicalSex | null;
+  digestOn:          boolean;
   onComplete:        () => void;
 }) {
   const [s, setS] = useState<SetupState>({
@@ -573,6 +656,14 @@ function StepSetup({
         [JOINED_AT_KEY,     new Date().toISOString()],
         [PROFILE_GOAL_KEY,  goal],
       ];
+      if (sex) pairs.push([PROFILE_SEX_KEY, sex]);
+      if (digestOn) {
+        pairs.push(
+          [NOTIF_ENABLED_KEY, 'true'],
+          [NOTIF_HOUR_KEY,    String(DEFAULT_DIGEST_HOUR)],
+          [NOTIF_MINUTE_KEY,  '0'],
+        );
+      }
 
       try {
         await AsyncStorage.multiSet(pairs);
@@ -621,7 +712,7 @@ function StepSetup({
         <View style={styles.firstWeekBanner}>
           <Ionicons name="information-circle-outline" size={16} color={colors.amber[400]} />
           <Text style={styles.firstWeekText}>
-            Your first readiness score will appear tomorrow morning after your wearable syncs overnight data. You can finish optional profile details and notification preferences after your first useful session.
+            Your first readiness score will appear tomorrow morning after your wearable syncs overnight data. Age, height, weight and notification times can be adjusted any time in Profile.
           </Text>
         </View>
       )}
@@ -638,6 +729,8 @@ export default function OnboardingScreen() {
   const [device,            setDevice] = useState<DeviceType>('garmin');
   const [trainingFreq,      setFreq]   = useState<TrainingFrequency>('moderate');
   const [goal,              setGoal]   = useState<TrainingGoal>('general_health');
+  const [sex,               setSex]    = useState<BiologicalSex | null>(null);
+  const [digestOn,          setDigestOn] = useState(true);
   const [permissionGranted, setPermissionGranted] = useState(false);
 
   function next() { setStep(s => s + 1); }
@@ -649,6 +742,7 @@ export default function OnboardingScreen() {
   }
 
   function handleComplete() {
+    track('onboarding_complete', { device, freq: trainingFreq, digest: digestOn, sex: sex ?? 'unset' });
     router.replace('/(tabs)');
   }
 
@@ -677,6 +771,10 @@ export default function OnboardingScreen() {
           setFreq={setFreq}
           goal={goal}
           setGoal={setGoal}
+          sex={sex}
+          setSex={setSex}
+          digestOn={digestOn}
+          setDigestOn={setDigestOn}
           onNext={next}
           onBack={back}
         />
@@ -691,6 +789,8 @@ export default function OnboardingScreen() {
           userName={name}
           trainingFreq={trainingFreq}
           goal={goal}
+          sex={sex}
+          digestOn={digestOn}
           onComplete={handleComplete}
         />
       )}
@@ -701,6 +801,61 @@ export default function OnboardingScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  sexRow: {
+    flexDirection: 'row',
+    gap: spacing[2],
+    marginBottom: spacing[2],
+  },
+  sexChip: {
+    flex: 1,
+    paddingVertical: spacing[3],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    backgroundColor: colors.bg.secondary,
+    alignItems: 'center',
+  },
+  sexChipActive: {
+    borderColor: colors.amber[400],
+    backgroundColor: colors.bg.tertiary,
+  },
+  sexChipText: {
+    color: colors.text.secondary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+  sexChipTextActive: {
+    color: colors.text.primary,
+  },
+  aboutHint: {
+    color: colors.text.tertiary,
+    fontSize: fontSize.xs,
+    lineHeight: 16,
+    marginBottom: spacing[3],
+  },
+  aboutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    padding: spacing[3],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    backgroundColor: colors.bg.secondary,
+    marginBottom: spacing[4],
+  },
+  aboutRowText: { flex: 1 },
+  aboutRowLabel: {
+    color: colors.text.primary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+  aboutRowSub: {
+    color: colors.text.tertiary,
+    fontSize: fontSize.xs,
+    lineHeight: 16,
+    marginTop: 2,
+  },
   safe: {
     flex: 1,
     backgroundColor: colors.bg.primary,
