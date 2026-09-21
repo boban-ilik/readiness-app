@@ -74,6 +74,11 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 export default function CoachChatScreen({ embedded = false }: { embedded?: boolean } = {}) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // As a pushed route the screen owns the bottom edge and pads the composer
+  // above the home indicator. Inside the tab the tab bar already covers that
+  // inset, so doing it again left a band of empty space under the composer.
+  const safeEdges: Array<'top' | 'bottom'> = embedded ? ['top'] : ['top', 'bottom'];
+  const composerBottom = embedded ? spacing[3] : Math.max(insets.bottom, spacing[3]);
   const { readiness, isLoading: isHealthLoading, error: healthError, rhrBaseline, hrvBaseline } = useHealthData();
   const [session, setSession] = useState<CoachSessionContext | null>(() => getCoachSession());
   const [isContextLoading, setIsContextLoading] = useState(() => !getCoachSession());
@@ -185,7 +190,7 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
 
   if (isContextLoading || isHealthLoading) {
     return (
-      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.screen} edges={safeEdges}>
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>Loading your coach</Text>
           <Text style={styles.emptyBody}>Pulling in today&apos;s readiness and training context.</Text>
@@ -196,7 +201,7 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
 
   if (!session) {
     return (
-      <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.screen} edges={safeEdges}>
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>{healthError ? 'Your coach is waiting for a score' : 'No score context yet'}</Text>
           <Text style={styles.emptyBody}>
@@ -211,7 +216,7 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
   }
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.screen} edges={safeEdges}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -284,7 +289,7 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
           {error && <Text style={styles.errorText}>{error}</Text>}
         </ScrollView>
 
-        <View style={[styles.composerWrap, { paddingBottom: Math.max(insets.bottom, spacing[3]) }]}>
+        <View style={[styles.composerWrap, { paddingBottom: composerBottom }]}>
           <View style={styles.composer}>
             <TextInput
               value={input}
