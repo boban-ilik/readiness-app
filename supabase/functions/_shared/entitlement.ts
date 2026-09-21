@@ -76,11 +76,16 @@ async function revenueCatIsPro(userId: string): Promise<boolean | null> {
   const timer = setTimeout(() => controller.abort(), RC_TIMEOUT_MS);
   try {
     const res = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(userId)}`, {
-      headers: { Authorization: `Bearer ${key}`, 'X-Platform': 'ios' },
+      // No X-Platform header: it marks the request as coming from an SDK, and
+      // RevenueCat refuses secret keys from apps (403, code 7243).
+      headers: { Authorization: `Bearer ${key}` },
       signal:  controller.signal,
     });
     if (!res.ok) {
-      console.warn(`[entitlement] RevenueCat ${res.status} for subscriber lookup`);
+      // RevenueCat's error body names the cause (wrong key type, missing
+      // permission, unknown project). It never contains the key itself.
+      const reason = (await res.text().catch(() => '')).slice(0, 300);
+      console.warn(`[entitlement] RevenueCat ${res.status} for subscriber lookup: ${reason}`);
       return null;
     }
     const data = await res.json();
