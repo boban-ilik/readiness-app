@@ -153,8 +153,8 @@ function BriefingFeedbackRow({ date }: { date: string }) {
       <View style={styles.feedbackRow}>
         <Text style={styles.feedbackThanks}>
           {rating === 'helpful'
-            ? '👍 Glad it helped — keep the feedback coming'
-            : "👎 Got it — I'll be more specific next time"}
+            ? '👍 Glad it helped, keep the feedback coming'
+            : "👎 Got it, I'll be more specific next time"}
         </Text>
       </View>
     );

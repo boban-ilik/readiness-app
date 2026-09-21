@@ -135,9 +135,9 @@ function buildContextNote(
 
   if (hrSuppression) {
     if (tier === 'peak') {
-      return `Yesterday's intense ${sportLabel} session is suppressing today's HRV — this is a sign your body is adapting. Prioritise sleep and protein today.`;
+      return `Yesterday's intense ${sportLabel} session is suppressing today's HRV. This is a sign your body is adapting. Prioritise sleep and protein today.`;
     }
-    return `Yesterday's ${sportLabel} load may be contributing to today's lower HRV. Normal adaptation — check in tomorrow.`;
+    return `Yesterday's ${sportLabel} load may be contributing to today's lower HRV. Normal adaptation, check in tomorrow.`;
   }
   if (tier === 'heavy') {
     return `Heavy ${sportLabel} session yesterday. If you feel sluggish today, your body is allocating resources to repair.`;
@@ -145,7 +145,7 @@ function buildContextNote(
   if (tier === 'moderate') {
     return `Moderate ${sportLabel} session yesterday. You should be recovered or close to it.`;
   }
-  return `Light ${sportLabel} activity yesterday — minimal impact on today's readiness.`;
+  return `Light ${sportLabel} activity yesterday, minimal impact on today's readiness.`;
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────

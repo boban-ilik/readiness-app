@@ -431,7 +431,7 @@ export default function PaywallScreen() {
           <Text style={styles.crown}>♛</Text>
           <Text style={styles.heroTitle}>Readiness Pro</Text>
           <Text style={styles.heroSub}>
-            Train smarter every day — guided by your body.
+            Train smarter every day, guided by your body.
           </Text>
         </View>
 
@@ -478,7 +478,7 @@ export default function PaywallScreen() {
               <Text style={styles.priceMain}>{selectedPkg.priceLabel}</Text>
               {cycle === 'annual' && (
                 <Text style={styles.priceNote}>
-                  Just {selectedPkg.perMonth}/mo — {selectedPkg.total}
+                  Just {selectedPkg.perMonth}/mo, {selectedPkg.total}
                 </Text>
               )}
             </View>

@@ -217,7 +217,7 @@ function assessDataQuality(data: HealthData): DataQuality {
     } else if (!hasSleep) {
       warningMessage = 'Heart rate is tracked. Wear your watch to bed to add sleep, the largest part of your score.';
     } else if (!hasHRV) {
-      warningMessage = 'Add your overnight HRV to sharpen this score — it\'s the strongest recovery signal we read. Tap to enter it.';
+      warningMessage = 'Add your overnight HRV to sharpen this score. It\'s the strongest recovery signal we read. Tap to enter it.';
     }
   }
 

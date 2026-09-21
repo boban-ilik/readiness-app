@@ -125,7 +125,7 @@ function StepWelcome({
         <Text style={styles.appName}>Readiness</Text>
         <Text style={styles.tagline}>Know before you go.</Text>
         <Text style={styles.welcomeBody}>
-          Your daily readiness score — built from heart rate, sleep, and recovery data synced from your wearable to Apple Health.
+          Your daily readiness score, built from heart rate, sleep, and recovery data synced from your wearable to Apple Health.
         </Text>
 
         {/* Name input */}
@@ -182,7 +182,7 @@ const SCORE_COMPONENTS = [
     label:  'Stress',
     weight: '15%',
     color:  colors.warning,
-    desc:   'Overnight autonomic stress load — high stress blunts recovery even with great sleep.',
+    desc:   'Overnight autonomic stress load. High stress blunts recovery even with great sleep.',
   },
 ] as const;
 
@@ -248,7 +248,7 @@ function StepDevice({
     <View style={styles.stepContent}>
       <Text style={styles.stepTitle}>What do you train with?</Text>
       <Text style={styles.stepSubtitle}>
-        Readiness syncs all data through Apple Health — no direct device connection needed.
+        Readiness syncs all data through Apple Health, no direct device connection needed.
       </Text>
 
       {/* 2×1 grid: first two side-by-side, third centered below */}
@@ -522,7 +522,7 @@ function StepPermissions({
     >
       <Text style={styles.stepTitle}>Connect Apple Health</Text>
       <Text style={styles.stepSubtitle}>
-        Readiness reads three types of data to calculate your score — nothing else.
+        Readiness reads three types of data to calculate your score, nothing else.
       </Text>
 
       <View style={styles.permList}>
@@ -703,7 +703,7 @@ function StepSetup({
           done={s.baselineDone}
         />
         <SetupItem
-          label="All set — loading your score"
+          label="All set, loading your score"
           done={s.allDone}
         />
       </View>

@@ -219,7 +219,7 @@ const DIGEST_COPY: Record<string, Array<{ title: string; body: string }>> = {
       body:  'Your recovery is fully loaded. Check your score and see what the coach recommends.',
     },
     {
-      title: 'Your body is ready — are you? 💪',
+      title: 'Your body is ready. Are you? 💪',
       body:  'Everything is pointing up this morning. Tap to see your readiness score.',
     },
   ],
@@ -244,7 +244,7 @@ const DIGEST_COPY: Record<string, Array<{ title: string; body: string }>> = {
     },
     {
       title: 'Your readiness score is ready →',
-      body:  "Recovery was partial last night — check your score to see what today's capacity looks like.",
+      body:  "Recovery was partial last night. Check your score to see what today's capacity looks like.",
     },
     {
       title: 'Worth a quick check this morning →',
@@ -261,13 +261,13 @@ const DIGEST_COPY: Record<string, Array<{ title: string; body: string }>> = {
       body:  'Your score suggests a lighter load today. Open the app for your coach\'s recommendation.',
     },
     {
-      title: 'Low score morning — coach has thoughts →',
+      title: 'Low score morning: coach has thoughts →',
       body:  'Something dragged your readiness down. Tap to see what it was and how to respond.',
     },
   ],
   noData: [
     {
-      title: "Good morning — your score is ready →",
+      title: "Good morning, your score is ready →",
       body:  'Tap to see how recovered you are and what kind of day your body is up for.',
     },
     {
@@ -295,10 +295,10 @@ function buildDigestCopy(lastScore: number | null): { title: string; body: strin
 const LOW_SCORE_COPY = [
   {
     title: (s: number) => `Your body needs some care today (${s}) 🫶`,
-    body:  'Readiness is low. Open the app for your recovery protocol — 3 things that actually help.',
+    body:  'Readiness is low. Open the app for your recovery protocol: 3 things that actually help.',
   },
   {
-    title: (s: number) => `Low score today (${s}) — coach has a plan →`,
+    title: (s: number) => `Low score today (${s}): coach has a plan →`,
     body:  "Your body's asking for a lighter day. Tap to see what's dragging the score down.",
   },
   {
@@ -316,7 +316,7 @@ const HRV_DROP_COPY = [
     body: 'Your nervous system is signalling incomplete recovery. A lighter day will pay dividends.',
   },
   {
-    title: (pct: number) => `HRV is down ${pct}% — worth noting →`,
+    title: (pct: number) => `HRV is down ${pct}%, worth noting →`,
     body: 'Lower-than-normal HRV often predicts a lower readiness score. Open the app for guidance.',
   },
   {

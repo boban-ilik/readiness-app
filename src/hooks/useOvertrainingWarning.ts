@@ -144,12 +144,12 @@ function buildActionPlan(
 
   if (riskLevel === 'high') {
     return [
-      'Take 1–2 full rest days now — no structured training until your scores begin recovering.',
+      'Take 1–2 full rest days now. No structured training until your scores begin recovering.',
       hasSleepDebt
         ? 'Sleep is your highest-leverage recovery tool right now. Aim for 8–9 h tonight and move your bedtime earlier for the next 3 nights.'
         : 'Prioritise 8–9 h of sleep tonight. This single variable drives more recovery than any supplement or protocol.',
       hasHRVDrop
-        ? 'If HRV doesn\'t start recovering within 72 h, consider seeing a sports physician — a prolonged drop can signal illness or hormonal disruption.'
+        ? 'If HRV doesn\'t start recovering within 72 h, consider seeing a sports physician. A prolonged drop can signal illness or hormonal disruption.'
         : 'Eat at a slight calorie surplus (protein-rich, 1.6–2 g/kg) to support tissue repair and restock glycogen.',
     ];
   }
@@ -157,11 +157,11 @@ function buildActionPlan(
   if (riskLevel === 'moderate') {
     return [
       hasTrainingLoad
-        ? 'Cut this week\'s training volume by ~30 % — your acute load is well above your chronic baseline.'
+        ? 'Cut this week\'s training volume by ~30 %. Your acute load is well above your chronic baseline.'
         : 'Shift the next 2–3 sessions to Zone 1–2 only (conversational pace, RPE ≤ 4).',
       hasSleepDebt
         ? 'Address sleep debt: go to bed 30–45 min earlier tonight and hold that for the next 3 nights.'
-        : 'Protect sleep — 7.5–8.5 h is the window where most recovery and adaptation occurs.',
+        : 'Protect sleep: 7.5–8.5 h is the window where most recovery and adaptation occurs.',
       'Focus nutrition: high protein, adequate carbohydrates after sessions, and consistent hydration throughout the day.',
     ];
   }
@@ -170,7 +170,7 @@ function buildActionPlan(
   return [
     'Keep today\'s session easy (RPE ≤ 5). Your body hasn\'t fully absorbed recent training load yet.',
     hasSleepDebt
-      ? 'Prioritise getting to bed on time tonight — even 30 extra minutes consistently helps clear accumulated sleep debt.'
+      ? 'Prioritise getting to bed on time tonight. Even 30 extra minutes consistently helps clear accumulated sleep debt.'
       : 'Monitor how your energy and mood trend over the next 2–3 days before returning to high-intensity work.',
     'Consider an active recovery session (yoga, walking, easy cycling) in place of any hard intervals you had planned.',
   ];

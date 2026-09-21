@@ -165,7 +165,7 @@ export default function LifeEventTagger({ events, onTagged }: Props) {
                     style={styles.notesInput}
                     value={notes}
                     onChangeText={setNotes}
-                    placeholder={`E.g. "${meta?.label}" — anything specific?`}
+                    placeholder={`E.g. "${meta?.label}", anything specific?`}
                     placeholderTextColor={colors.text.tertiary}
                     maxLength={120}
                     multiline

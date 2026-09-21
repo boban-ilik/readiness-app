@@ -231,7 +231,7 @@ export default function ForecastStrip({ forecast }: Props) {
             <View style={styles.summaryHeader}>
               <Text style={styles.summaryEyebrow}>Steady ahead</Text>
               <Text style={styles.summaryTitle}>
-                No standout day — readiness holds near {bestDay.score}
+                No standout day, readiness holds near {bestDay.score}
               </Text>
             </View>
             <Text style={styles.summaryBody}>

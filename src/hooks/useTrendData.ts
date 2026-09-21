@@ -98,17 +98,17 @@ function buildInsight(
   weakLink:  'recovery' | 'sleep' | 'stress' | null,
 ): string {
   if (direction === 'improving') {
-    if (delta >= 15) return 'Big jump this week — your body is responding well. Great time for a quality session.';
+    if (delta >= 15) return 'Big jump this week. Your body is responding well. Great time for a quality session.';
     return 'Recovery trending up this week. Build on the momentum with a solid training block.';
   }
   if (direction === 'declining') {
     if (weakLink === 'sleep') return 'Sleep quality has been pulling scores down. Prioritise an early night before any hard session.';
     if (weakLink === 'recovery') return 'Heart rate variability and resting heart rate are dipping. Consider a recovery-focused day.';
     if (weakLink === 'stress') return 'Stress signals are elevated this week. Dial back intensity and focus on recovery.';
-    return '3-day dip in readiness — consider keeping this week lighter than planned.';
+    return '3-day dip in readiness: consider keeping this week lighter than planned.';
   }
   // stable
-  return 'Readiness is consistent this week — solid base to build on. Keep the rhythm going.';
+  return 'Readiness is consistent this week. Solid base to build on. Keep the rhythm going.';
 }
 
 function deriveWeakLink(

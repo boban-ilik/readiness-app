@@ -106,7 +106,7 @@ function buildRecoveryDetail(h: HealthData | null, baseline: number): string | u
     const manualTag = h.hrvSource === 'manual' ? ' (manual)' : '';
     parts.push(`HRV ${h.hrv}ms${manualTag}`);
   } else {
-    parts.push('HRV —');
+    parts.push('HRV not recorded');
   }
   if (h.restingHeartRate !== null) {
     const delta = h.restingHeartRate - baseline;
@@ -324,7 +324,7 @@ export default function HomeScreen() {
       });
       await Share.share({
         url:     uri,
-        message: `My readiness score today: ${currentScore}/100 — ${getScoreLabel(currentScore)} 💪`,
+        message: `My readiness score today: ${currentScore}/100, ${getScoreLabel(currentScore)} 💪`,
       });
     } catch (err) {
       // User cancelled the share sheet — not an error worth alerting on

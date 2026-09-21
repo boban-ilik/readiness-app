@@ -940,7 +940,7 @@ export default function HistoryScreen() {
           <View style={styles.dayList}>
             <Text style={styles.sectionTitle}>DAILY LOG</Text>
             <Text style={styles.scoreBasis}>
-              Scores based on sleep + resting heart rate · coloured bars show recovery / sleep / stress
+              Scores based on HRV, sleep and resting heart rate · coloured bars show recovery / sleep / stress
             </Text>
             {[...history].reverse().map(day => (
               <DayRow key={day.date} day={day} isToday={day.date === todayStr} />
@@ -991,7 +991,7 @@ export default function HistoryScreen() {
           <View style={styles.dayList}>
             <Text style={styles.sectionTitle}>DAILY LOG</Text>
             <Text style={styles.scoreBasis}>
-              Scores based on sleep + resting heart rate · coloured bars show recovery / sleep / stress
+              Scores based on HRV, sleep and resting heart rate · coloured bars show recovery / sleep / stress
             </Text>
             {[...history].reverse().map(day => (
               <DayRow key={day.date} day={day} isToday={day.date === todayStr} />

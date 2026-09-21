@@ -98,7 +98,7 @@ function detectConsecutiveHRVDrop(rows: SupabaseScoreRow[]): PatternInsight | nu
   return {
     type:     'consecutive_hrv_drop',
     severity: totalDrop >= 12 ? 'alert' : 'warning',
-    message:  `HRV has dropped for 3 consecutive days — down ${totalDrop} ms over 72 hours (${hrvValues[0]} → ${hrvValues[2]} ms). This pattern historically precedes illness or overreaching; treat it as a strong signal to reduce intensity and prioritise sleep.`,
+    message:  `HRV has dropped for 3 consecutive days, down ${totalDrop} ms over 72 hours (${hrvValues[0]} → ${hrvValues[2]} ms). This pattern historically precedes illness or overreaching; treat it as a strong signal to reduce intensity and prioritise sleep.`,
   };
 }
 
@@ -115,7 +115,7 @@ function detectConsecutiveScoreDecline(rows: SupabaseScoreRow[]): PatternInsight
   return {
     type:     'consecutive_score_decline',
     severity: totalDrop >= 20 ? 'alert' : 'warning',
-    message:  `Overall readiness has declined for 3 consecutive days (${scores[0]} → ${scores[2]}, down ${totalDrop} points). Accumulated fatigue is building — this is not a day to push hard.`,
+    message:  `Overall readiness has declined for 3 consecutive days (${scores[0]} → ${scores[2]}, down ${totalDrop} points). Accumulated fatigue is building. This is not a day to push hard.`,
   };
 }
 
@@ -132,7 +132,7 @@ function detectHRVImprovingTrend(rows: SupabaseScoreRow[]): PatternInsight | nul
   return {
     type:     'hrv_improving',
     severity: 'info',
-    message:  `HRV has climbed for 3 consecutive days (up ${totalGain} ms — ${hrvValues[0]} → ${hrvValues[2]} ms). The body is adapting positively; this is a good window for quality training if overall readiness supports it.`,
+    message:  `HRV has climbed for 3 consecutive days (up ${totalGain} ms, ${hrvValues[0]} → ${hrvValues[2]} ms). The body is adapting positively; this is a good window for quality training if overall readiness supports it.`,
   };
 }
 
@@ -157,7 +157,7 @@ function detectSleepDebt(rows: SupabaseScoreRow[]): PatternInsight | null {
   return {
     type:     'sleep_debt',
     severity: debtMin >= 60 ? 'alert' : 'warning',
-    message:  `Sleep debt is accumulating — averaging ${debtHours} h less per night than your 2-week baseline over the past 5 days. Chronic sleep restriction suppresses HRV and immune function even when the user feels fine.`,
+    message:  `Sleep debt is accumulating, averaging ${debtHours} h less per night than your 2-week baseline over the past 5 days. Chronic sleep restriction suppresses HRV and immune function even when the user feels fine.`,
   };
 }
 
@@ -174,7 +174,7 @@ function detectStressAccumulation(rows: SupabaseScoreRow[]): PatternInsight | nu
   return {
     type:     'stress_accumulation',
     severity: 'warning',
-    message:  `Stress component has deteriorated for 4 consecutive days (${stressScores[0]} → ${stressScores[3]}, down ${drop} points). Sustained autonomic stress is reducing recovery capacity — prioritise stress management techniques today.`,
+    message:  `Stress component has deteriorated for 4 consecutive days (${stressScores[0]} → ${stressScores[3]}, down ${drop} points). Sustained autonomic stress is reducing recovery capacity. Prioritise stress management techniques today.`,
   };
 }
 
@@ -206,7 +206,7 @@ function detectPersistentLow(rows: SupabaseScoreRow[]): PatternInsight | null {
   return {
     type:     'persistent_low',
     severity: 'alert',
-    message:  `7-day average readiness score is ${Math.round(weekAvg)}/100 — well below healthy baseline. Sustained scores this low are consistent with overtraining syndrome or an underlying illness. A full rest or deload week is likely overdue.`,
+    message:  `7-day average readiness score is ${Math.round(weekAvg)}/100, well below healthy baseline. Sustained scores this low are consistent with overtraining syndrome or an underlying illness. A full rest or deload week is likely overdue.`,
   };
 }
 

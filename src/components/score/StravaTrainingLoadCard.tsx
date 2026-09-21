@@ -414,7 +414,7 @@ export default function StravaTrainingLoadCard({ activities, isPro }: Props) {
         /* Free tier — teaser */
         <View style={styles.proTeaser}>
           <Text style={styles.proTeaserText}>
-            🔒  A:C ratio, coaching insights & sport breakdown — Pro
+            🔒  Pro: A:C ratio, coaching insights & sport breakdown
           </Text>
         </View>
       )}

@@ -541,7 +541,7 @@ export default function ProfileScreen() {
   const nativeNotReadyAlert = () => {
     const msg = IS_EXPO_GO
       ? 'expo-image-picker isn\'t available in Expo Go for this SDK version.\n\nRun a native build instead:\n  npx expo run:ios'
-      : 'The native ImagePicker module isn\'t registered in the running binary — the build is stale.\n\nRun a full clean rebuild:\n  cd ios && pod install && cd ..\n  npx expo run:ios --no-build-cache\n\nOr in Xcode: Product → Clean Build Folder (⇧⌘K) then run.';
+      : 'The native ImagePicker module isn\'t registered in the running binary. The build is stale.\n\nRun a full clean rebuild:\n  cd ios && pod install && cd ..\n  npx expo run:ios --no-build-cache\n\nOr in Xcode: Product → Clean Build Folder (⇧⌘K) then run.';
     Alert.alert('Photo picker unavailable', msg, [{ text: 'OK' }]);
   };
 
@@ -725,7 +725,7 @@ export default function ProfileScreen() {
       : `Android ${Platform.Version}`;
     const uid = user?.id?.slice(0, 8) ?? '—';
 
-    const subject = encodeURIComponent(`Bug Report — Readiness v${version}`);
+    const subject = encodeURIComponent(`Bug Report: Readiness v${version}`);
     const body    = encodeURIComponent(
       `App version: ${version}\nPlatform: ${platform}\nUser ID (partial): ${uid}\n\n` +
       `--- Describe the bug ---\n\n` +
@@ -1093,7 +1093,7 @@ export default function ProfileScreen() {
         {/* ── Notifications — Pro feature ─────────────────────────────────── */}
         <ProGate
           feature="Custom Thresholds & Notifications"
-          description="Set a score target and get a morning digest — so your phone tells you how hard to push today."
+          description="Set a score target and get a morning digest, so your phone tells you how hard to push today."
           style={styles.proGateBlock}
         >
           <NotificationsContent />

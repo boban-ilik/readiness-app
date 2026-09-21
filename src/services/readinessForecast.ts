@@ -148,70 +148,70 @@ function trendDir(diff: number): TrendDir {
 const NO_SIGNAL: Record<ScoreZone, Record<TrendDir, [string, string, string]>> = {
   peak: {
     up:   [
-      'Form building into peak territory — ideal for threshold or race-pace work',
-      'Readiness climbing — press the advantage with your hardest session of the week',
-      'Sustained high form ahead — plan your priority session for day 3',
+      'Form building into peak territory: ideal for threshold or race-pace work',
+      'Readiness climbing: press the advantage with your hardest session of the week',
+      'Sustained high form ahead: plan your priority session for day 3',
     ],
     flat: [
-      'Peak readiness maintained — load can stay high; quality over volume today',
-      'Top-form plateau — optimal window for a second quality session this week',
-      'Consistent peak form — strong week still ahead, keep the rhythm going',
+      'Peak readiness maintained: load can stay high, quality over volume today',
+      'Top-form plateau: optimal window for a second quality session this week',
+      'Consistent peak form: strong week still ahead, keep the rhythm going',
     ],
     down: [
-      'Small dip from peak — still well in the green; hard effort is fine',
-      'Normal post-quality regression — body cycling through adaptation',
-      'Gradual tapering from peak — recovery will consolidate gains; stay patient',
+      'Small dip from peak, still well in the green; hard effort is fine',
+      'Normal post-quality regression, body cycling through adaptation',
+      'Gradual tapering from peak: recovery will consolidate gains, stay patient',
     ],
   },
   good: {
     up:   [
-      'Readiness building — solid conditions for a quality session today',
-      'Trajectory pointing up — progressive overload will pay dividends now',
-      'Form climbing toward prime range — plan your biggest session for day 3',
+      'Readiness building: solid conditions for a quality session today',
+      'Trajectory pointing up: progressive overload will pay dividends now',
+      'Form climbing toward prime range: plan your biggest session for day 3',
     ],
     flat: [
-      'Solid, stable readiness — execute your planned session without adjustments',
-      'Good-form plateau — maintain current training load; no need to change course',
-      'Consistent good readiness — week is on track; add volume before intensity',
+      'Solid, stable readiness: execute your planned session without adjustments',
+      'Good-form plateau: maintain current training load, no need to change course',
+      'Consistent good readiness: week is on track, add volume before intensity',
     ],
     down: [
-      'Slight softening from good base — scale intensity back 10–15% today',
-      'Readiness easing — stick to aerobic base work; avoid intensity spikes',
-      'Continued softening — protect sleep and dial back session volume slightly',
+      'Slight softening from good base: scale intensity back 10–15% today',
+      'Readiness easing: stick to aerobic base work, avoid intensity spikes',
+      'Continued softening: protect sleep and dial back session volume slightly',
     ],
   },
   moderate: {
     up:   [
-      'Moderate but improving — favour shorter quality work over long volume today',
-      'Readiness trending up — build load carefully; body is responding',
-      'Recovery building — by day 3 you should be ready for a proper training block',
+      'Moderate but improving: favour shorter quality work over long volume today',
+      'Readiness trending up: build load carefully, body is responding',
+      'Recovery building: by day 3 you should be ready for a proper training block',
     ],
     flat: [
-      'Mid-range plateau — maintenance work only; avoid overreaching right now',
-      'Holding in mid-range — keep sessions at 70–75% of normal intensity',
-      'Stable moderate form — watch for fatigue signals before adding any new load',
+      'Mid-range plateau: maintenance work only, avoid overreaching right now',
+      'Holding in mid-range: keep sessions at 70–75% of normal intensity',
+      'Stable moderate form: watch for fatigue signals before adding any new load',
     ],
     down: [
-      'Continued dip — active recovery or a full rest day will serve you better',
-      'Readiness sliding — protect sleep above all else; push hard sessions back',
-      'Extended moderate-low range — a full deload day is the smart play',
+      'Continued dip: active recovery or a full rest day will serve you better',
+      'Readiness sliding: protect sleep above all else, push hard sessions back',
+      'Extended moderate-low range: a full deload day is the smart play',
     ],
   },
   low: {
     up:   [
-      'Low but turning — light movement only; don\'t rush the recovery process',
-      'Readiness starting to lift — one more easy day before resuming any load',
-      'Recovery taking hold — stay patient; gains come after the rest, not during',
+      'Low but turning: light movement only, don\'t rush the recovery process',
+      'Readiness starting to lift: one more easy day before resuming any load',
+      'Recovery taking hold: stay patient; gains come after the rest, not during',
     ],
     flat: [
-      'Persistent low readiness — rest and nutrition are the training today',
-      'No improvement yet — full rest or very light movement only (walk, stretch)',
-      'Extended low period — sleep, hydration, and zero intensity; body needs time',
+      'Persistent low readiness: rest and nutrition are the training today',
+      'No improvement yet: full rest or very light movement only (walk, stretch)',
+      'Extended low period: sleep, hydration, and zero intensity; body needs time',
     ],
     down: [
-      'Deep fatigue territory — rest is the only high-value option right now',
-      'Compounding fatigue — skip all sessions; the cost of training now is high',
-      'Prolonged low readiness — consider whether illness or overtraining is a factor',
+      'Deep fatigue territory: rest is the only high-value option right now',
+      'Compounding fatigue: skip all sessions, the cost of training now is high',
+      'Prolonged low readiness: consider whether illness or overtraining is a factor',
     ],
   },
 };
@@ -229,82 +229,82 @@ function deriveKeyFactor(
   // ── Training load (dominant near-term driver) ─────────────────────────────
   if (workload?.isHighLoad) {
     return [
-      'DOMS peak — active recovery only; a hard session now deepens fatigue',
-      'Training stress clearing — readiness recovering; easy movement is fine',
-      'Full recovery expected by day 3 — ready to rebuild training load',
+      'DOMS peak: active recovery only, a hard session now deepens fatigue',
+      'Training stress clearing, readiness recovering; easy movement is fine',
+      'Full recovery expected by day 3, ready to rebuild training load',
     ][idx];
   }
   if (workload && workload.dailyLoad > 20 && !workload.isHighLoad) {
     return [
-      `Moderate load yesterday (${workload.dailyLoad}/100) — sub-maximal effort today`,
-      'Training residue easing — readiness recovering toward normal range',
-      'Load cleared — recovery on track; resume normal training intensity',
+      `Moderate load yesterday (${workload.dailyLoad}/100): sub-maximal effort today`,
+      'Training residue easing, readiness recovering toward normal range',
+      'Load cleared, recovery on track; resume normal training intensity',
     ][idx];
   }
 
   // ── Negative patterns ─────────────────────────────────────────────────────
   if (p.has('persistent_low')) {
     return [
-      'Extended low readiness — a full deload week is likely overdue; rest now',
-      'Slow recovery — prioritise 8+ hours of sleep and caloric sufficiency',
-      'Readiness rebuilding gradually — resist the urge to return to full load',
+      'Extended low readiness: a full deload week is likely overdue, rest now',
+      'Slow recovery: prioritise 8+ hours of sleep and caloric sufficiency',
+      'Readiness rebuilding gradually: resist the urge to return to full load',
     ][idx];
   }
 
   if (p.has('consecutive_hrv_drop')) {
     return [
-      'HRV declining 3 days straight — protect sleep tonight, skip all intensity',
-      'HRV recovery in progress — light aerobic activity only, no strength work',
+      'HRV declining 3 days straight: protect sleep tonight, skip all intensity',
+      'HRV recovery in progress: light aerobic activity only, no strength work',
       diff > 0
-        ? 'HRV stabilising — recovery on track; easy sessions are fine now'
-        : 'HRV still catching up — another easy day before resuming load',
+        ? 'HRV stabilising, recovery on track; easy sessions are fine now'
+        : 'HRV still catching up: another easy day before resuming load',
     ][idx];
   }
 
   if (p.has('consecutive_score_decline') && diff < -3) {
     return [
-      'Fatigue compounding for 3 days — a rest day now prevents a longer setback',
-      'Recovery beginning — keep intensity low; aerobic base work only',
+      'Fatigue compounding for 3 days: a rest day now prevents a longer setback',
+      'Recovery beginning: keep intensity low, aerobic base work only',
       diff > 0
-        ? 'Trend reversing — readiness recovering; easy session is fine'
-        : 'Decline continuing — extend the recovery window another day',
+        ? 'Trend reversing, readiness recovering; easy session is fine'
+        : 'Decline continuing: extend the recovery window another day',
     ][idx];
   }
 
   if (p.has('sleep_debt') && diff < 3) {
     return [
-      'Sleep debt compounding — an early night is the single best training tool now',
-      'Sleep recovery takes time — consistent sleep schedule will unlock improvement',
+      'Sleep debt compounding: an early night is the single best training tool now',
+      'Sleep recovery takes time: consistent sleep schedule will unlock improvement',
       diff > 2
-        ? 'Sleep rebounding — readiness will follow; quality session possible day 3'
-        : 'Sleep debt still showing — protect sleep over any training decision',
+        ? 'Sleep rebounding, readiness will follow; quality session possible day 3'
+        : 'Sleep debt still showing: protect sleep over any training decision',
     ][idx];
   }
 
   if (p.has('stress_accumulation') && diff < 4) {
     return [
-      'Stress load carrying forward — today is a recovery window, not a training one',
-      'Autonomic stress easing — body adapting; light aerobic work is fine',
+      'Stress load carrying forward: today is a recovery window, not a training one',
+      'Autonomic stress easing, body adapting; light aerobic work is fine',
       diff > 2
-        ? 'Stress signals clearing — green light to resume moderate training'
-        : 'Stress accumulation ongoing — high intensity still not advised',
+        ? 'Stress signals clearing: green light to resume moderate training'
+        : 'Stress accumulation ongoing, high intensity still not advised',
     ][idx];
   }
 
   // ── Positive patterns ─────────────────────────────────────────────────────
   if (p.has('recovery_rebound') && diff > 3) {
     return [
-      'Recovery rebound underway — excellent window for a quality session today',
-      'Momentum building — training load can increase; body is responding well',
-      'Strong recovery window sustained — green light to push your hardest effort',
+      'Recovery rebound underway: excellent window for a quality session today',
+      'Momentum building: training load can increase, body is responding well',
+      'Strong recovery window sustained: green light to push your hardest effort',
     ][idx];
   }
 
   if (p.has('hrv_improving') && diff > 2) {
     return [
-      'HRV climbing — green light for harder efforts; autonomic system is primed',
-      'HRV trend strong — adaptation in full swing; progressive load recommended',
-      'HRV at a seasonal high — capitalise with your most demanding training day',
+      'HRV climbing: green light for harder efforts, autonomic system is primed',
+      'HRV trend strong, adaptation in full swing; progressive load recommended',
+      'HRV at a seasonal high: capitalise with your most demanding training day',
     ][idx];
   }
 

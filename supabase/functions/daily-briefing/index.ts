@@ -278,7 +278,10 @@ function parseBriefing(raw: string): DailyBriefing {
 // spaced dash into a comma and a bare one into a hyphen so none reaches
 // the screen.
 function stripDashes(text: string): string {
-  return text.replace(/\s*[—–]\s*/g, ', ').replace(/,\s*,/g, ',');
+  return text
+    .replace(/(\d)\s*[—–]\s*(\d)/g, '$1-$2')   // numeric ranges keep a hyphen: 30-40 min
+    .replace(/\s*[—–]\s*/g, ', ')
+    .replace(/,\s*,/g, ',');
 }
 
 serve(async (req: Request) => {
