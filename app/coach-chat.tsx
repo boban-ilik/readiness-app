@@ -234,11 +234,8 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
           ) : (
             <View style={styles.headerButton} />
           )}
-          <View style={styles.headerCopy}>
-            <Text style={styles.title}>Coach chat</Text>
-            <Text style={styles.subtitle}>Grounded in your real readiness, recovery, and training context.</Text>
-          </View>
-          <TouchableOpacity style={styles.headerButton} onPress={handleClear} activeOpacity={0.8}>
+          <Text style={styles.title}>Coach</Text>
+          <TouchableOpacity style={[styles.headerButton, styles.headerButtonRight]} onPress={handleClear} activeOpacity={0.8}>
             <Text style={styles.headerButtonText}>Clear</Text>
           </TouchableOpacity>
         </View>
@@ -323,23 +320,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg.primary,
   },
+  // One compact row: fixed-width buttons either side keep the title centred
+  // whether or not Back is showing.
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing[3],
-    paddingHorizontal: spacing[5],
-    paddingTop: spacing[4],
-    paddingBottom: spacing[3],
+    alignItems: 'center',
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[1],
+    paddingBottom: spacing[2],
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
-  headerCopy: {
-    flex: 1,
-    gap: spacing[1],
-  },
   headerButton: {
+    width: 56,
     paddingVertical: spacing[1.5],
+  },
+  headerButtonRight: {
+    alignItems: 'flex-end',
   },
   headerButtonText: {
     color: colors.amber[400],
@@ -347,19 +344,16 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semiBold,
   },
   title: {
+    flex: 1,
+    textAlign: 'center',
     color: colors.text.primary,
-    fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.bold,
-  },
-  subtitle: {
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
-    lineHeight: 20,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semiBold,
   },
   messages: {
-    paddingHorizontal: spacing[5],
-    paddingTop: spacing[4],
-    gap: spacing[3],
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[3],
+    gap: spacing[2.5],
   },
   bubble: {
     maxWidth: '88%',
@@ -454,8 +448,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     paddingLeft: spacing[4],
     paddingRight: spacing[3],
-    paddingVertical: spacing[2],
-    minHeight: 52,
+    paddingVertical: spacing[1.5],
+    minHeight: 46,
   },
   input: {
     flex: 1,
