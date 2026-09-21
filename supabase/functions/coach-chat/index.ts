@@ -101,17 +101,17 @@ Spelling: British English throughout, matching the rest of the app. Prefer -ise 
 
 Punctuation: never use em dashes or en dashes. Use a comma, a full stop or a colon instead.
 
-You have real-time access to their biometric data, personal profile (age, sex, height, weight, training goal), detected patterns from the past 30 days, and any life events they have tagged (illness, travel, poor sleep, etc.). Use all of this to give specific, personalised answers — not generic advice.
+You have real-time access to their biometric data, personal profile (age, sex, height, weight, training goal), detected patterns from the past 30 days, and any life events they have tagged (illness, travel, poor sleep, etc.). Use all of this to give specific, personalised answers, not generic advice.
 
-Your tone: warm, direct, like a knowledgeable friend who happens to have a sports science degree. Address the user by name if you know it. No excessive caveats. No "I recommend consulting a doctor" on routine questions — they know you're an AI coach.
+Your tone: warm, direct, like a knowledgeable friend who happens to have a sports science degree. Address the user by name if you know it. No excessive caveats. No "I recommend consulting a doctor" on routine questions, they know you're an AI coach.
 
 Rules:
 - Always reference their actual numbers when relevant (e.g. "your HRV is 48ms vs your 62ms baseline")
 - Factor in their profile when relevant: a 25-year-old male training 6 days/week for performance needs different advice than a 45-year-old training for general health
-- Keep answers concise — 2-4 sentences unless the question genuinely needs more
+- Keep answers concise: 2-4 sentences unless the question genuinely needs more
 - If the question is outside health/recovery/training, politely redirect to what you can help with
 - Be honest: if something looks concerning, say so clearly but kindly
-- Never diagnose conditions — but you can say "this pattern looks like overtraining" or "this drop is consistent with poor sleep recovery"`;
+- Never diagnose conditions, but you can say "this pattern looks like overtraining" or "this drop is consistent with poor sleep recovery"`;
 
 function freqLabel(f: UserProfile['trainingFrequency']): string {
   if (f === 'light')    return '2–3 days/week';
@@ -160,7 +160,7 @@ function buildContext(input: CoachChatInput): string {
 
   lines.push(
     `Current readiness: ${score}/100 (${scoreLabel})`,
-    `Components — Recovery: ${components.recovery} | Sleep: ${components.sleep} | Stress: ${components.stress}`,
+    `Components: Recovery ${components.recovery} | Sleep: ${components.sleep} | Stress: ${components.stress}`,
     '',
     'Biometrics:',
   );
@@ -182,9 +182,9 @@ function buildContext(input: CoachChatInput): string {
 
   if (workload && workload.workouts.length > 0) {
     lines.push('');
-    lines.push(`Yesterday's training (load: ${workload.dailyLoad}/100${workload.isHighLoad ? ' — HIGH' : ''}):`);
+    lines.push(`Yesterday's training (load: ${workload.dailyLoad}/100${workload.isHighLoad ? ', HIGH' : ''}):`);
     for (const w of workload.workouts) {
-      lines.push(`  • ${w.type} — ${w.durationMins}min (${w.intensityTier})`);
+      lines.push(`  • ${w.type}, ${w.durationMins}min (${w.intensityTier})`);
     }
   }
 
@@ -201,7 +201,7 @@ function buildContext(input: CoachChatInput): string {
     lines.push('');
     lines.push('Recent life events tagged by the user:');
     for (const e of lifeEvents) {
-      const noteStr = e.notes ? ` — "${e.notes}"` : '';
+      const noteStr = e.notes ? `: "${e.notes}"` : '';
       lines.push(`  • ${e.date}: ${e.event_type}${noteStr}`);
     }
   }
@@ -211,6 +211,13 @@ function buildContext(input: CoachChatInput): string {
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
+
+// The prompt forbids dashes, but the model still slips them in. Turn a
+// spaced dash into a comma and a bare one into a hyphen so none reaches
+// the screen.
+function stripDashes(text: string): string {
+  return text.replace(/\s*[—–]\s*/g, ', ').replace(/,\s*,/g, ',');
+}
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -266,7 +273,7 @@ serve(async (req: Request) => {
     const contextBlock = buildContext(input);
     const messages: ChatMessage[] = [
       { role: 'user',      content: `Here is my current health context:\n\n${contextBlock}` },
-      { role: 'assistant', content: "Got it — I have your data loaded. What would you like to know?" },
+      { role: 'assistant', content: "Got it, I have your data loaded. What would you like to know?" },
       // Inject up to last 6 history turns for continuity
       ...input.history.slice(-6),
       // New question
@@ -295,7 +302,7 @@ serve(async (req: Request) => {
     }
 
     const data  = await claudeRes.json();
-    const answer = data.content?.[0]?.text?.trim() ?? '';
+    const answer = stripDashes(data.content?.[0]?.text?.trim() ?? '');
 
     return new Response(JSON.stringify({ answer }), {
       status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },

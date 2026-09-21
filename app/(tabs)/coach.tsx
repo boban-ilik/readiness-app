@@ -23,7 +23,7 @@ export default function CoachTab() {
   // start a HealthKit fetch and a coach-context build for a user who may be
   // about to see the upgrade panel instead.
   if (isLoading || !identityReady) return <View style={styles.screen} />;
-  if (isPro) return <CoachChatScreen />;
+  if (isPro) return <CoachChatScreen embedded />;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>

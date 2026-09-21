@@ -274,6 +274,13 @@ function parseBriefing(raw: string): DailyBriefing {
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
 
+// The prompt forbids dashes, but the model still slips them in. Turn a
+// spaced dash into a comma and a bare one into a hyphen so none reaches
+// the screen.
+function stripDashes(text: string): string {
+  return text.replace(/\s*[—–]\s*/g, ', ').replace(/,\s*,/g, ',');
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS });
@@ -339,7 +346,7 @@ serve(async (req: Request) => {
     }
 
     const claudeData = await claudeRes.json();
-    const text: string = claudeData.content?.[0]?.text ?? '';
+    const text: string = stripDashes(claudeData.content?.[0]?.text ?? '');
     const briefing = parseBriefing(text);
 
     return new Response(JSON.stringify(briefing), {

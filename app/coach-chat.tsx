@@ -71,7 +71,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
   );
 }
 
-export default function CoachChatScreen() {
+export default function CoachChatScreen({ embedded = false }: { embedded?: boolean } = {}) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { readiness, isLoading: isHealthLoading, error: healthError, rhrBaseline, hrvBaseline } = useHealthData();
@@ -218,10 +218,11 @@ export default function CoachChatScreen() {
         keyboardVerticalOffset={0}
       >
         <View style={styles.header}>
-          {/* Pushed from the briefing there is somewhere to go back to; opened
-              from the Coach tab there is not, so hide the button rather than
-              hand the user a dead control. */}
-          {router.canGoBack() ? (
+          {/* Pushed from the briefing there is somewhere to go back to; as the
+              Coach tab there is not. canGoBack() is true inside the tab
+              navigator whenever the root stack has any history, so the tab
+              says so explicitly instead. */}
+          {!embedded && router.canGoBack() ? (
             <TouchableOpacity style={styles.headerButton} onPress={() => router.back()} activeOpacity={0.8}>
               <Text style={styles.headerButtonText}>Back</Text>
             </TouchableOpacity>
