@@ -30,6 +30,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSubscription } from '@contexts/SubscriptionContext';
 import { track } from '@services/analytics';
+import { fetchFounderRemaining } from '@services/founder';
 import {
   colors,
   fontSize,
@@ -90,6 +91,26 @@ const FEATURES: Array<{
 const PRIVACY_URL = 'https://thereadiness.app/privacy/';
 // Apple's standard EULA, which apps may use in place of bespoke terms.
 const TERMS_URL   = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+
+// ─── Founder (lifetime) ───────────────────────────────────────────────────────
+// A one-time purchase that unlocks the same "pro" entitlement forever, capped
+// at the first 200 buyers. The cap itself is enforced by removing the product
+// from sale in App Store Connect; the remaining count here is display only.
+const FOUNDER_CAP = 200;
+
+type RcPackageLike = {
+  identifier?:  string;
+  packageType?: string;
+  product?:     { productIdentifier?: string; priceString?: string };
+};
+
+function isFounderPackage(pkg: RcPackageLike): boolean {
+  const productId = (pkg.product?.productIdentifier ?? '').toLowerCase();
+  return pkg.packageType === 'LIFETIME'
+      || pkg.identifier === '$rc_lifetime'
+      || productId.includes('lifetime')
+      || productId.includes('founder');
+}
 
 // ─── Fallback pricing (shown when RevenueCat packages haven't loaded) ─────────
 
@@ -193,6 +214,10 @@ export default function PaywallScreen() {
   // waiting to happen and misprices every non-US storefront.
   const [offerings, setOfferings] = useState<'loading' | 'ready' | 'unavailable'>('loading');
   const rcLoaded = offerings === 'ready';
+  // Founder package from the current offering (null = not offered) and the
+  // places left (null = count unknown).
+  const [founderPkg,       setFounderPkg]       = useState<unknown>(null);
+  const [founderRemaining, setFounderRemaining] = useState<number | null>(null);
 
   // ── Load live packages from RevenueCat ──────────────────────────────────────
   const loadPackages = useCallback(async () => {
@@ -201,6 +226,7 @@ export default function PaywallScreen() {
       return;
     }
     setOfferings('loading');
+    setFounderPkg(null);
       try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const Purchases = (require('react-native-purchases') as { default: import('react-native-purchases').PurchasesStatic }).default;
@@ -223,6 +249,7 @@ export default function PaywallScreen() {
         }
 
         const updated: Record<BillingCycle, DisplayPackage> = { ...MOCK_PACKAGES };
+        let founder: unknown = null;
 
         // RevenueCat can return packages whose StoreKit product failed to
         // resolve, leaving product fields undefined. Log the real shape so a
@@ -247,6 +274,12 @@ export default function PaywallScreen() {
           const productId = pkg.product?.productIdentifier ?? '';
           const price     = pkg.product?.priceString ?? '';
           const pkgId     = pkg.identifier ?? '';
+
+          if (isFounderPackage(pkg)) {
+            // Only offer it when StoreKit resolved a price to show.
+            if (price) founder = pkg;
+            continue;
+          }
 
           const isAnnual   = pkg.packageType === 'ANNUAL'  || pkgId === '$rc_annual'
                           || productId === 'yearly'  || productId.includes('annual') || productId.includes('yearly');
@@ -276,6 +309,7 @@ export default function PaywallScreen() {
         }
 
         setPackages(updated);
+        setFounderPkg(founder);
         // A package whose StoreKit product failed to resolve carries no price;
         // treat "no sellable package" the same as "store unreachable".
         const sellable = !!updated.annual.rcPackage || !!updated.monthly.rcPackage;
@@ -296,6 +330,11 @@ export default function PaywallScreen() {
 
   useEffect(() => { loadPackages(); }, [loadPackages]);
   useEffect(() => { track('paywall_shown'); }, []);
+  useEffect(() => {
+    let cancelled = false;
+    fetchFounderRemaining().then(n => { if (!cancelled) setFounderRemaining(n); });
+    return () => { cancelled = true; };
+  }, []);
 
   const selectedPkg = packages[cycle];
 
@@ -363,6 +402,39 @@ export default function PaywallScreen() {
       setBusy(false);
     }
   }
+
+  // ── Founder (lifetime) purchase ─────────────────────────────────────────────
+  async function handleFounder() {
+    if (busy || !founderPkg) return;
+    setBusy(true);
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Purchases = (require('react-native-purchases') as { default: import('react-native-purchases').PurchasesStatic }).default;
+
+      const { customerInfo } = await Purchases.purchasePackage(
+        founderPkg as Parameters<typeof Purchases.purchasePackage>[0],
+      );
+
+      if (customerInfo.entitlements.active['pro']) {
+        track('purchase_success', { cycle: 'lifetime' });
+        await refreshEntitlements();
+        router.back();
+      } else {
+        Alert.alert('Purchase Issue', 'Payment completed but Pro entitlement was not activated. Please restore purchases or contact support.');
+      }
+    } catch (e: any) {
+      // User cancelled (errorCode 1): don't show an alert
+      if (e?.code !== '1' && e?.userCancelled !== true) {
+        Alert.alert('Purchase Failed', e?.message ?? 'Something went wrong. Please try again.');
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const showFounder = !!founderPkg && founderRemaining !== 0;
+  const founderPrice = (founderPkg as RcPackageLike | null)?.product?.priceString ?? '';
 
   // ── Restore purchases ───────────────────────────────────────────────────────
   async function handleRestore() {
@@ -525,6 +597,29 @@ export default function PaywallScreen() {
                 ? 'No charge for 14 days · Cancel anytime in App Store'
                 : 'Billed monthly · Cancel anytime in App Store'}
             </Text>
+
+            {/* ── Founder (lifetime) card ── */}
+            {showFounder && (
+              <View style={styles.founderCard}>
+                <View style={styles.founderHeader}>
+                  <Text style={styles.founderTitle}>Founder · lifetime</Text>
+                  <Text style={styles.founderPrice}>{founderPrice} once</Text>
+                </View>
+                <Text style={styles.founderSub}>
+                  {founderRemaining == null
+                    ? `Limited to the first ${FOUNDER_CAP} supporters`
+                    : `Pro forever for the first ${FOUNDER_CAP} supporters · ${founderRemaining} left`}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.founderButton, busy && styles.ctaButtonBusy]}
+                  onPress={handleFounder}
+                  disabled={busy}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.founderButtonText}>Become a Founder</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </>
         )}
 
@@ -795,6 +890,54 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     textAlign: 'center',
     marginBottom: spacing[6],
+  },
+
+  // ── Founder card ────────────────────────────────────────────────────────────
+  founderCard: {
+    backgroundColor: colors.amber[900] + '33',
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.amber[700],
+    padding: spacing[4],
+    gap: spacing[2],
+    marginBottom: spacing[6],
+  },
+  founderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: spacing[2],
+  },
+  founderTitle: {
+    color: colors.amber[400],
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+    flexShrink: 1,
+  },
+  founderPrice: {
+    color: colors.text.primary,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semiBold,
+  },
+  founderSub: {
+    color: colors.text.secondary,
+    fontSize: fontSize.sm,
+    lineHeight: fontSize.sm * 1.5,
+  },
+  founderButton: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.amber[400],
+    paddingVertical: spacing[3],
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+    marginTop: spacing[1],
+  },
+  founderButtonText: {
+    color: colors.amber[400],
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
   },
 
   // ── Footer ──────────────────────────────────────────────────────────────────

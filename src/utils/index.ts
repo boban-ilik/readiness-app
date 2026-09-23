@@ -77,8 +77,9 @@ export function computeMedian(values: number[]): number {
 export function computeRHRBaseline(
   samples: number[],
   populationDefault = 60,
+  minSamples = 7,
 ): number {
-  if (samples.length < 7) return populationDefault; // not enough data yet
+  if (samples.length < minSamples) return populationDefault; // not enough data yet
 
   // Sort ascending, take the lower 80% to exclude illness/hard-effort spikes
   const sorted = [...samples].sort((a, b) => a - b);
@@ -100,8 +101,9 @@ export function computeRHRBaseline(
 export function computeHRVBaseline(
   samples: number[],
   populationDefault = 55,
+  minSamples = 7,
 ): number {
-  if (samples.length < 7) return populationDefault; // not enough data yet
+  if (samples.length < minSamples) return populationDefault; // not enough data yet
 
   // Sort ascending, skip the bottom 20% (low-HRV sick/stress outliers)
   const sorted = [...samples].sort((a, b) => a - b);

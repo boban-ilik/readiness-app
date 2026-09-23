@@ -34,13 +34,11 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { localDateStr } from '@utils/index';
+import { mergePeriodStarts } from '@utils/cyclePhase';
+import { fetchPeriodStartsFromHealth, requestMenstrualPermission } from '@services/menstrualImport';
 
-export type CyclePhase =
-  | 'menstrual'
-  | 'follicular'
-  | 'ovulatory'
-  | 'luteal'
-  | 'late_luteal';
+import { phaseForDay, type CyclePhase } from '@utils/cyclePhase';
+export { phaseForDay, type CyclePhase };
 
 export interface CycleSettings {
   enabled:          boolean;
@@ -181,22 +179,7 @@ export function computeCycleState(
 
   const cycleProgress = dayOfCycle / settings.cycleLengthDays;
 
-  // Phase boundaries
-  const { periodLengthDays, cycleLengthDays } = settings;
-  const lateLutealStart = cycleLengthDays - 5;  // last ~6 days = late luteal / PMS window
-
-  let phase: CyclePhase;
-  if (dayOfCycle <= periodLengthDays) {
-    phase = 'menstrual';
-  } else if (dayOfCycle <= 13) {
-    phase = 'follicular';
-  } else if (dayOfCycle <= 16) {
-    phase = 'ovulatory';
-  } else if (dayOfCycle >= lateLutealStart) {
-    phase = 'late_luteal';
-  } else {
-    phase = 'luteal';
-  }
+  const phase = phaseForDay(dayOfCycle, settings.cycleLengthDays, settings.periodLengthDays);
 
   return { phase, dayOfCycle, daysUntilNext, nextPeriodDate, cycleProgress };
 }
@@ -241,6 +224,74 @@ export function nextPeriodLabel(daysUntilNext: number): string {
   return `In ${daysUntilNext} days`;
 }
 
+// ─── Period starts: manual log plus Apple Health ──────────────────────────────
+
+// Apple Health cycle data changes at most daily; read it once per app session
+// every few hours rather than on every screen.
+const HEALTH_STARTS_TTL_MS = 6 * 60 * 60 * 1000;
+let healthStartsCache: { at: number; starts: string[] } | null = null;
+let permissionAsked = false;
+
+async function healthPeriodStarts(): Promise<string[]> {
+  if (healthStartsCache && Date.now() - healthStartsCache.at < HEALTH_STARTS_TTL_MS) {
+    return healthStartsCache.starts;
+  }
+  // Users who turned tracking on before 1.0.3 never saw the cycle permission
+  // sheet. iOS only shows it for undetermined types, so asking once per
+  // session is silent for everyone who has already answered.
+  if (!permissionAsked) {
+    permissionAsked = true;
+    await requestMenstrualPermission().catch(() => false);
+  }
+  const starts = await fetchPeriodStartsFromHealth(200).catch(() => [] as string[]);
+  healthStartsCache = { at: Date.now(), starts };
+  return starts;
+}
+
+/** Drop the cached Apple Health starts, e.g. after the user logs a period. */
+export function invalidateHealthPeriodStarts(): void {
+  healthStartsCache = null;
+}
+
+export interface CycleSnapshot {
+  settings: CycleSettings;
+  /** Manual and Apple Health starts, merged and sorted ascending */
+  starts:   string[];
+  /** How many of the merged starts came only from Apple Health */
+  fromHealth: number;
+}
+
+/**
+ * Cycle settings plus every known period start. Null unless cycle tracking is
+ * on, so no cycle data is read for users who haven't opted in.
+ */
+export async function loadCycleSnapshot(): Promise<CycleSnapshot | null> {
+  try {
+    const pairs = await AsyncStorage.multiGet([
+      CYCLE_ENABLED_KEY, CYCLE_LENGTH_KEY, CYCLE_PERIOD_KEY, CYCLE_ENTRIES_KEY,
+    ]);
+    const get = (key: string) => pairs.find(([k]) => k === key)?.[1] ?? null;
+    if (get(CYCLE_ENABLED_KEY) !== 'true') return null;
+
+    const manual = parseEntries(get(CYCLE_ENTRIES_KEY));
+    const health = await healthPeriodStarts();
+    const starts = mergePeriodStarts(manual, health);
+    const manualSet = new Set(mergePeriodStarts(manual));
+
+    return {
+      settings: {
+        enabled:          true,
+        cycleLengthDays:  parseInt(get(CYCLE_LENGTH_KEY)  ?? '', 10) || DEFAULT_CYCLE_SETTINGS.cycleLengthDays,
+        periodLengthDays: parseInt(get(CYCLE_PERIOD_KEY) ?? '', 10) || DEFAULT_CYCLE_SETTINGS.periodLengthDays,
+      },
+      starts,
+      fromHealth: starts.filter(d => !manualSet.has(d)).length,
+    };
+  } catch {
+    return null; // cycle data is an enhancement, never a blocker
+  }
+}
+
 // ─── AI context ───────────────────────────────────────────────────────────────
 
 /** Compact phase snapshot sent to the AI briefing and coach. */
@@ -257,31 +308,13 @@ export interface CycleContext {
  * has not opted into sharing with it.
  */
 export async function getCycleContext(): Promise<CycleContext | null> {
-  try {
-    const pairs = await AsyncStorage.multiGet([
-      CYCLE_ENABLED_KEY, CYCLE_LENGTH_KEY, CYCLE_PERIOD_KEY, CYCLE_ENTRIES_KEY,
-    ]);
-    const get = (key: string) => pairs.find(([k]) => k === key)?.[1] ?? null;
-
-    if (get(CYCLE_ENABLED_KEY) !== 'true') return null;
-
-    const entries = parseEntries(get(CYCLE_ENTRIES_KEY));
-    const last    = latestEntry(entries);
-    if (!last) return null;
-
-    const settings: CycleSettings = {
-      enabled:          true,
-      cycleLengthDays:  parseInt(get(CYCLE_LENGTH_KEY)  ?? '', 10) || DEFAULT_CYCLE_SETTINGS.cycleLengthDays,
-      periodLengthDays: parseInt(get(CYCLE_PERIOD_KEY) ?? '', 10) || DEFAULT_CYCLE_SETTINGS.periodLengthDays,
-    };
-
-    const state = computeCycleState(last, settings);
-    return {
-      phase:           state.phase,
-      dayOfCycle:      state.dayOfCycle,
-      cycleLengthDays: settings.cycleLengthDays,
-    };
-  } catch {
-    return null; // cycle context is an enhancement, never a blocker
-  }
+  const snap = await loadCycleSnapshot();
+  const last = snap ? latestEntry(snap.starts) : null;
+  if (!snap || !last) return null;
+  const state = computeCycleState(last, snap.settings);
+  return {
+    phase:           state.phase,
+    dayOfCycle:      state.dayOfCycle,
+    cycleLengthDays: snap.settings.cycleLengthDays,
+  };
 }

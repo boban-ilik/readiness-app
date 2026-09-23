@@ -18,6 +18,7 @@ class ReadinessDataBridge: NSObject {
 
   @objc static func requiresMainQueueSetup() -> Bool { false }
 
+  /// Original method, kept so older JS bundles keep working.
   @objc(writeScore:label:recovery:sleep:stress:)
   func writeScore(
     _ score:  NSNumber,
@@ -26,9 +27,37 @@ class ReadinessDataBridge: NSObject {
     sleep:    NSNumber,
     stress:   NSNumber
   ) {
+    write(score: score, label: label, recovery: recovery, sleep: sleep, stress: stress,
+          trainingHeadline: nil, trainingZone: nil)
+  }
+
+  /// Same as writeScore plus today's training call (zone 0 means rest).
+  @objc(writeScoreWithTraining:label:recovery:sleep:stress:trainingHeadline:trainingZone:)
+  func writeScoreWithTraining(
+    _ score:          NSNumber,
+    label:            NSString,
+    recovery:         NSNumber,
+    sleep:            NSNumber,
+    stress:           NSNumber,
+    trainingHeadline: NSString,
+    trainingZone:     NSNumber
+  ) {
+    write(score: score, label: label, recovery: recovery, sleep: sleep, stress: stress,
+          trainingHeadline: trainingHeadline as String, trainingZone: trainingZone.intValue)
+  }
+
+  private func write(
+    score:            NSNumber,
+    label:            NSString,
+    recovery:         NSNumber,
+    sleep:            NSNumber,
+    stress:           NSNumber,
+    trainingHeadline: String?,
+    trainingZone:     Int?
+  ) {
     guard let defaults = UserDefaults(suiteName: Self.appGroupID) else { return }
 
-    let payload: [String: Any] = [
+    var payload: [String: Any] = [
       "score":     score.intValue,
       "label":     label as String,
       "recovery":  recovery.intValue,
@@ -36,6 +65,8 @@ class ReadinessDataBridge: NSObject {
       "stress":    stress.intValue,
       "updatedAt": Date().timeIntervalSince1970,
     ]
+    if let trainingHeadline { payload["trainingHeadline"] = trainingHeadline }
+    if let trainingZone     { payload["trainingZone"]     = trainingZone }
 
     guard let json = try? JSONSerialization.data(withJSONObject: payload) else { return }
     defaults.set(json, forKey: Self.storageKey)

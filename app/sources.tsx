@@ -64,6 +64,23 @@ const SECTIONS: Section[] = [
     ],
   },
   {
+    heading: 'Heart rate variability across the menstrual cycle',
+    claim:
+      'With cycle tracking on, Readiness compares your heart rate variability and resting heart rate with the same phase of your earlier cycles. Studies of naturally cycling women find heart rate variability tends to fall and resting heart rate tends to rise from the follicular phase into the late luteal phase. The size of that change differs between people, which is why the app learns yours rather than applying a fixed correction.',
+    sources: [
+      {
+        title: 'A Systematic Review and Meta-Analysis of Within-Person Changes in Cardiac Vagal Activity across the Menstrual Cycle',
+        where: 'Journal of Clinical Medicine, 2019',
+        url:   'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6912442/',
+      },
+      {
+        title: 'Patterns of endogenous and exogenous ovarian hormone modulation on recovery metrics across the menstrual cycle',
+        where: 'BMJ Open Sport & Exercise Medicine, 2021',
+        url:   'https://pmc.ncbi.nlm.nih.gov/articles/PMC8291316/',
+      },
+    ],
+  },
+  {
     heading: 'Alcohol and overnight recovery',
     claim:
       'Readiness suggests skipping alcohol on low days because drinking raises your overnight heart rate and leaves you less recovered. Note that the study below found sleep structure itself stayed stable, so we do not claim alcohol destroys your deep sleep.',

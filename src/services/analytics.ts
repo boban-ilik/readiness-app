@@ -25,7 +25,8 @@ export type AnalyticsEvent =
   | 'purchase_success'
   | 'restore_success'
   | 'calibration_report_shown'
-  | 'calibration_keep_pro';
+  | 'calibration_keep_pro'
+  | 'score_math_opened';
 
 type Props = Record<string, string | number | boolean | null>;
 

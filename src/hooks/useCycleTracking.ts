@@ -6,7 +6,7 @@
  *
  * Returns:
  *   settings     — { enabled, cycleLengthDays, periodLengthDays }
- *   entries      — sorted ISO date strings of logged period starts
+ *   entries      — period starts logged here plus read from Apple Health, merged
  *   cycleState   — current phase, day of cycle, days until next period
  *   isLoading    — true while AsyncStorage is being read
  *   logToday     — log today as a period start
@@ -25,15 +25,22 @@ import {
   latestEntry,
   logPeriodStart,
   parseEntries,
+  invalidateHealthPeriodStarts,
+  loadCycleSnapshot,
   type CycleSettings,
   type CycleState,
 } from '@services/cycleTracking';
+import { mergePeriodStarts } from '@utils/cyclePhase';
+import { requestMenstrualPermission } from '@services/menstrualImport';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface CycleTrackingReturn {
   settings:       CycleSettings;
+  /** Every known period start: logged here plus read from Apple Health, merged */
   entries:        string[];
+  /** How many of `entries` came only from Apple Health */
+  fromHealth:     number;
   /** Current cycle state, or null when no period has been logged yet. */
   cycleState:     CycleState | null;
   isLoading:      boolean;
@@ -47,7 +54,8 @@ export interface CycleTrackingReturn {
 
 export function useCycleTracking(): CycleTrackingReturn {
   const [settings,  setSettings]  = useState<CycleSettings>(DEFAULT_CYCLE_SETTINGS);
-  const [entries,   setEntries]   = useState<string[]>([]);
+  const [entries,   setEntries]   = useState<string[]>([]);   // logged in this app
+  const [healthStarts, setHealthStarts] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // ── Load from storage ──────────────────────────────────────────────────────
@@ -70,8 +78,26 @@ export function useCycleTracking(): CycleTrackingReturn {
     })();
   }, []);
 
+  // ── Apple Health period starts (only while tracking is on) ─────────────────
+  const loadHealthStarts = useCallback(async () => {
+    const snap = await loadCycleSnapshot();
+    if (!snap) { setHealthStarts([]); return; }
+    // The snapshot is already manual + Health merged; merging it again with
+    // `entries` below is harmless and lets a period logged in the app show
+    // immediately without another Health read.
+    setHealthStarts(snap.starts);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading && settings.enabled) loadHealthStarts();
+  }, [isLoading, settings.enabled, loadHealthStarts]);
+
+  const allStarts  = mergePeriodStarts(entries, healthStarts);
+  const manualSet  = new Set(mergePeriodStarts(entries));
+  const fromHealth = allStarts.filter(d => !manualSet.has(d)).length;
+
   // ── Derived cycle state ────────────────────────────────────────────────────
-  const latest     = latestEntry(entries);
+  const latest     = latestEntry(allStarts);
   const cycleState = latest ? computeCycleState(latest, settings) : null;
 
   // ── Log today ──────────────────────────────────────────────────────────────
@@ -84,13 +110,21 @@ export function useCycleTracking(): CycleTrackingReturn {
   // ── Update settings ────────────────────────────────────────────────────────
   const updateSettings = useCallback(async (updates: Partial<CycleSettings>) => {
     const next = { ...settings, ...updates };
+    const turningOn = next.enabled && !settings.enabled;
     setSettings(next);
     await AsyncStorage.multiSet([
       [CYCLE_ENABLED_KEY, next.enabled          ? 'true' : 'false'],
       [CYCLE_LENGTH_KEY,  String(next.cycleLengthDays)],
       [CYCLE_PERIOD_KEY,  String(next.periodLengthDays)],
     ]);
-  }, [settings]);
+    if (turningOn) {
+      // Ask for Apple Health cycle access at the moment the user opts in,
+      // not at launch, so nobody who doesn't track a cycle sees the prompt.
+      await requestMenstrualPermission();
+      invalidateHealthPeriodStarts();
+      await loadHealthStarts();
+    }
+  }, [settings, loadHealthStarts]);
 
-  return { settings, entries, cycleState, isLoading, logToday, updateSettings };
+  return { settings, entries: allStarts, fromHealth, cycleState, isLoading, logToday, updateSettings };
 }

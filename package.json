@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "lint": "eslint . --ext .ts,.tsx",
     "type-check": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "postinstall": "patch-package"
   },
   "jest": {
     "preset": "jest-expo",
@@ -64,6 +65,7 @@
     "eslint-config-expo": "^7.0.0",
     "jest": "^29.7.0",
     "jest-expo": "~51.0.4",
+    "patch-package": "^8.0.1",
     "typescript": "^5.3.3"
   },
   "private": true

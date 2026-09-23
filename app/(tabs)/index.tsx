@@ -4,6 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { captureRef } from 'react-native-view-shot';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useScoreSnapshot } from '@hooks/useScoreSnapshot';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ScoreRing from '@components/score/ScoreRing';
 import ScoreBreakdownCard from '@components/score/ScoreBreakdownCard';
@@ -60,7 +61,7 @@ function getGreeting(): string {
   return 'Good evening';
 }
 
-function InsufficientDataCard({ onRefresh }: { onRefresh: () => void }) {
+function InsufficientDataCard({ onRefresh, onEnterHRV }: { onRefresh: () => void; onEnterHRV: () => void }) {
   return (
     <View style={styles.insufficientCard}>
       <Text style={styles.insufficientEyebrow}>WAITING FOR YOUR FIRST SYNC</Text>
@@ -68,9 +69,16 @@ function InsufficientDataCard({ onRefresh }: { onRefresh: () => void }) {
       <Text style={styles.noDataBody}>
         Wear your watch overnight and sync sleep or heart-rate data. Your readiness score and training recommendation will appear as soon as we have a usable signal.
       </Text>
-      <TouchableOpacity style={styles.refreshDataButton} onPress={onRefresh} activeOpacity={0.8}>
-        <Text style={styles.refreshDataButtonText}>Check again</Text>
-      </TouchableOpacity>
+      <View style={styles.insufficientActions}>
+        <TouchableOpacity style={styles.refreshDataButton} onPress={onRefresh} activeOpacity={0.8}>
+          <Text style={styles.refreshDataButtonText}>Check again</Text>
+        </TouchableOpacity>
+        {/* A watch that never writes HRV to Apple Health (or a phone with no
+            watch yet) could never get past this card before 1.0.3. */}
+        <TouchableOpacity style={styles.refreshDataButton} onPress={onEnterHRV} activeOpacity={0.8}>
+          <Text style={styles.refreshDataButtonText}>Enter HRV yourself</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -192,6 +200,7 @@ function buildSleepDetail(h: HealthData | null): string | undefined {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const scoreSnapshot = useScoreSnapshot();
   const { readiness, isLoading, isRefreshing, error, refresh, rhrBaseline, hrvBaseline, setManualHRV } = useHealthData();
   const { isPro, isTrialActive, presentPaywall } = useSubscription();
   const calibration = useCalibrationStatus();
@@ -558,6 +567,20 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
+        {/* The open score model: every number the score used, free for all. */}
+        {hasUsableScore && (
+          <TouchableOpacity
+            style={styles.mathLink}
+            onPress={() => { track('score_math_opened', { cycleAdjusted: scoreSnapshot?.uncorrectedScore != null }); router.push('/score-math'); }}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+          >
+            <Text style={styles.mathLinkText}>
+              How today's score was calculated{scoreSnapshot?.uncorrectedScore != null ? ' · cycle-adjusted' : ''} ›
+            </Text>
+          </TouchableOpacity>
+        )}
+
         {/* Today's recommendation — the answer to "what do I do today?", so it
             sits directly under the score and is free: users act on the score
             before deciding whether they need the deeper Pro analysis. */}
@@ -642,7 +665,7 @@ export default function HomeScreen() {
 
         {/* Honest empty state — never show a fabricated numeric score. */}
         {!isLoading && !error && (hasInsufficientData || score === 0) && (
-          <InsufficientDataCard onRefresh={refresh} />
+          <InsufficientDataCard onRefresh={refresh} onEnterHRV={handleEnterManualHRV} />
         )}
 
         {/* Calibration week banner — shown for first 7 days after onboarding */}
@@ -885,6 +908,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing[8],
+  },
+  mathLink: {
+    alignSelf: 'center',
+    marginTop: -spacing[5],
+    marginBottom: spacing[6],
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[3],
+  },
+  mathLinkText: {
+    color: colors.amber[400],
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+  insufficientActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[2],
   },
   scoreOverlay: {
     position: 'absolute',

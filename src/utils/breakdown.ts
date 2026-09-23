@@ -164,7 +164,7 @@ function buildRecovery(
   if (rhr != null || hrv != null) {
     const signalCount  = (rhr != null ? 1 : 0) + (hrv != null ? 1 : 0);
     const goodSignals  = (rhr != null && (rhr - rhrBaseline) <= 2 ? 1 : 0)
-                       + (hrv != null && (hrv - 55) >= -5 ? 1 : 0);
+                       + (hrv != null && (hrv - hrvBaseline) >= -5 ? 1 : 0);
     const sub = signalCount === 2
       ? goodSignals === 2
         ? 'Both heart rate variability and resting heart rate are pointing in a positive direction'

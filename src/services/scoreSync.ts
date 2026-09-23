@@ -29,6 +29,18 @@ export interface SupabaseScoreRow {
   sleep_efficiency: number | null;
 }
 
+// ─── Saved-score notifications ────────────────────────────────────────────────
+// Cards that read readiness_scores (Weekly Trend) mount as soon as a score is
+// on screen, which is before the background upsert of today's row lands.
+// They subscribe here and re-read once the row is actually saved.
+
+const savedListeners = new Set<(date: string) => void>();
+
+export function onScoreSaved(listener: (date: string) => void): () => void {
+  savedListeners.add(listener);
+  return () => { savedListeners.delete(listener); };
+}
+
 // ─── Write ────────────────────────────────────────────────────────────────────
 
 /**
@@ -62,6 +74,7 @@ export async function upsertTodayScore(
     .upsert(row, { onConflict: 'user_id,date' });
 
   if (error) throw new Error(`scoreSync upsert failed: ${error.message}`);
+  savedListeners.forEach(l => { try { l(healthData.date); } catch { /* a listener must not break the save */ } });
 }
 
 // ─── Read ─────────────────────────────────────────────────────────────────────

@@ -16,4 +16,12 @@ RCT_EXTERN_METHOD(writeScore:(nonnull NSNumber *)score
                   sleep:(nonnull NSNumber *)sleep
                   stress:(nonnull NSNumber *)stress)
 
+RCT_EXTERN_METHOD(writeScoreWithTraining:(nonnull NSNumber *)score
+                  label:(nonnull NSString *)label
+                  recovery:(nonnull NSNumber *)recovery
+                  sleep:(nonnull NSNumber *)sleep
+                  stress:(nonnull NSNumber *)stress
+                  trainingHeadline:(nonnull NSString *)trainingHeadline
+                  trainingZone:(nonnull NSNumber *)trainingZone)
+
 @end

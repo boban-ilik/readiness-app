@@ -83,6 +83,7 @@ const USER_SCOPED_KEYS = [
 
   // Trend insight cache (30 min TTL) — narrates the previous user's week
   '@readiness/trend_v1',
+  '@readiness/phase_baseline_v1',
 ];
 
 /**

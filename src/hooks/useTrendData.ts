@@ -24,6 +24,7 @@
 
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { onScoreSaved } from '@services/scoreSync';
 import { supabase } from '@services/supabase';
 import { localDateStr } from '@utils/index';
 
@@ -178,8 +179,8 @@ export function useTrendData(): UseTrendDataReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [error,     setError]     = useState<string | null>(null);
 
-  const load = async (forceRefresh = false) => {
-    setIsLoading(true);
+  const load = async (forceRefresh = false, silent = false) => {
+    if (!silent) setIsLoading(true);
     setError(null);
 
     try {
@@ -212,6 +213,12 @@ export function useTrendData(): UseTrendDataReturn {
   };
 
   useEffect(() => { load(); }, []);
+
+  // Today's row is saved in the background after the score appears. Re-read
+  // (bypassing the 30-minute cache) whenever a save lands, so the card never
+  // keeps a week that is missing today. Pull-to-refresh re-saves, so it
+  // refreshes the card too.
+  useEffect(() => onScoreSaved(() => { load(true, true); }), []);
 
   return {
     trend,

@@ -12,6 +12,7 @@
 
 import { Platform } from 'react-native';
 import { summariseTodayHRV, dailyOvernightHRV, OVERNIGHT_START_HOUR, type HRVSample } from '@utils/hrvSamples';
+import { summariseSleepSamples, type SleepSummary } from '@utils/sleepSamples';
 import type { HealthData } from '@/types/index';
 
 // react-native-health is only available on iOS native builds.
@@ -293,12 +294,7 @@ export function fetchRHRByDay(days: number): Promise<Record<string, number>> {
   });
 }
 
-export interface SleepDay {
-  duration:   number;  // total asleep minutes
-  deep:       number;  // deep sleep minutes
-  rem:        number;  // REM minutes
-  efficiency: number;  // 0–100
-}
+export type SleepDay = SleepSummary;
 
 /**
  * Returns sleep summaries for the last N nights, keyed by wake-up date (YYYY-MM-DD).
@@ -331,41 +327,8 @@ export function fetchSleepByDay(days: number): Promise<Record<string, SleepDay>>
 
         const result: Record<string, SleepDay> = {};
         for (const [date, daySamples] of Object.entries(groups)) {
-          // Guard against Garmin double-counting: it writes both a generic ASLEEP
-          // sample AND CORE/DEEP/REM stage samples for the same period. Only count
-          // the generic sample when no stage-specific data is present.
-          const hasStages = daySamples.some(s =>
-            ['CORE', 'DEEP', 'REM', 'ASLEEP_CORE', 'ASLEEP_DEEP', 'ASLEEP_REM'].includes(s.value),
-          );
-
-          let asleepMin = 0, deepMin = 0, remMin = 0, inBedMin = 0;
-          for (const s of daySamples) {
-            const mins = (new Date(s.endDate).getTime() - new Date(s.startDate).getTime()) / 60000;
-            switch (s.value) {
-              case 'INBED':
-                inBedMin  += mins; break;
-              case 'ASLEEP':
-              case 'ASLEEP_UNSPECIFIED':
-                if (!hasStages) asleepMin += mins; break;  // skip if finer stages exist
-              case 'ASLEEP_CORE':
-              case 'CORE':
-                asleepMin += mins; break;
-              case 'ASLEEP_DEEP':
-              case 'DEEP':
-                deepMin   += mins; asleepMin += mins; break;
-              case 'ASLEEP_REM':
-              case 'REM':
-                remMin    += mins; asleepMin += mins; break;
-            }
-          }
-          if (asleepMin >= 60) { // at least 1 h — filter sensor noise
-            result[date] = {
-              duration:   Math.round(asleepMin),
-              deep:       Math.round(deepMin),
-              rem:        Math.round(remMin),
-              efficiency: inBedMin > 0 ? Math.round((asleepMin / inBedMin) * 100) : 85,
-            };
-          }
+          const summary = summariseSleepSamples(daySamples, 60); // at least 1 h, filters sensor noise
+          if (summary) result[date] = summary;
         }
         resolve(result);
       },
@@ -690,13 +653,6 @@ export function fetchYesterdayWorkouts(): Promise<RawWorkout[]> {
   });
 }
 
-interface SleepSummary {
-  duration:   number;  // total asleep minutes
-  deep:       number;  // deep sleep minutes
-  rem:        number;  // REM minutes
-  efficiency: number;  // 0–100
-}
-
 function fetchSleepData(startDate: string, endDate: string): Promise<SleepSummary | null> {
   return new Promise((resolve) => {
     AppleHealthKit.getSleepSamples({ startDate, endDate }, (err: any, results: any[]) => {
@@ -754,56 +710,9 @@ function fetchSleepData(startDate: string, endDate: string): Promise<SleepSummar
         console.log(`  ${v}: ${d.count} samples, ${Math.round(d.mins)}min`),
       );
 
-      // ── Sum stages — skip generic ASLEEP when stage-specific data exists ─────
-      // Garmin writes both a generic ASLEEP and CORE/DEEP/REM for the same time,
-      // so we only count the generic sample when no specific stages are present.
-      const hasStages = session.some(s =>
-        ['CORE', 'DEEP', 'REM', 'ASLEEP_CORE', 'ASLEEP_DEEP', 'ASLEEP_REM'].includes(s.value),
-      );
-
-      let asleepMin = 0, deepMin = 0, remMin = 0, inBedMin = 0;
-
-      session.forEach((s: any) => {
-        const mins = (new Date(s.endDate).getTime() - new Date(s.startDate).getTime()) / 60000;
-        switch (s.value) {
-          case 'INBED':
-            inBedMin += mins;
-            break;
-          case 'ASLEEP':
-          case 'ASLEEP_UNSPECIFIED':
-            // Only count if no finer-grained stages exist — avoids double-counting
-            if (!hasStages) asleepMin += mins;
-            break;
-          case 'ASLEEP_CORE':
-          case 'CORE':
-            asleepMin += mins;
-            break;
-          case 'ASLEEP_DEEP':
-          case 'DEEP':
-            deepMin   += mins;
-            asleepMin += mins;
-            break;
-          case 'ASLEEP_REM':
-          case 'REM':
-            remMin    += mins;
-            asleepMin += mins;
-            break;
-          // 'AWAKE' / 'ASLEEP_AWAKE' during sleep intentionally ignored
-        }
-      });
-
-      console.log(`[Readiness] Sleep parsed → total:${Math.round(asleepMin)}min deep:${Math.round(deepMin)}min rem:${Math.round(remMin)}min inBed:${Math.round(inBedMin)}min`);
-
-      if (asleepMin === 0) return resolve(null);
-
-      resolve({
-        duration:   Math.round(asleepMin),
-        deep:       Math.round(deepMin),
-        rem:        Math.round(remMin),
-        efficiency: inBedMin > 0
-          ? Math.round((asleepMin / inBedMin) * 100)
-          : 85,
-      });
+      const summary = summariseSleepSamples(session);
+      console.log(`[Readiness] Sleep parsed → total:${summary?.duration ?? 0}min deep:${summary?.deep ?? 'n/a'} rem:${summary?.rem ?? 'n/a'} eff:${summary?.efficiency ?? 'n/a'}`);
+      resolve(summary);
     });
   });
 }

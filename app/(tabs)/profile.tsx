@@ -1035,7 +1035,7 @@ export default function ProfileScreen() {
             <SettingsCard>
               <ToggleRow
                 label="Track menstrual cycle"
-                sublabel="Contextualise HRV and RHR changes across your cycle"
+                sublabel="Reads period dates from Apple Health and adjusts your score by phase"
                 value={cycle.settings.enabled}
                 onValueChange={(v) => cycle.updateSettings({ enabled: v })}
                 topBorder={false}
@@ -1064,7 +1064,9 @@ export default function ProfileScreen() {
                   />
                   <RowBase
                     label="Log period start"
-                    sublabel="Mark today as day 1 of your cycle"
+                    sublabel={cycle.entries.length > 0
+                      ? `${cycle.entries.length} period${cycle.entries.length === 1 ? '' : 's'} known${cycle.fromHealth > 0 ? `, ${cycle.fromHealth} from Apple Health` : ''}. Tap to mark today as day 1.`
+                      : 'Mark today as day 1 of your cycle'}
                     topBorder
                     right={
                       <TouchableOpacity
@@ -1085,7 +1087,7 @@ export default function ProfileScreen() {
               )}
             </SettingsCard>
             <Text style={styles.sectionHint}>
-              🔒 Your period dates stay on this device. While tracking is on, your current cycle phase (not the dates) is sent with briefing and coach requests so the AI reads your numbers in context. Turn tracking off to stop that.
+              🔒 Your period dates stay on this device. Readiness reads them from Apple Health if you allow it, and from anything you log here. After two complete cycles, your score compares today with the same phase of your earlier cycles instead of the whole month. While tracking is on, your current cycle phase (not the dates) is sent with briefing and coach requests so the AI reads your numbers in context. Turn tracking off to stop both.
             </Text>
           </>
         )}
