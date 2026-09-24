@@ -979,7 +979,7 @@ export default function ProfileScreen() {
             max={100}
             sublabel={age === null ? 'Optional · tap + to set' : undefined}
             onDecrement={() => { if (age !== null) saveAge(age - 1); }}
-            onIncrement={() => saveAge(age ?? 30)}
+            onIncrement={() => saveAge(age === null ? 30 : age + 1)}
             topBorder={false}
           />
           <SelectRow
@@ -995,7 +995,7 @@ export default function ProfileScreen() {
             max={250}
             sublabel={height === null ? 'Optional · tap + to set' : undefined}
             onDecrement={() => { if (height !== null) saveHeight(height - 1); }}
-            onIncrement={() => saveHeight(height ?? 175)}
+            onIncrement={() => saveHeight(height === null ? 175 : height + 1)}
           />
           <StepperRow
             label="Weight"
@@ -1005,7 +1005,7 @@ export default function ProfileScreen() {
             max={250}
             sublabel={weight === null ? 'Optional · tap + to set' : undefined}
             onDecrement={() => { if (weight !== null) saveWeight(weight - 1); }}
-            onIncrement={() => saveWeight(weight ?? 75)}
+            onIncrement={() => saveWeight(weight === null ? 75 : weight + 1)}
           />
         </SettingsCard>
 
