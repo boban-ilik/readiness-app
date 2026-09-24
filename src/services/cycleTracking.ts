@@ -16,9 +16,12 @@
  *   Late luteal (last 6d)  PMS window — sleep disruption, mood shifts common
  *
  * ── Privacy ───────────────────────────────────────────────────────────────────
- * All cycle data is stored exclusively in AsyncStorage (on-device only).
- * Nothing is synced to any server. Data is cleared when the user signs out
- * or uninstalls the app.
+ * Period dates and settings live only in AsyncStorage; nothing is written to
+ * Supabase. The one thing that leaves the device is the derived context from
+ * getCycleContext() (phase, day of cycle, cycle length), which the briefing
+ * and coach services attach to their Anthropic requests while tracking is on.
+ * The privacy policy and the in-app cycle copy both disclose exactly that.
+ * Data is cleared when the user signs out or uninstalls the app.
  *
  * ── Storage ───────────────────────────────────────────────────────────────────
  *   @readiness/cycle_enabled           'true' | 'false'
@@ -29,12 +32,13 @@
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type CyclePhase =
-  | 'menstrual'
-  | 'follicular'
-  | 'ovulatory'
-  | 'luteal'
-  | 'late_luteal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { localDateStr } from '@utils/index';
+import { mergePeriodStarts } from '@utils/cyclePhase';
+import { fetchPeriodStartsFromHealth, requestMenstrualPermission } from '@services/menstrualImport';
+
+import { phaseForDay, type CyclePhase } from '@utils/cyclePhase';
+export { phaseForDay, type CyclePhase };
 
 export interface CycleSettings {
   enabled:          boolean;
@@ -91,17 +95,17 @@ const PHASE_INFO: Record<CyclePhase, PhaseInfo> = {
     emoji:         '🌑',
     color:         '#F87171',
     colorDim:      'rgba(248,113,113,0.15)',
-    readinessNote: 'Menstrual phase — some fatigue is normal. Your score may read slightly lower, and that\'s expected.',
+    readinessNote: 'Menstrual phase: some fatigue is normal. Your score may read slightly lower, and that\'s expected.',
     metricsNote:   'HRV can dip and RHR may be slightly elevated during menstruation. Both are temporary and return to baseline after your period.',
     trainingAdvice: 'Listen to your body. Light movement, swimming, or yoga often feel best. If symptoms are mild, easy cardio is fine.',
-    phaseDesc:     'Estrogen and progesterone are at their lowest. Your body is resetting — rest is productive.',
+    phaseDesc:     'Estrogen and progesterone are at their lowest. Your body is resetting. Rest is productive.',
   },
   follicular: {
     name:          'Follicular',
     emoji:         '🌱',
     color:         '#34D399',
     colorDim:      'rgba(52,211,153,0.15)',
-    readinessNote: 'Follicular phase — estrogen is rising. This is often your best energy and recovery window.',
+    readinessNote: 'Follicular phase: estrogen is rising. This is often your best energy and recovery window.',
     metricsNote:   'HRV tends to be higher and RHR lower in the follicular phase. Your scores may trend upward naturally.',
     trainingAdvice: 'Great time to build intensity. Your body handles stress and recovers well now. Good window for strength work and hard sessions.',
     phaseDesc:     'Estrogen is rising, energy lifts, and your body is highly responsive to training.',
@@ -111,7 +115,7 @@ const PHASE_INFO: Record<CyclePhase, PhaseInfo> = {
     emoji:         '✨',
     color:         '#FBBF24',
     colorDim:      'rgba(251,191,36,0.15)',
-    readinessNote: 'Ovulatory phase — this is your peak performance window. Strength and endurance are at their best.',
+    readinessNote: 'Ovulatory phase: this is your peak performance window. Strength and endurance are at their best.',
     metricsNote:   'HRV is typically at its highest point in the cycle. Your body is primed for output.',
     trainingAdvice: 'Optimal window for PR attempts, hard intervals, or competition. High pain tolerance and coordination peak here.',
     phaseDesc:     'LH surge drives ovulation. Strength, coordination, and pain tolerance peak for a brief window.',
@@ -121,9 +125,9 @@ const PHASE_INFO: Record<CyclePhase, PhaseInfo> = {
     emoji:         '🌕',
     color:         '#A78BFA',
     colorDim:      'rgba(167,139,250,0.15)',
-    readinessNote: 'Luteal phase — slightly lower HRV and elevated RHR are completely normal now. Don\'t be alarmed by a lower score.',
+    readinessNote: 'Luteal phase: slightly lower HRV and elevated RHR are completely normal now. Don\'t be alarmed by a lower score.',
     metricsNote:   'Progesterone raises body temperature slightly, which elevates RHR by 2–3 bpm and reduces HRV. This is normal hormonal physiology, not a sign of poor health.',
-    trainingAdvice: 'Moderate training works well. Maintain your routine but avoid pushing for personal records — save those for the follicular phase.',
+    trainingAdvice: 'Moderate training works well. Maintain your routine but avoid pushing for personal records. Save those for the follicular phase.',
     phaseDesc:     'Progesterone is dominant, slightly raising resting heart rate and body temperature.',
   },
   late_luteal: {
@@ -131,9 +135,9 @@ const PHASE_INFO: Record<CyclePhase, PhaseInfo> = {
     emoji:         '🌖',
     color:         '#C084FC',
     colorDim:      'rgba(192,132,252,0.15)',
-    readinessNote: 'Late luteal phase — PMS symptoms may affect sleep and energy. Your score may dip; this is expected and temporary.',
+    readinessNote: 'Late luteal phase: PMS symptoms may affect sleep and energy. Your score may dip; this is expected and temporary.',
     metricsNote:   'Sleep disruption is most common now. If your HRV is low and sleep score is down, hormonal shifts are likely contributing.',
-    trainingAdvice: 'Prioritise recovery — light cardio, mobility, yoga. Save harder sessions for after your period. Extra sleep pays off here.',
+    trainingAdvice: 'Prioritise recovery: light cardio, mobility, yoga. Save harder sessions for after your period. Extra sleep pays off here.',
     phaseDesc:     'Progesterone peaks then drops. PMS symptoms peak here before the cycle resets.',
   },
 };
@@ -152,7 +156,11 @@ export function computeCycleState(
   lastPeriodStart: string,    // ISO date string
   settings: CycleSettings,
 ): CycleState {
-  const start  = new Date(lastPeriodStart);
+  // Entries are stored as local "YYYY-MM-DD". `new Date('YYYY-MM-DD')` would
+  // parse that as UTC midnight, which is still the previous evening in the
+  // Americas, so build the date from its parts instead.
+  const [sy, sm, sd] = lastPeriodStart.slice(0, 10).split('-').map(Number);
+  const start  = new Date(sy, sm - 1, sd);
   const today  = new Date();
 
   // Strip time — work with calendar days only
@@ -171,22 +179,7 @@ export function computeCycleState(
 
   const cycleProgress = dayOfCycle / settings.cycleLengthDays;
 
-  // Phase boundaries
-  const { periodLengthDays, cycleLengthDays } = settings;
-  const lateLutealStart = cycleLengthDays - 5;  // last ~6 days = late luteal / PMS window
-
-  let phase: CyclePhase;
-  if (dayOfCycle <= periodLengthDays) {
-    phase = 'menstrual';
-  } else if (dayOfCycle <= 13) {
-    phase = 'follicular';
-  } else if (dayOfCycle <= 16) {
-    phase = 'ovulatory';
-  } else if (dayOfCycle >= lateLutealStart) {
-    phase = 'late_luteal';
-  } else {
-    phase = 'luteal';
-  }
+  const phase = phaseForDay(dayOfCycle, settings.cycleLengthDays, settings.periodLengthDays);
 
   return { phase, dayOfCycle, daysUntilNext, nextPeriodDate, cycleProgress };
 }
@@ -213,7 +206,7 @@ export function latestEntry(entries: string[]): string | null {
 
 /** Add today as a new period start. Returns updated entries array. */
 export function logPeriodStart(entries: string[]): string[] {
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr();
   const filtered = entries.filter(e => e !== today);
   return [...filtered, today].sort();
 }
@@ -229,4 +222,99 @@ export function nextPeriodLabel(daysUntilNext: number): string {
   if (daysUntilNext <= 7)  return `In ${daysUntilNext} days`;
   if (daysUntilNext <= 14) return `In ${Math.round(daysUntilNext / 7)} week`;
   return `In ${daysUntilNext} days`;
+}
+
+// ─── Period starts: manual log plus Apple Health ──────────────────────────────
+
+// Apple Health cycle data changes at most daily; read it once per app session
+// every few hours rather than on every screen.
+const HEALTH_STARTS_TTL_MS = 6 * 60 * 60 * 1000;
+let healthStartsCache: { at: number; starts: string[] } | null = null;
+let permissionAsked = false;
+
+async function healthPeriodStarts(): Promise<string[]> {
+  if (healthStartsCache && Date.now() - healthStartsCache.at < HEALTH_STARTS_TTL_MS) {
+    return healthStartsCache.starts;
+  }
+  // Users who turned tracking on before 1.0.3 never saw the cycle permission
+  // sheet. iOS only shows it for undetermined types, so asking once per
+  // session is silent for everyone who has already answered.
+  if (!permissionAsked) {
+    permissionAsked = true;
+    await requestMenstrualPermission().catch(() => false);
+  }
+  const starts = await fetchPeriodStartsFromHealth(200).catch(() => [] as string[]);
+  healthStartsCache = { at: Date.now(), starts };
+  return starts;
+}
+
+/** Drop the cached Apple Health starts, e.g. after the user logs a period. */
+export function invalidateHealthPeriodStarts(): void {
+  healthStartsCache = null;
+}
+
+export interface CycleSnapshot {
+  settings: CycleSettings;
+  /** Manual and Apple Health starts, merged and sorted ascending */
+  starts:   string[];
+  /** How many of the merged starts came only from Apple Health */
+  fromHealth: number;
+}
+
+/**
+ * Cycle settings plus every known period start. Null unless cycle tracking is
+ * on, so no cycle data is read for users who haven't opted in.
+ */
+export async function loadCycleSnapshot(): Promise<CycleSnapshot | null> {
+  try {
+    const pairs = await AsyncStorage.multiGet([
+      CYCLE_ENABLED_KEY, CYCLE_LENGTH_KEY, CYCLE_PERIOD_KEY, CYCLE_ENTRIES_KEY,
+    ]);
+    const get = (key: string) => pairs.find(([k]) => k === key)?.[1] ?? null;
+    if (get(CYCLE_ENABLED_KEY) !== 'true') return null;
+
+    const manual = parseEntries(get(CYCLE_ENTRIES_KEY));
+    const health = await healthPeriodStarts();
+    const starts = mergePeriodStarts(manual, health);
+    const manualSet = new Set(mergePeriodStarts(manual));
+
+    return {
+      settings: {
+        enabled:          true,
+        cycleLengthDays:  parseInt(get(CYCLE_LENGTH_KEY)  ?? '', 10) || DEFAULT_CYCLE_SETTINGS.cycleLengthDays,
+        periodLengthDays: parseInt(get(CYCLE_PERIOD_KEY) ?? '', 10) || DEFAULT_CYCLE_SETTINGS.periodLengthDays,
+      },
+      starts,
+      fromHealth: starts.filter(d => !manualSet.has(d)).length,
+    };
+  } catch {
+    return null; // cycle data is an enhancement, never a blocker
+  }
+}
+
+// ─── AI context ───────────────────────────────────────────────────────────────
+
+/** Compact phase snapshot sent to the AI briefing and coach. */
+export interface CycleContext {
+  phase:           CyclePhase;
+  dayOfCycle:      number;
+  cycleLengthDays: number;
+}
+
+/**
+ * Load the current cycle context directly from storage, for services that run
+ * outside React. Returns null unless the user has enabled cycle tracking and
+ * logged at least one period start, so the AI never sees cycle data the user
+ * has not opted into sharing with it.
+ */
+export async function getCycleContext(): Promise<CycleContext | null> {
+  const snap = await loadCycleSnapshot();
+  const last = snap ? latestEntry(snap.starts) : null;
+  if (!snap || !last) return null;
+  const state = computeCycleState(last, snap.settings);
+  return {
+    phase:           state.phase,
+    dayOfCycle:      state.dayOfCycle,
+    cycleLengthDays: snap.settings.cycleLengthDays,
+  };
 }

@@ -1,0 +1,360 @@
+{
+  "approval_mode": "guided",
+  "archetype": {
+    "recommended": null,
+    "selected": null
+  },
+  "artifacts": {
+    "article.md": {
+      "bytes": 17044,
+      "sha256": "bf1a548f4f0c8f185e83697750e97e7a38a530814645337279d5d74c10924a44",
+      "status": "completed"
+    },
+    "brief.md": {
+      "bytes": 12372,
+      "sha256": "29ac42e6e6ca3aff29c9c8120f1fd93176086bcefce2ad9d67e15cb78179ef06",
+      "status": "completed"
+    },
+    "draft.md": {
+      "bytes": 18195,
+      "sha256": "31cfa230fe65dd5309a0ccd1f3f623947b866fc3e6336f9f90638f00dc58f88b",
+      "status": "completed"
+    },
+    "qa.md": {
+      "bytes": 3962,
+      "sha256": "d3bcd8cae84478aa2dbce11111811c3c28cf57ff827f22b878906d9ef2bd160d",
+      "status": "completed"
+    },
+    "research.md": {
+      "bytes": 67494,
+      "sha256": "5899bc47d86d17b142348cc1a9f7fee1bf55bbf73391262dc53141f06f3f12af",
+      "status": "completed"
+    },
+    "run.json": {
+      "status": "completed"
+    }
+  },
+  "checkpoints": {
+    "archetype": true,
+    "brief": true
+  },
+  "competitor_benchmark": {
+    "competitor_sha256": "fb227ff040d35b9a656e127093b56b886f915a427f38ade7a9e511a67b4b6d7a",
+    "evidence_ref": "research.md#serp-and-competitor-benchmark",
+    "ranking_evidence": {
+      "basis": "observed_serp",
+      "inspected_results": [
+        {
+          "disposition": "selected",
+          "observed_position": 2,
+          "reason": "Highest-ranking external article for the reader task (is my number good, by age, personal baseline); AI Overview source; also #7 for 'hrv by age'.",
+          "url": "https://www.whoop.com/us/en/thelocker/what-is-a-good-hrv/"
+        },
+        {
+          "disposition": "selected",
+          "observed_position": 4,
+          "reason": "Second-highest external article; HRV-analytics specialist with a reference list; normal-range, by-age and by-sex coverage; also #9 for the secondary query.",
+          "url": "https://www.kubios.com/blog/heart-rate-variability-normal-range/"
+        },
+        {
+          "disposition": "selected",
+          "observed_position": 6,
+          "reason": "Third-highest external article; only page with a numeric by-age, by-sex table traced to a primary dataset (Lifelines); #2 and AI Overview source for the secondary query.",
+          "url": "https://www.differenthealth.com/blog/what-is-a-good-hrv"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 7,
+          "reason": "General medical explainer; one sentence of norms (Nunan 2010); no wearable 'is my number good' task.",
+          "url": "https://www.webmd.com/heart/what-is-heart-rate-variability"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 8,
+          "reason": "Training-use page already benchmarked in full in run 2026-08-30; its by-age numbers are uncited and identical to Whoop's.",
+          "url": "https://www.hss.edu/health-library/move-better/heart-rate-variability"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 9,
+          "reason": "Definitional 'what is HRV' page; Oura's by-age member data is on a separate page not on the SERP, used as evidence E17.",
+          "url": "https://ouraring.com/blog/what-is-heart-rate-variability/"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 10,
+          "reason": "Discussion thread, not an article; lived-experience lead only; capture blocked.",
+          "url": "https://www.reddit.com/r/fitbit/comments/1i5bu90/hrv_what_are_peoples_average_scores_just_curious/"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 11,
+          "reason": "Fourth explainer of the same shape; 24-hour ECG norms relabelled as wearable status bands; sample capped at three higher-ranking pages.",
+          "url": "https://www.bodyspec.com/blog/post/what_is_a_good_hrv_status"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 12,
+          "reason": "Academic paper, evidence lead, not an editorial competitor.",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3298675/"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 13,
+          "reason": "Outside the top ten organic rows; not inspected.",
+          "url": "https://insightcla.com/blog/average-sleeping-hrv-by-age/"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 14,
+          "reason": "Outside the top ten; used as aggregator evidence for Apple Watch SDNN readers (E19).",
+          "url": "https://www.empirical.health/metrics/hrv/"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 15,
+          "reason": "Outside the top ten for the primary query; #4 for the secondary; candidate fourth benchmark if wanted.",
+          "url": "https://cardiomood.com/2023/06/17/what-is-a-good-hrv-by-age"
+        }
+      ],
+      "inspection_complete": true,
+      "reference": "Ahrefs SERP overview, keyword 'what is a good hrv', US, Ahrefs update 2026-09-17, retrieved by the orchestrator 2026-09-22 (.runtime/serp-what-is-a-good-hrv-us.json); secondary 'hrv by age' (update 2026-09-14) as corroboration."
+    },
+    "rationale": "Three highest-ranking external articles matching the reader task were captured in full and benchmarked passage by passage (research.md section 3); every other top-ten organic row is excluded with a reason. All three selected pages also rank in the top ten for the secondary query 'hrv by age', supporting one article for both.",
+    "recorded_at": "2026-09-22T21:25:17.455443+00:00",
+    "research_sha256": "5899bc47d86d17b142348cc1a9f7fee1bf55bbf73391262dc53141f06f3f12af",
+    "run_id": "2026-09-22-what-is-a-good-hrv",
+    "source_sha256": null,
+    "status": "benchmarked"
+  },
+  "competitor_pages": {
+    "bytes": 32693,
+    "captured_at": "2026-09-22",
+    "locale": "us/en",
+    "pages": [
+      {
+        "bytes": 6945,
+        "observed_position": 2,
+        "reason": "Highest-ranking external article for the primary query (position 2; also position 7 for 'hrv by age'); cited by the AI Overview; answers the exact reader task (is my number good, by-age ranges, personal baseline) with vendor population averages. DR 80, est. 12,835 monthly traffic.",
+        "selection_basis": "observed_rank",
+        "sha256": "58199b9dca36df0931731b3339ba08c7d61be22bb43c8f0ba7e03a04d5d5faf7",
+        "title": "What Is a Good HRV? Average HRV Ranges by Age for Adults (WHOOP)",
+        "url": "https://www.whoop.com/us/en/thelocker/what-is-a-good-hrv/"
+      },
+      {
+        "bytes": 8542,
+        "observed_position": 4,
+        "reason": "Second-highest external article (position 4; position 9 for 'hrv by age'); the only selected page written by an HRV-analytics specialist with a reference list (Nunan 2010, Task Force 1996, Autonomic Aging dataset); covers normal RMSSD range, by-age and by-sex charts, sleep HRV and 'dangerously low' FAQ. DR 53, est. 8,491 monthly traffic.",
+        "selection_basis": "observed_rank",
+        "sha256": "eec4d20c8929c19a2ffb1520ed0886d4c0f145c30aa578f127aff2cefef6ca1c",
+        "title": "Heart rate variability normal range (Kubios)",
+        "url": "https://www.kubios.com/blog/heart-rate-variability-normal-range/"
+      },
+      {
+        "bytes": 14410,
+        "observed_position": 6,
+        "reason": "Third-highest external article (position 6; position 2 for 'hrv by age', where it leads the organic set and is cited by the AI Overview); the only page with a full numeric by-age, by-sex RMSSD table traced to a primary dataset (Lifelines, Tegegne 2020) and an explicit device-comparability section. DR 21, est. 5,373 monthly traffic.",
+        "selection_basis": "observed_rank",
+        "sha256": "d883b1eb6fd11abc7066b2b454adc09029d6c0cc03217fd868de6909694383e4",
+        "title": "What Is a Good HRV? Charts of Normal HRV by Age (Different Health)",
+        "url": "https://www.differenthealth.com/blog/what-is-a-good-hrv"
+      }
+    ],
+    "provider": "ahrefs serp-overview",
+    "query": "what is a good hrv",
+    "sha256": "fb227ff040d35b9a656e127093b56b886f915a427f38ade7a9e511a67b4b6d7a",
+    "snapshot_path": ".runtime/competitor-pages.json"
+  },
+  "consent": {
+    "apify": null,
+    "openrouter": {
+      "events": []
+    }
+  },
+  "current_stage": "qa",
+  "doctrine": {
+    "files": [
+      {
+        "bytes": 1859,
+        "path": "ai-visibility.md",
+        "sha256": "ca9850ff7d19ded6c9917e7db8c5a30a5f1c3eff042f1046a8a6ca0fe56a973a"
+      },
+      {
+        "bytes": 4936,
+        "path": "editing.md",
+        "sha256": "780a6312311d3675be998a1e9820d15eb3a1523de995225281c8f2c38df00944"
+      },
+      {
+        "bytes": 5612,
+        "path": "links.md",
+        "sha256": "e8b023c0522c6ad32344bd1d64ea082c1f91f02450766f7dda941d0bc6eda691"
+      },
+      {
+        "bytes": 2848,
+        "path": "sources-evidence.md",
+        "sha256": "10b3ab3031dd8472e48c93e698029211ffbb6bdfa5749da0e962d5f161d62ed9"
+      },
+      {
+        "bytes": 3661,
+        "path": "voice.md",
+        "sha256": "5d00c742d4e1353b41ccc7478912dd2515079a88b700b7cbf416ca553c5d4111"
+      },
+      {
+        "bytes": 5882,
+        "path": "writing.md",
+        "sha256": "d878fd031213771e5a81315f32797f32c3f717039d4c0ae7ac779ad6bcbc8136"
+      }
+    ],
+    "hash": "8a473bcf31622b9906b2129ef590923eb39737ef9a6d85e444d5c4d7a0a711c5",
+    "paths": [
+      "ai-visibility.md",
+      "editing.md",
+      "links.md",
+      "sources-evidence.md",
+      "voice.md",
+      "writing.md"
+    ],
+    "root": "/Users/bobanilikj/.claude/plugins/cache/authority-hacker-plugins/seo-article-writer-v2/0.1.13/doctrine",
+    "snapshot_path": ".runtime/doctrine-snapshot.json",
+    "snapshot_sha256": "aa49d4e672126c94fdf55e9788db90e2a1e82bf1aaff814432cccfa28f8db85c",
+    "source": "bundled",
+    "warnings": [
+      "no user doctrine loaded; using bundled doctrine"
+    ]
+  },
+  "failure": null,
+  "final_gate": {
+    "edited_before_humanize": {
+      "bytes": 17051,
+      "sha256": "823d5d62066cd06aa13540ec5333e3417034c76ecc375520b1b3c9e0674e190c"
+    },
+    "humanizer": {
+      "input_sha256": "823d5d62066cd06aa13540ec5333e3417034c76ecc375520b1b3c9e0674e190c",
+      "output_sha256": "bf1a548f4f0c8f185e83697750e97e7a38a530814645337279d5d74c10924a44"
+    },
+    "passed": true,
+    "qa_decision": "passed",
+    "site_url": "https://thereadiness.app/blog/what-is-a-good-hrv/"
+  },
+  "last_valid_artifact": "qa.md",
+  "mode": "new",
+  "model_routes": {
+    "editor": {
+      "effective": "claude-fable-5-1",
+      "fallback_used": false,
+      "provider": "native",
+      "requested": "automatic"
+    },
+    "writer": {
+      "effective": "claude-fable-5-1",
+      "fallback_used": false,
+      "provider": "native",
+      "requested": "automatic"
+    }
+  },
+  "openrouter_calls": [],
+  "openrouter_candidates_purged": 0,
+  "openrouter_responses_purged": 0,
+  "openrouter_totals": {
+    "accepted_calls": 0,
+    "cost_usd": 0.0,
+    "logical_calls": 0,
+    "provider_generations": 0,
+    "rejected_calls": 0,
+    "unknown_cost_calls": 0
+  },
+  "profile": {
+    "hash": null,
+    "name": null,
+    "root": null,
+    "selection": "bundled"
+  },
+  "provenance": {
+    "history": {
+      "editor": [
+        {
+          "attempt": 1,
+          "bytes": 17051,
+          "id": "editor-2026-09-22-native-hrv",
+          "kind": "subagent",
+          "model_route": {
+            "effective": "claude-fable-5-1",
+            "fallback_used": false,
+            "provider": "native",
+            "requested": "automatic"
+          },
+          "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-09-22-what-is-a-good-hrv/.runtime/edited-before-humanize.md",
+          "sha256": "823d5d62066cd06aa13540ec5333e3417034c76ecc375520b1b3c9e0674e190c"
+        }
+      ],
+      "writer": [
+        {
+          "attempt": 1,
+          "bytes": 18195,
+          "id": "aa418db576ff47fc4",
+          "kind": "subagent",
+          "model_route": {
+            "effective": "claude-fable-5-1",
+            "fallback_used": false,
+            "provider": "native",
+            "requested": "automatic"
+          },
+          "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-09-22-what-is-a-good-hrv/draft.md",
+          "sha256": "31cfa230fe65dd5309a0ccd1f3f623947b866fc3e6336f9f90638f00dc58f88b"
+        }
+      ]
+    },
+    "outputs": {
+      "editor": {
+        "attempt": 1,
+        "bytes": 17051,
+        "id": "editor-2026-09-22-native-hrv",
+        "kind": "subagent",
+        "model_route": {
+          "effective": "claude-fable-5-1",
+          "fallback_used": false,
+          "provider": "native",
+          "requested": "automatic"
+        },
+        "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-09-22-what-is-a-good-hrv/.runtime/edited-before-humanize.md",
+        "sha256": "823d5d62066cd06aa13540ec5333e3417034c76ecc375520b1b3c9e0674e190c"
+      },
+      "writer": {
+        "attempt": 1,
+        "bytes": 18195,
+        "id": "aa418db576ff47fc4",
+        "kind": "subagent",
+        "model_route": {
+          "effective": "claude-fable-5-1",
+          "fallback_used": false,
+          "provider": "native",
+          "requested": "automatic"
+        },
+        "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-09-22-what-is-a-good-hrv/draft.md",
+        "sha256": "31cfa230fe65dd5309a0ccd1f3f623947b866fc3e6336f9f90638f00dc58f88b"
+      }
+    }
+  },
+  "qa": {
+    "editor_fresh_context": true,
+    "execution_contexts": {
+      "editor": {
+        "id": "editor-2026-09-22-native-hrv",
+        "kind": "subagent"
+      },
+      "writer": {
+        "id": "aa418db576ff47fc4",
+        "kind": "subagent"
+      }
+    },
+    "writer_fresh_context": true
+  },
+  "rejected_openrouter_outputs_purged": 0,
+  "research_stop_closed": true,
+  "run_contract_version": 4,
+  "run_id": "2026-09-22-what-is-a-good-hrv",
+  "schema_version": 1,
+  "source_presentation": "automatic",
+  "status": "completed",
+  "topic": null
+}

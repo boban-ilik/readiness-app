@@ -55,7 +55,7 @@ export default function StreakBanner({ score }: StreakBannerProps) {
           </Text>
           {isMilestone && (
             <Text style={styles.milestoneText}>
-              {current} days in a row — keep it going!
+              {current} days in a row, keep it going!
             </Text>
           )}
         </View>

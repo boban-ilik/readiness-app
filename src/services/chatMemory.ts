@@ -15,6 +15,29 @@ const STORAGE_KEY   = '@readiness/coach_chat_v1';
 const MAX_MESSAGES  = 40;   // max stored (display)
 export const CONTEXT_WINDOW = 10; // max sent to the AI as history context
 
+// ─── Dating ───────────────────────────────────────────────────────────────────
+
+/** Local date, not UTC — a conversation belongs to the user's day. */
+export function todayLocal(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * The slice of conversation sent to the model as context.
+ *
+ * Only today's turns qualify. Yesterday's answers describe yesterday's body:
+ * left in the context window they get restated as current, so the coach would
+ * cite an 8.2 h night while the rest of the app showed 6 h 17 m. Older turns
+ * stay in the transcript for the user to scroll — they just stop being fed
+ * back as fact. Messages stored before dating existed have no date and are
+ * treated as older than today.
+ */
+export function selectContext(messages: ChatMessage[]): ChatMessage[] {
+  const today = todayLocal();
+  return messages.filter(m => m.date === today).slice(-CONTEXT_WINDOW);
+}
+
 // ─── Load ─────────────────────────────────────────────────────────────────────
 
 export async function loadChatHistory(): Promise<ChatMessage[]> {

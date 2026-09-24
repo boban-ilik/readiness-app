@@ -17,8 +17,12 @@
  * additional network call.
  */
 
+import { supabase } from '@services/supabase';
+
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { HealthData } from '@/types/index';
+import { localDateStr } from '@utils/index';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -75,7 +79,7 @@ async function loadCachedInsight(
     if (!raw) return null;
     const cached: CachedInsight = JSON.parse(raw);
     // Invalidate if the cached entry is from a different calendar day
-    const cachedDate = new Date(cached.cachedAt).toISOString().split('T')[0];
+    const cachedDate = localDateStr(new Date(cached.cachedAt));
     if (cachedDate !== date) return null;
     return { interpretation: cached.interpretation, advice: cached.advice };
   } catch {
@@ -133,15 +137,24 @@ export async function fetchAIInsight(input: AiInsightInput): Promise<AiInsight> 
   try {
     console.log(`[AI] Fetching insight via Edge Function — ${component} score=${Math.round(score)}`);
 
+    // The function verifies the session itself and meters the call, so it
+    // needs the user's token, not the anon key.
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not signed in');
+
     const response = await fetch(edgeFunctionUrl(), {
       method:  'POST',
       signal:  controller.signal,
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey':        SUPABASE_ANON_KEY,
       },
       body: JSON.stringify(input),
     });
 
+    if (response.status === 402) throw new Error('This needs Readiness Pro.');
+    if (response.status === 429) throw new Error('You have reached today\'s limit for this. Try again tomorrow.');
     if (!response.ok) {
       const body = await response.text().catch(() => '');
       throw new Error(`Edge Function error ${response.status}: ${body.slice(0, 120)}`);

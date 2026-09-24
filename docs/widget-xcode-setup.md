@@ -1,86 +1,51 @@
-# Adding the ReadinessWidget to Xcode
+# ReadinessWidget
 
-All Swift source files and the native data bridge are already written. You need
-to do four short things in Xcode to wire them in — none require writing code.
+The home-screen widget showing today's readiness score. The Xcode target, the
+Swift sources, and the native bridge are all committed — there is no manual
+Xcode setup left for local or simulator builds.
 
----
-
-## 1 · Register the App Group in the Apple Developer portal
-
-1. Go to [developer.apple.com](https://developer.apple.com) → **Identifiers**.
-2. Click **App Groups** → **+** → create `group.com.bobanilikj.readiness`.
-3. Back under **Identifiers → App IDs**, find `com.bobanilikj.readiness` and
-   enable **App Groups**, select the group you just created.
-4. Create a new App ID for the widget:
-   - Bundle ID: `com.bobanilikj.readiness.ReadinessWidget`
-   - Enable **App Groups**, select the same group.
-5. Re-generate and download your provisioning profiles.
+Verified working on the iOS 26.3 simulator: the widget appears in the widget
+gallery, reads the score from App Group storage, and renders on the home screen
+in both small and medium sizes.
 
 ---
 
-## 2 · Add the Widget Extension target in Xcode
+## What's in the repo
 
-1. Open `ios/Readiness.xcworkspace` in Xcode.
-2. **File → New → Target…**
-3. Choose **Widget Extension** → Next.
-4. Fill in:
-   - **Product Name:** `ReadinessWidget`
-   - **Bundle Identifier:** `com.bobanilikj.readiness.ReadinessWidget`
-   - **Include Configuration Intent:** ❌ (leave unchecked — we use StaticConfiguration)
-5. Click **Finish**. When Xcode asks "Activate scheme?", click **Activate**.
-6. Xcode will create a default widget file inside a new `ReadinessWidget/` folder.
-   **Delete the default files Xcode generated** — our files are already in
-   `ios/ReadinessWidget/`.
+| Path | Target | Purpose |
+|---|---|---|
+| `ios/ReadinessDataBridge/ReadinessDataBridge.swift` | Readiness | Writes the score to App Group storage, triggers a widget reload |
+| `ios/ReadinessDataBridge/ReadinessDataBridge.m` | Readiness | Exposes the Swift class to React Native |
+| `ios/ReadinessWidget/WidgetData.swift` | ReadinessWidget | Shared model + App Group reader |
+| `ios/ReadinessWidget/ReadinessProvider.swift` | ReadinessWidget | TimelineProvider (30-minute refresh as a safety net) |
+| `ios/ReadinessWidget/ReadinessWidget.swift` | ReadinessWidget | SwiftUI views — small and medium families |
+| `ios/ReadinessWidget/ReadinessWidgetBundle.swift` | ReadinessWidget | `@main` entry point |
 
----
-
-## 3 · Add the source files to the new target
-
-1. In the Xcode Project Navigator, right-click the **ReadinessWidget** group
-   Xcode created → **Add Files to "Readiness"…**
-2. Navigate to `ios/ReadinessWidget/` and select all four files:
-   - `ReadinessWidgetBundle.swift`
-   - `WidgetData.swift`
-   - `ReadinessProvider.swift`
-   - `ReadinessWidget.swift`
-3. In the "Add to targets" panel, make sure **only ReadinessWidget** is checked
-   (not the main Readiness target).
-4. Click **Add**.
+Both targets carry the `group.com.bobanilikj.readiness` App Group entitlement,
+and the app embeds `ReadinessWidget.appex` in its `PlugIns/` folder.
 
 ---
 
-## 4 · Add the native bridge files to the main target
+## Still required before a device or TestFlight build
 
-1. In the Project Navigator, right-click the **Readiness** group → **Add Files…**
-2. Navigate to `ios/ReadinessDataBridge/` and select:
-   - `ReadinessDataBridge.swift`
-   - `ReadinessDataBridge.m`
-3. In "Add to targets", check **Readiness** only.
-4. Click **Add**.
+Simulator builds need none of this; signed builds do.
 
----
-
-## 5 · Set the App Group entitlement on both targets
-
-Xcode may already have read the entitlement files we updated, but verify:
-
-1. Select the **Readiness** target → **Signing & Capabilities**.
-2. Click **+ Capability** → **App Groups**.
-3. Check `group.com.bobanilikj.readiness`.
-4. Repeat for the **ReadinessWidget** target.
+1. In the [Apple Developer portal](https://developer.apple.com/account/resources/identifiers/list)
+   → **Identifiers → App Groups**, create `group.com.bobanilikj.readiness`.
+2. Under **Identifiers → App IDs**, enable **App Groups** on
+   `com.bobanilikj.readiness` and select that group.
+3. Create an App ID for `com.bobanilikj.readiness.ReadinessWidget`, enable
+   **App Groups**, and select the same group.
+4. Let EAS regenerate credentials for the new extension bundle ID on the next
+   build (`eas build` prompts for this automatically).
 
 ---
 
-## 6 · Verify the widget builds
+## Verifying the build
 
 ```bash
-cd ios && xcodebuild -workspace Readiness.xcworkspace \
-  -scheme ReadinessWidget \
-  -destination 'generic/platform=iOS Simulator' \
-  build | tail -5
+cd ios && xcodebuild -workspace Readiness.xcworkspace -scheme ReadinessWidget -destination 'generic/platform=iOS Simulator' build
 ```
-
-You should see `BUILD SUCCEEDED`.
 
 ---
 
@@ -98,5 +63,5 @@ App opens
                               └─ Widget re-renders with latest score
 ```
 
-No network call needed — widget reads directly from shared local storage.
-The widget also auto-refreshes every 30 minutes as a safety net.
+No network call needed — the widget reads directly from shared local storage.
+Before the first score is computed, it shows an "Open Readiness" empty state.

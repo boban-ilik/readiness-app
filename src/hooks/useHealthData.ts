@@ -6,14 +6,20 @@ import {
   fetchTodaysHealthData,
   fetchRHRHistory,
   fetchHRVHistory,
+  fetchHRVByDay,
+  fetchRHRByDay,
   isHealthKitAvailable,
 } from '@services/healthkit';
-import { calculateReadiness, type ReadinessResult } from '@utils/readiness';
+import { calculateReadiness, explainReadiness, type ReadinessResult } from '@utils/readiness';
+import { computePhaseBaselines, type PhaseBaselineResult } from '@utils/cycleBaselines';
+import { computeCycleState, latestEntry, loadCycleSnapshot } from '@services/cycleTracking';
+import { setScoreSnapshot } from '@services/scoreSession';
 import { computeRHRBaseline, computeHRVBaseline } from '@utils/index';
 import type { HealthData } from '../types';
 import { supabase } from '@services/supabase';
 import { upsertTodayScore } from '@services/scoreSync';
 import { pushScoreToWidget } from '@services/widgetBridge';
+import { localDateStr } from '@utils/index';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -144,10 +150,51 @@ export async function getPersonalHRVBaseline(): Promise<number> {
   return baseline;
 }
 
+// ─── Cycle-phase baselines ────────────────────────────────────────────────────
+// Only for users with cycle tracking on. Reads ~4 cycles of nightly HRV and
+// resting HR and compares today with the same phase of earlier cycles (see
+// utils/cycleBaselines.ts). Cached for the calendar day: the phase changes at
+// most once a day and the history it reads doesn't change within one.
+
+const PHASE_BASELINE_CACHE_KEY = '@readiness/phase_baseline_v1';
+const PHASE_HISTORY_DAYS = 120;
+
+async function getPhaseBaselines(hrvAllMonth: number, rhrAllMonth: number): Promise<PhaseBaselineResult | null> {
+  const snap = await loadCycleSnapshot();
+  const last = snap ? latestEntry(snap.starts) : null;
+  if (!snap || !last) return null;
+
+  const today = localDateStr();
+  const todayPhase = computeCycleState(last, snap.settings).phase;
+  const cacheTag = `${today}|${snap.starts.join(',')}|${snap.settings.periodLengthDays}|${hrvAllMonth}|${rhrAllMonth}`;
+  try {
+    const raw = await AsyncStorage.getItem(PHASE_BASELINE_CACHE_KEY);
+    if (raw) {
+      const cached = JSON.parse(raw) as { tag: string; result: PhaseBaselineResult };
+      if (cached.tag === cacheTag) return cached.result;
+    }
+  } catch { /* recompute */ }
+
+  const [hrvByDay, rhrByDay] = await Promise.all([
+    withTimeout(fetchHRVByDay(PHASE_HISTORY_DAYS), 8_000, {} as Record<string, number>),
+    withTimeout(fetchRHRByDay(PHASE_HISTORY_DAYS), 8_000, {} as Record<string, number>),
+  ]);
+  const result = computePhaseBaselines({
+    hrvByDay, rhrByDay,
+    periodStarts:     snap.starts,
+    todayPhase,
+    periodLengthDays: snap.settings.periodLengthDays,
+    hrvBaseline:      hrvAllMonth,
+    rhrBaseline:      rhrAllMonth,
+  });
+  AsyncStorage.setItem(PHASE_BASELINE_CACHE_KEY, JSON.stringify({ tag: cacheTag, result })).catch(() => {});
+  return result;
+}
+
 // ─── Mock data (Expo Go / web dev) ────────────────────────────────────────────
 
 const MOCK_HEALTH_DATA: HealthData = {
-  date: new Date().toISOString().split('T')[0],
+  date: localDateStr(),
   hrv: 58,
   restingHeartRate: 52,
   sleepDuration: 427,
@@ -175,7 +222,7 @@ const MIN_SILENT_REFETCH_MS = 5 * 60 * 1000; // 5 minutes
 // HealthKit callbacks can silently hang (permission edge-cases, simulator quirks,
 // background-app-refresh disabled, etc.). Wrap any async HealthKit call so we
 // always get a fallback value rather than leaving isLoading=true forever.
-function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+export function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>(resolve => {
@@ -258,8 +305,17 @@ export function useHealthData(): UseHealthDataReturn {
         hrvBase    = MOCK_HRV_BASELINE;
       }
 
-      setRhrBaseline(baseline);
-      setHrvBaseline(hrvBase);
+      // Cycle-phase correction: with two or more logged cycles, today is
+      // compared with the same phase of earlier cycles rather than the whole
+      // month. Never blocks the score; any failure falls back to all-month.
+      const cycle = Platform.OS === 'ios' && isHealthKitAvailable()
+        ? await withTimeout(getPhaseBaselines(hrvBase, baseline).catch(() => null), 10_000, null)
+        : null;
+      const scoringHrvBase = cycle?.hrv ?? hrvBase;
+      const scoringRhrBase = cycle?.rhr ?? baseline;
+
+      setRhrBaseline(scoringRhrBase);
+      setHrvBaseline(scoringHrvBase);
 
       if (healthData) {
         // ── Manual HRV overlay ──────────────────────────────────────────────
@@ -274,9 +330,21 @@ export function useHealthData(): UseHealthDataReturn {
           }
         }
 
-        const result = calculateReadiness(mergedData, hrvBase, baseline);
-        console.log(`[Readiness] ${mode} fetch | RHR baseline: ${baseline} bpm | HRV baseline: ${hrvBase} ms | score → ${result.score}`);
+        const result = calculateReadiness(mergedData, scoringHrvBase, scoringRhrBase);
+        const corrected = scoringHrvBase !== hrvBase || scoringRhrBase !== baseline;
+        console.log(`[Readiness] ${mode} fetch | RHR baseline: ${scoringRhrBase} bpm | HRV baseline: ${scoringHrvBase} ms${corrected ? ` (phase-adjusted from ${hrvBase}/${baseline})` : ''} | score → ${result.score}`);
         setReadiness(result);
+        setScoreSnapshot({
+          readiness:           result,
+          explanation:         explainReadiness(mergedData, scoringHrvBase, scoringRhrBase),
+          hrvBaseline:         scoringHrvBase,
+          rhrBaseline:         scoringRhrBase,
+          hrvBaselineAllMonth: hrvBase,
+          rhrBaselineAllMonth: baseline,
+          cycle,
+          uncorrectedScore:    corrected ? calculateReadiness(mergedData, hrvBase, baseline).score : null,
+          computedAt:          Date.now(),
+        });
 
         // ── Fire-and-forget Supabase sync ──────────────────────────────────
         // Save today's score so history and weekly-report can read it.
@@ -284,7 +352,10 @@ export function useHealthData(): UseHealthDataReturn {
         // source of truth and the app works fine without a network.
         supabase.auth.getUser()
           .then(({ data }) => {
-            if (data.user) {
+            // A score computed with no overnight signal at all is the
+            // population default, not a measurement. The home screen no
+            // longer shows it, so it must not become a history row either.
+            if (data.user && !result.dataQuality.isInsufficient) {
               upsertTodayScore(result, data.user.id).catch(err =>
                 console.warn('[Readiness] Supabase sync failed (non-fatal):', err.message),
               );
@@ -324,13 +395,18 @@ export function useHealthData(): UseHealthDataReturn {
   // ── Nuclear fallback — guarantee isLoading never stays true forever ─────────
   // On iOS 26 beta, HealthKit callbacks and/or setTimeout can silently stall.
   // This hard wall ensures the app UI always appears within 20 seconds.
+  //
+  // Depends on isLoading so the timer is torn down the moment loading finishes.
+  // Previously it ran once on mount and always fired at 20s, logging a fallback
+  // warning even on healthy launches that had rendered long before.
   useEffect(() => {
+    if (!isLoading) return;
     const t = setTimeout(() => {
       console.warn('[Readiness] ☢️  Nuclear fallback — forcing isLoading=false after 20s');
       setIsLoading(false);
     }, 20_000);
     return () => clearTimeout(t);
-  }, []);
+  }, [isLoading]);
 
   // ── Initial load ────────────────────────────────────────────────────────────
   useEffect(() => {

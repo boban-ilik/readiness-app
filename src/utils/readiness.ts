@@ -4,7 +4,7 @@
  * Score = (Recovery × 0.45) + (Sleep × 0.40) + (Stress × 0.15)
  *
  * Each component is scored 0–100, then weighted and summed.
- * Lifestyle modifiers (journal tags) are applied as final adjustments.
+ * Life-event tags are context for the coach; they do not change the score.
  */
 
 import { clamp } from '@utils/index';
@@ -12,108 +12,181 @@ import type { HealthData, ReadinessScore } from '@/types/index';
 
 // ─── Baseline defaults (used when no personal baseline is established yet) ────
 
-const DEFAULTS = {
+export const DEFAULTS = {
   HRV_BASELINE: 55,       // ms — population average
   HRV_SD: 15,             // standard deviation
   RHR_BASELINE: 60,       // bpm
-  OPTIMAL_SLEEP: 480,     // minutes (8h)
+  // 7h, matching the AASM / Sleep Research Society joint consensus that adults
+  // need seven or more hours. This was 8h, which scored people as deficient
+  // while they were meeting the actual health guideline.
+  // https://jcsm.aasm.org/doi/10.5664/jcsm.4950
+  OPTIMAL_SLEEP: 420,     // minutes (7h)
   MIN_SLEEP: 300,         // minutes (5h) — floor for scoring
   OPTIMAL_DEEP_PCT: 0.20, // 20% of total sleep
   OPTIMAL_REM_PCT: 0.25,  // 25% of total sleep
 };
 
+/**
+ * Daytime-HR stress proxy (Tier 3). Waking average HR minus resting HR for
+ * an ordinary day; the copy and the score both treat this as "typical".
+ * Elevation up to LOW is a calm day, up to HIGH is moderate, above is
+ * elevated. Shared with the breakdown copy so the words match the number.
+ */
+export const STRESS_TYPICAL_ELEVATION = 15;
+export const STRESS_ELEVATION_LOW     = 12;
+export const STRESS_ELEVATION_HIGH    = 22;
+
+// ─── Explanation types ────────────────────────────────────────────────────────
+// Every intermediate value the score is built from. calculateReadiness() is a
+// thin wrapper over explainReadiness(), so the "How today's score was
+// calculated" screen shows exactly the numbers the score used.
+
+export interface RecoveryExplanation {
+  hrv: { value: number; baseline: number; spread: number; z: number; score: number } | null;
+  rhr: { value: number; baseline: number; delta: number; score: number } | null;
+  /** 'blend' = 60% HRV + 40% RHR; 'hrv' / 'rhr' = the only signal; 'neutral' = neither */
+  method: 'blend' | 'hrv' | 'rhr' | 'neutral';
+  score: number;
+}
+
+export interface SleepPart {
+  key:    'duration' | 'deep' | 'rem' | 'efficiency';
+  /** minutes for duration, percent for the others */
+  value:  number;
+  target: number;
+  score:  number;
+  weight: number;
+}
+
+export interface SleepExplanation {
+  /** null when there is no sleep data (score is the neutral 50) */
+  parts:       SleepPart[] | null;
+  totalWeight: number;
+  score:       number;
+}
+
+export interface StressExplanation {
+  tier:  'device' | 'hrv' | 'daytime_hr' | 'neutral';
+  deviceStress?: number;
+  hrv?:          { value: number; baseline: number; z: number };
+  daytimeHR?:    { value: number; rhrBaseline: number; elevation: number };
+  score: number;
+}
+
+export interface ScoreExplanation {
+  recovery: RecoveryExplanation;
+  sleep:    SleepExplanation;
+  stress:   StressExplanation;
+  weights:  { recovery: number; sleep: number; stress: number };
+  raw:      number;
+  score:    number;
+}
+
+export const COMPONENT_WEIGHTS = { recovery: 0.45, sleep: 0.40, stress: 0.15 } as const;
+
 // ─── Recovery component (45%) ─────────────────────────────────────────────────
 
-function scoreRecovery(
+function explainRecovery(
   hrv: number | null,
   rhr: number | null,
   hrvBaseline = DEFAULTS.HRV_BASELINE,
   rhrBaseline = DEFAULTS.RHR_BASELINE
-): number {
-  const scores: number[] = [];
+): RecoveryExplanation {
+  // HRV score: deviation from personal baseline, normalised. Higher → better.
+  const hrvPart = hrv !== null
+    ? (() => {
+        const z = (hrv - hrvBaseline) / DEFAULTS.HRV_SD;
+        return { value: hrv, baseline: hrvBaseline, spread: DEFAULTS.HRV_SD, z, score: clamp(50 + z * 20, 0, 100) };
+      })()
+    : null;
 
-  if (hrv !== null) {
-    // HRV score: deviation from personal baseline, normalised
-    // Higher HRV than baseline → better recovery
-    const zScore = (hrv - hrvBaseline) / DEFAULTS.HRV_SD;
-    const hrvScore = clamp(50 + zScore * 20, 0, 100);
-    scores.push(hrvScore);
+  // RHR score: lower than baseline → better recovery, 3 points per bpm.
+  const rhrPart = rhr !== null
+    ? (() => {
+        const delta = rhrBaseline - rhr; // positive = lower than baseline = good
+        return { value: rhr, baseline: rhrBaseline, delta, score: clamp(50 + delta * 3, 0, 100) };
+      })()
+    : null;
+
+  if (hrvPart && rhrPart) {
+    // Weight HRV more heavily than RHR (60/40 within recovery component)
+    return { hrv: hrvPart, rhr: rhrPart, method: 'blend', score: clamp(hrvPart.score * 0.6 + rhrPart.score * 0.4, 0, 100) };
   }
-
-  if (rhr !== null) {
-    // RHR score: lower than baseline → better recovery
-    const rhrDelta = rhrBaseline - rhr; // positive = lower than baseline = good
-    const rhrScore = clamp(50 + rhrDelta * 3, 0, 100);
-    scores.push(rhrScore);
-  }
-
-  if (scores.length === 0) return 50; // neutral when no data
-
-  // Weight HRV more heavily than RHR (60/40 within recovery component)
-  if (scores.length === 2) {
-    return clamp(scores[0] * 0.6 + scores[1] * 0.4, 0, 100);
-  }
-  return scores[0];
+  if (hrvPart) return { hrv: hrvPart, rhr: null, method: 'hrv', score: hrvPart.score };
+  if (rhrPart) return { hrv: null, rhr: rhrPart, method: 'rhr', score: rhrPart.score };
+  return { hrv: null, rhr: null, method: 'neutral', score: 50 }; // neutral when no data
 }
 
 // ─── Sleep component (40%) ────────────────────────────────────────────────────
 
-function scoreSleep(
+function explainSleep(
   duration: number | null,
   deep: number | null,
   rem: number | null,
   efficiency: number | null
-): number {
-  if (duration === null) return 50;
+): SleepExplanation {
+  if (duration === null) return { parts: null, totalWeight: 0, score: 50 };
 
-  // Duration score (50% of sleep component)
-  const durationScore = duration >= DEFAULTS.OPTIMAL_SLEEP
-    ? 100
-    : clamp((duration / DEFAULTS.OPTIMAL_SLEEP) * 100, 0, 100);
+  // Sub-scores are weighted, not averaged: duration is the dominant term and
+  // the one users can most directly act on. Weights are renormalised over
+  // whatever the device actually reported, so a watch that only tracks total
+  // sleep time isn't penalised for the stages it can't measure (the sleep
+  // parser reports unmeasured stages as null, see utils/sleepSamples.ts).
+  const parts: SleepPart[] = [];
 
-  const subScores = [durationScore];
+  // Duration — 50% of the sleep component
+  parts.push({
+    key: 'duration', value: duration, target: DEFAULTS.OPTIMAL_SLEEP, weight: 0.5,
+    score: duration >= DEFAULTS.OPTIMAL_SLEEP ? 100 : clamp((duration / DEFAULTS.OPTIMAL_SLEEP) * 100, 0, 100),
+  });
 
-  // Deep sleep score (20% of sleep component)
+  // Deep sleep — 20%
   if (deep !== null && duration > 0) {
     const deepPct = deep / duration;
-    const deepScore = clamp((deepPct / DEFAULTS.OPTIMAL_DEEP_PCT) * 80, 0, 100);
-    subScores.push(deepScore);
+    parts.push({
+      key: 'deep', value: deepPct * 100, target: DEFAULTS.OPTIMAL_DEEP_PCT * 100, weight: 0.2,
+      score: clamp((deepPct / DEFAULTS.OPTIMAL_DEEP_PCT) * 80, 0, 100),
+    });
   }
 
-  // REM score (20% of sleep component)
+  // REM — 20%
   if (rem !== null && duration > 0) {
     const remPct = rem / duration;
-    const remScore = clamp((remPct / DEFAULTS.OPTIMAL_REM_PCT) * 80, 0, 100);
-    subScores.push(remScore);
+    parts.push({
+      key: 'rem', value: remPct * 100, target: DEFAULTS.OPTIMAL_REM_PCT * 100, weight: 0.2,
+      score: clamp((remPct / DEFAULTS.OPTIMAL_REM_PCT) * 80, 0, 100),
+    });
   }
 
-  // Efficiency score (10% of sleep component)
+  // Efficiency — 10%
   if (efficiency !== null) {
-    const effScore = clamp((efficiency / 85) * 80, 0, 100);
-    subScores.push(effScore);
+    parts.push({ key: 'efficiency', value: efficiency, target: 85, weight: 0.1, score: clamp((efficiency / 85) * 80, 0, 100) });
   }
 
-  return clamp(subScores.reduce((a, b) => a + b, 0) / subScores.length, 0, 100);
+  const totalWeight = parts.reduce((sum, p) => sum + p.weight, 0);
+  const weighted    = parts.reduce((sum, p) => sum + p.score * p.weight, 0);
+
+  return { parts, totalWeight, score: clamp(weighted / totalWeight, 0, 100) };
 }
 
 // ─── Stress component (15%) ───────────────────────────────────────────────────
 
-function scoreStress(
+function explainStress(
   stressScore:  number | null,
   hrv:          number | null,
   daytimeAvgHR: number | null,
   rhrBaseline:  number,
   hrvBaseline = DEFAULTS.HRV_BASELINE,
-): number {
+): StressExplanation {
   // Tier 1: Garmin proprietary stress score (0 = calm, 100 = high stress)
   if (stressScore !== null) {
-    return clamp(100 - stressScore, 0, 100);
+    return { tier: 'device', deviceStress: stressScore, score: clamp(100 - stressScore, 0, 100) };
   }
 
   // Tier 2: HRV SDNN proxy — Apple Watch or Garmin (when it syncs)
   if (hrv !== null) {
-    const zScore = (hrv - hrvBaseline) / DEFAULTS.HRV_SD;
-    return clamp(50 + zScore * 15, 0, 100);
+    const z = (hrv - hrvBaseline) / DEFAULTS.HRV_SD;
+    return { tier: 'hrv', hrv: { value: hrv, baseline: hrvBaseline, z }, score: clamp(50 + z * 15, 0, 100) };
   }
 
   // Tier 3: Daytime HR elevation proxy — works with any device that syncs HR
@@ -121,14 +194,22 @@ function scoreStress(
   // rest periods above the personal RHR baseline signals physiological stress.
   if (daytimeAvgHR !== null && rhrBaseline > 0) {
     const elevation = daytimeAvgHR - rhrBaseline;
-    // elevation ≤ 3 bpm → low stress  (~80)
-    // elevation 3–8 bpm → typical     (~60)
-    // elevation 8–15 bpm → moderate   (~45)
-    // elevation > 15 bpm → elevated   (~30)
-    return clamp(75 - elevation * 3, 20, 90);
+    // Waking-hours HR sits well above resting HR for everyone: walking,
+    // stairs, meals and coffee put an ordinary day 10–20 bpm over RHR, so
+    // the scale is centred there rather than at zero elevation (which
+    // scored every Garmin user's normal day as "very high stress").
+    //   elevation ≤ 9 bpm  → ~90 (calm day)
+    //   elevation 15 bpm   →  75 (typical)
+    //   elevation 25 bpm   →  50 (moderate)
+    //   elevation ≥ 37 bpm →  20 (elevated)
+    return {
+      tier: 'daytime_hr',
+      daytimeHR: { value: daytimeAvgHR, rhrBaseline, elevation },
+      score: clamp(75 - (elevation - STRESS_TYPICAL_ELEVATION) * 2.5, 20, 90),
+    };
   }
 
-  return 50; // neutral — no stress signal at all
+  return { tier: 'neutral', score: 50 }; // neutral — no stress signal at all
 }
 
 // ─── Data quality ─────────────────────────────────────────────────────────────
@@ -139,6 +220,8 @@ export interface DataQuality {
   hasHRV:         boolean;
   hasRHR:         boolean;
   hasSleep:       boolean;
+  /** True when there is not enough overnight data to produce a meaningful score. */
+  isInsufficient: boolean;
   confidence:     DataConfidence;
   /** Human-readable list of absent sensors, e.g. ['HRV', 'sleep'] */
   missingSignals: string[];
@@ -171,20 +254,31 @@ function assessDataQuality(data: HealthData): DataQuality {
     confidence = 'low';
   }
 
+  // Phrased as the next step rather than a fault. Missing wearable data is the
+  // normal state on day one, and reading it as an error makes a working app
+  // look broken to new users.
+  // Deliberately device-agnostic. Garmin, Whoop, Polar and Oura don't write
+  // HRV to Apple Health, so telling those users to wear an Apple Watch is
+  // advice they can't act on — they can enter HRV by hand instead.
   let warningMessage: string | null = null;
   if (confidence === 'low') {
-    warningMessage = 'No Apple Watch data detected — score is estimated. Wear your watch overnight for accurate results.';
+    warningMessage = 'No overnight data from your watch yet, so this is an estimate. Open your watch\'s app to sync, then pull down here to refresh.';
   } else if (confidence === 'medium') {
     if (!hasHRV && !hasRHR) {
-      warningMessage = 'Sleep detected, but no heart rate data — wear your Apple Watch snugly overnight for HRV tracking.';
+      warningMessage = 'Sleep is tracked. Wear your watch snugly overnight to add heart rate, or tap to enter HRV yourself.';
     } else if (!hasSleep) {
-      warningMessage = 'Heart rate tracked, but sleep wasn\'t detected — wearing your watch to bed improves accuracy.';
+      warningMessage = 'Heart rate is tracked. Wear your watch to bed to add sleep, the largest part of your score.';
     } else if (!hasHRV) {
-      warningMessage = 'HRV not detected — ensure your Apple Watch fits snugly and is worn during sleep.';
+      warningMessage = 'Add your overnight HRV to sharpen this score. It\'s the strongest recovery signal we read. Tap to enter it.';
     }
   }
 
-  return { hasHRV, hasRHR, hasSleep, confidence, missingSignals, warningMessage };
+  // A numeric fallback score is useful for partial data, but it is misleading
+  // when every overnight signal is absent. Keep that state explicit so the UI
+  // can ask the user to sync rather than presenting an invented 50.
+  const isInsufficient = !hasHRV && !hasRHR && !hasSleep;
+
+  return { hasHRV, hasRHR, hasSleep, isInsufficient, confidence, missingSignals, warningMessage };
 }
 
 // ─── Main scorer ──────────────────────────────────────────────────────────────
@@ -200,26 +294,14 @@ export interface ReadinessResult {
   dataQuality: DataQuality;
 }
 
-export function calculateReadiness(
+export function explainReadiness(
   healthData: HealthData,
   hrvBaseline?: number,
   rhrBaseline?: number
-): ReadinessResult {
-  const recovery = scoreRecovery(
-    healthData.hrv,
-    healthData.restingHeartRate,
-    hrvBaseline,
-    rhrBaseline
-  );
-
-  const sleep = scoreSleep(
-    healthData.sleepDuration,
-    healthData.deepSleep,
-    healthData.remSleep,
-    healthData.sleepEfficiency
-  );
-
-  const stress = scoreStress(
+): ScoreExplanation {
+  const recovery = explainRecovery(healthData.hrv, healthData.restingHeartRate, hrvBaseline, rhrBaseline);
+  const sleep    = explainSleep(healthData.sleepDuration, healthData.deepSleep, healthData.remSleep, healthData.sleepEfficiency);
+  const stress   = explainStress(
     healthData.stressScore,
     healthData.hrv,
     healthData.daytimeAvgHR ?? null,
@@ -227,15 +309,23 @@ export function calculateReadiness(
     hrvBaseline,
   );
 
-  const rawScore = recovery * 0.45 + sleep * 0.40 + stress * 0.15;
-  const score = Math.round(clamp(rawScore, 0, 100));
+  const w   = COMPONENT_WEIGHTS;
+  const raw = recovery.score * w.recovery + sleep.score * w.sleep + stress.score * w.stress;
+  return { recovery, sleep, stress, weights: { ...w }, raw, score: Math.round(clamp(raw, 0, 100)) };
+}
 
+export function calculateReadiness(
+  healthData: HealthData,
+  hrvBaseline?: number,
+  rhrBaseline?: number
+): ReadinessResult {
+  const e = explainReadiness(healthData, hrvBaseline, rhrBaseline);
   return {
-    score,
+    score: e.score,
     components: {
-      recovery: Math.round(recovery),
-      sleep: Math.round(sleep),
-      stress: Math.round(stress),
+      recovery: Math.round(e.recovery.score),
+      sleep:    Math.round(e.sleep.score),
+      stress:   Math.round(e.stress.score),
     },
     healthData,
     dataQuality: assessDataQuality(healthData),

@@ -16,7 +16,7 @@
  *
  * ── Request ──────────────────────────────────────────────────────────────────
  *   POST /functions/v1/ai-insight
- *   Authorization: Bearer <supabase-anon-key>
+ *   Authorization: Bearer <user session access token>
  *   Content-Type: application/json
  *   Body: AiInsightInput (see types below)
  *
@@ -27,6 +27,7 @@
  */
 
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
+import { gate } from '../_shared/entitlement.ts';
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 // Expo apps run on localhost in dev and as native apps in production.
@@ -189,6 +190,9 @@ serve(async (req: Request) => {
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
     });
   }
+
+  const gated = await gate(req, { fn: 'ai-insight', dailyCap: 40 }, CORS_HEADERS);
+  if (!gated.ok) return gated.response;
 
   try {
     // ── Parse request body ──────────────────────────────────────────────────
