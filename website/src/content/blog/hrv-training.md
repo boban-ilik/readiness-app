@@ -6,13 +6,13 @@ pubDate: 2026-08-30
 
 Your watch says your HRV was 52 last night. Is that good?
 
-Honestly: nobody can tell you. Not from that number alone. An HRV of 52 is a strong morning for one runner and a warning sign for another, because heart rate variability only means something compared to *your own* recent readings. A page that answers "is 52 good?" with an age chart is answering a different question — how you compare to strangers, not how recovered you are today.
+Honestly: nobody can tell you. Not from that number alone. An HRV of 52 is a strong morning for one runner and a warning sign for another, because heart rate variability only means something compared to *your own* recent readings. A page that answers "is 52 good?" with an age chart is answering a different question: how you compare to strangers, not how recovered you are today.
 
 What you can do is turn that number into a daily training decision using a method you can inspect, run yourself, and check against your own results. Here is the whole protocol in three lines:
 
-- **Green** — today's HRV is inside or above your normal 7-day range: run the planned session, hard days included.
-- **Amber** — modestly below your normal range: keep the session, cut the intensity or volume.
-- **Red** — well below your range, or several low mornings in a row: recovery work or rest.
+- **Green.** Today's HRV is inside or above your normal 7-day range: run the planned session, hard days included.
+- **Amber.** Modestly below your normal range: keep the session, cut the intensity or volume.
+- **Red.** Well below your range, or several low mornings in a row: recovery work or rest.
 
 The rest of this guide shows you how to build the baseline those branches depend on, how to classify a morning, what to do on borderline days, and the specific situations where the number lies to you. It won't diagnose anything, and it won't tell you which wearable to buy.
 
@@ -136,13 +136,13 @@ That's the list. No supplements, no gadgets, no twelve hacks.
 
 **What's a good HRV for my age?** Comparing yourself to an age table is the wrong move. One high-authority medical page prints "normal" ranges by decade without citing a source for them, then advises in the same article that you follow your own individual trend instead. Take the second half of that advice. The research framing is baseline-first: at least 7 consecutive days of your own data, then deviation from *your* normal. Your 7-day average is your "good."
 
-**Is 37 a low HRV?** Only your baseline can say. For someone whose normal range is 45–55, a 37 is a red morning. For someone whose baseline *is* 37, it's a green Tuesday. Same number, opposite meanings — which is exactly why this guide made you build a baseline before interpreting anything.
+**Is 37 a low HRV?** Only your baseline can say. For someone whose normal range is 45–55, a 37 is a red morning. For someone whose baseline *is* 37, it's a green Tuesday. Same number, opposite meanings, which is exactly why this guide made you build a baseline before interpreting anything.
 
 ## One way to run this every morning
 
 Everything above works with a notes app and thirty seconds of arithmetic, and it always will. If you'd rather not do the arithmetic, this is the part where we mention that we built an app for it.
 
-Readiness Coach is our iOS app, and it runs exactly the method in this guide: it reads your overnight HRV, resting heart rate, and sleep from Apple Health, compares each against your personal baseline (never a population chart), and produces one morning readiness score. The weighting is published, not proprietary: 45% recovery, 40% sleep, 15% stress, with a 7-day calibration week to establish your baselines — the same seven mornings you'd collect by hand in Step 1. The full breakdown is in our [readiness score explainer](/blog/what-is-a-readiness-score/), so you can check the math against this article. The core daily score is free, and new accounts get the first week fully unlocked.
+Readiness Coach is our iOS app, and it runs exactly the method in this guide: it reads your overnight HRV, resting heart rate, and sleep from Apple Health, compares each against your personal baseline (never a population chart), and produces one morning readiness score. The weighting is published, not proprietary: 45% recovery, 40% sleep, 15% stress, with a 7-day calibration week to establish your baselines. Those are the same seven mornings you'd collect by hand in Step 1. The full breakdown is in our [readiness score explainer](/blog/what-is-a-readiness-score/), so you can check the math against this article. The core daily score is free, and new accounts get the first week fully unlocked.
 
 If that sounds useful, it's [on the App Store](https://apps.apple.com/app/id6760478506). If not, the protocol above is yours either way.
 
