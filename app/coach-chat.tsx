@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -10,8 +11,11 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { askCoach, type ChatMessage } from '@services/coachChat';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { askCoach, CoachError, type ChatMessage } from '@services/coachChat';
+import { buildCoachExtras } from '@services/coachContext';
+import { addCoachMemory } from '@services/coachMemory';
+import { useSubscription } from '@contexts/SubscriptionContext';
 import { getCoachSession, setCoachSession, type CoachSessionContext } from '@services/coachSession';
 import { loadChatHistory, saveChatHistory, clearChatHistory, selectContext, todayLocal } from '@services/chatMemory';
 import { loadUserProfile, type UserProfile } from '@services/userProfile';
@@ -57,7 +61,7 @@ function MarkdownMessage({ text }: { text: string }) {
   );
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({ message, onRate }: { message: ChatMessage; onRate?: (r: 'up' | 'down') => void }) {
   const isUser = message.role === 'user';
   return (
     <View style={[styles.bubble, isUser ? styles.userBubble : styles.assistantBubble]}>
@@ -67,8 +71,43 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       ) : (
         <MarkdownMessage text={message.content} />
       )}
+      {!isUser && message.remembered && message.remembered.length > 0 && (
+        <Text style={styles.rememberedNote}>Remembered: {message.remembered.join('; ')}</Text>
+      )}
+      {!isUser && onRate && (
+        <View style={styles.rateRow}>
+          {(['up', 'down'] as const).map(r => (
+            <TouchableOpacity
+              key={r}
+              onPress={() => onRate(r)}
+              disabled={!!message.rating}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={r === 'up' ? 'Helpful answer' : 'Not helpful'}
+              style={[styles.rateBtn, message.rating === r && styles.rateBtnActive, message.rating && message.rating !== r && styles.rateBtnDim]}
+            >
+              <Text style={styles.rateText}>{r === 'up' ? '👍' : '👎'}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </View>
   );
+}
+
+// Free accounts get 3 coach questions per ISO week (enforced by the server).
+// The last count the server reported is kept so the banner is right before
+// the first question of a session.
+const FREE_WEEKLY_QUESTIONS = 3;
+const FREE_REMAINING_KEY = '@readiness/coach_free_remaining_v1';
+
+function isoWeekKey(d = new Date()): string {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((t.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
+  return `${t.getUTCFullYear()}-W${week}`;
 }
 
 export default function CoachChatScreen({ embedded = false }: { embedded?: boolean } = {}) {
@@ -88,6 +127,11 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile>({});
+  const [errorKind, setErrorKind] = useState<'pro_required' | 'daily_limit' | 'other' | null>(null);
+  const [freeRemaining, setFreeRemaining] = useState<number | null>(null);
+  const { isPro, presentPaywall } = useSubscription();
+  const params = useLocalSearchParams<{ q?: string; source?: string }>();
+  const autoAsked = useRef(false);
 
   // The briefing flow seeds a session before navigating here. When Coach is
   // opened directly from the tab bar, build the same context from today's
@@ -136,7 +180,24 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
     track('coach_opened');
     loadChatHistory().then(setHistory).catch(() => {});
     loadUserProfile().then(setProfile).catch(() => {});
+    AsyncStorage.getItem(FREE_REMAINING_KEY)
+      .then(raw => {
+        const saved = raw ? JSON.parse(raw) : null;
+        if (saved?.week === isoWeekKey() && typeof saved.remaining === 'number') setFreeRemaining(saved.remaining);
+      })
+      .catch(() => {});
   }, []);
+
+  // A question handed over from a briefing follow-up or a coach check-in
+  // notification is asked as soon as the context is ready.
+  useEffect(() => {
+    const q = typeof params.q === 'string' ? params.q.trim() : '';
+    if (!q || !session || autoAsked.current || isSending) return;
+    autoAsked.current = true;
+    const source = params.source === 'notification' ? 'notification' : 'briefing';
+    sendQuestion(q, source);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.q, session]);
 
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -144,21 +205,28 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
     });
   }, [history, isSending]);
 
-  async function handleSend() {
-    const question = input.trim();
+  function handleSend() {
+    sendQuestion(input, 'typed');
+  }
+
+  async function sendQuestion(raw: string, source: 'typed' | 'chip' | 'briefing' | 'notification') {
+    const question = raw.trim();
     if (!session || !question || isSending) return;
 
     const userMessage: ChatMessage = { role: 'user', content: question, date: todayLocal() };
     const nextHistory = [...history, userMessage];
 
-    setInput('');
+    if (source === 'typed') setInput('');
     setError(null);
+    setErrorKind(null);
     setHistory(nextHistory);
     saveChatHistory(nextHistory);
     setIsSending(true);
+    track('coach_message_sent', { source, pro: isPro });
 
     try {
-      const answer = await askCoach(
+      const extras = await buildCoachExtras();
+      const reply = await askCoach(
         question,
         session.readiness,
         session.healthData,
@@ -169,17 +237,48 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
         session.lifeEvents,
         selectContext(nextHistory),
         profile,
+        extras,
       );
 
-      const assistantMessage: ChatMessage = { role: 'assistant', content: answer, date: todayLocal() };
+      const added = reply.remember.length > 0 ? await addCoachMemory(reply.remember) : 0;
+      if (added > 0) track('coach_memory_saved', { count: added });
+
+      const assistantMessage: ChatMessage = {
+        role: 'assistant', content: reply.answer, date: todayLocal(),
+        ...(added > 0 ? { remembered: reply.remember } : {}),
+      };
       const updatedHistory: ChatMessage[] = [...nextHistory, assistantMessage];
       setHistory(updatedHistory);
       saveChatHistory(updatedHistory);
-    } catch {
-      setError("Couldn't fetch the Coach. Try again.");
+
+      if (reply.freeRemaining !== null) {
+        setFreeRemaining(reply.freeRemaining);
+        AsyncStorage.setItem(FREE_REMAINING_KEY, JSON.stringify({ week: isoWeekKey(), remaining: reply.freeRemaining })).catch(() => {});
+      }
+    } catch (e) {
+      if (e instanceof CoachError) {
+        setErrorKind(e.kind);
+        setError(e.kind === 'other' ? "Couldn't reach your coach. Try again." : e.message);
+        if (e.kind === 'pro_required') {
+          setFreeRemaining(0);
+          AsyncStorage.setItem(FREE_REMAINING_KEY, JSON.stringify({ week: isoWeekKey(), remaining: 0 })).catch(() => {});
+        }
+      } else {
+        setErrorKind('other');
+        setError("Couldn't reach your coach. Try again.");
+      }
     } finally {
       setIsSending(false);
     }
+  }
+
+  function rateAnswer(index: number, rating: 'up' | 'down') {
+    setHistory(prev => {
+      const next = prev.map((m, i) => (i === index ? { ...m, rating } : m));
+      saveChatHistory(next);
+      return next;
+    });
+    track('coach_answer_rated', { rating });
   }
 
   async function handleClear() {
@@ -262,7 +361,7 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
                   <TouchableOpacity
                     key={prompt}
                     style={styles.promptChip}
-                    onPress={() => setInput(prompt)}
+                    onPress={() => sendQuestion(prompt, 'chip')}
                     activeOpacity={0.75}
                   >
                     <Text style={styles.promptChipText}>{prompt}</Text>
@@ -272,8 +371,22 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
             </View>
           )}
 
+          {!isPro && (
+            <Text style={styles.freeNote}>
+              {freeRemaining === null
+                ? `Free accounts get ${FREE_WEEKLY_QUESTIONS} coach questions a week.`
+                : freeRemaining > 0
+                  ? `${freeRemaining} of ${FREE_WEEKLY_QUESTIONS} free questions left this week.`
+                  : 'No free questions left this week. They reset on Monday.'}
+            </Text>
+          )}
+
           {history.map((message, index) => (
-            <MessageBubble key={`${message.role}-${index}`} message={message} />
+            <MessageBubble
+              key={`${message.role}-${index}`}
+              message={message}
+              onRate={message.role === 'assistant' ? r => rateAnswer(index, r) : undefined}
+            />
           ))}
 
           {isSending && (
@@ -284,6 +397,11 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
           )}
 
           {error && <Text style={styles.errorText}>{error}</Text>}
+          {errorKind === 'pro_required' && (
+            <TouchableOpacity style={styles.primaryButton} onPress={() => presentPaywall()} activeOpacity={0.85}>
+              <Text style={styles.primaryButtonText}>See Readiness Pro</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
 
         <View style={[styles.composerWrap, { paddingBottom: composerBottom }]}>
@@ -473,6 +591,33 @@ const styles = StyleSheet.create({
     color: colors.bg.primary,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
+  },
+  rememberedNote: {
+    color: colors.text.tertiary,
+    fontSize: fontSize.xs,
+    marginTop: spacing[2],
+    fontStyle: 'italic',
+  },
+  rateRow: {
+    flexDirection: 'row',
+    gap: spacing[2],
+    marginTop: spacing[2],
+  },
+  rateBtn: {
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+  },
+  rateBtnActive: { borderColor: colors.amber[400] },
+  rateBtnDim: { opacity: 0.35 },
+  rateText: { fontSize: fontSize.sm },
+  freeNote: {
+    color: colors.text.tertiary,
+    fontSize: fontSize.xs,
+    textAlign: 'center',
+    marginBottom: spacing[2],
   },
   errorText: {
     color: colors.error,

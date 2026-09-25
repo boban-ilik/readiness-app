@@ -70,6 +70,8 @@ const USER_SCOPED_KEYS = [
   '@readiness/notif_trend_decline_last_date',
   '@readiness/notif_last_score',
   '@readiness/notif_score_history',
+  '@readiness/notif_coach_checkin_enabled',
+  '@readiness/notif_coach_checkin_last_date',
 
   // Coach conversation — contains health details and whatever the user typed
   '@readiness/coach_chat_v1',
@@ -84,6 +86,8 @@ const USER_SCOPED_KEYS = [
   // Trend insight cache (30 min TTL) — narrates the previous user's week
   '@readiness/trend_v1',
   '@readiness/phase_baseline_v1',
+  '@readiness/coach_memory_v1',
+  '@readiness/coach_free_remaining_v1',
 ];
 
 /**

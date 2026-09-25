@@ -37,6 +37,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { localDateStr } from '@utils/index';
+import { track } from '@services/analytics';
+import type { PatternInsight } from '@services/patternAnalysis';
 
 // ─── Expo Go guard ────────────────────────────────────────────────────────────
 // expo-notifications requires native code compiled into a custom dev build.
@@ -73,6 +75,9 @@ const K = {
   TREND_DECLINE_ENABLED:'@readiness/notif_trend_decline_enabled',
   TREND_DECLINE_LAST:   '@readiness/notif_trend_decline_last_date',
   SCORE_HISTORY:        '@readiness/notif_score_history',  // JSON: [{date,score}]
+  // ── Coach check-ins (Pro) ───────────────────────────────────────────────
+  COACH_CHECKIN_ENABLED:'@readiness/notif_coach_checkin_enabled',
+  COACH_CHECKIN_LAST:   '@readiness/notif_coach_checkin_last_date',
 } as const;
 
 // ─── Native setup (custom build only) ────────────────────────────────────────
@@ -113,6 +118,8 @@ export interface NotificationPrefs {
   rhrSpikeEnabled:     boolean;
   /** Fire when readiness score has declined for 3 consecutive days. */
   trendDeclineEnabled: boolean;
+  /** Coach check-in when a warning/alert pattern is detected, at most every 3 days. */
+  coachCheckinsEnabled: boolean;
 }
 
 interface UseNotificationsReturn {
@@ -130,6 +137,8 @@ interface UseNotificationsReturn {
   checkAndAlertRHR: (rhr: number, baseline: number) => Promise<void>;
   /** Push today's score; alert if a 3-day downward trend is detected (Pro). */
   checkAndAlertTrend: (score: number) => Promise<void>;
+  /** Nudge from the coach when a pattern needs attention (Pro, max every 3 days). */
+  checkAndScheduleCoachCheckin: (patterns: PatternInsight[], isPro: boolean) => Promise<void>;
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
@@ -143,6 +152,8 @@ const DEFAULT_PREFS: NotificationPrefs = {
   hrvDropEnabled:      false,
   rhrSpikeEnabled:     false,
   trendDeclineEnabled: false,
+  // On by default, unlike the other alerts: the check-in is the feature.
+  coachCheckinsEnabled: true,
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -157,6 +168,7 @@ async function loadPrefs(): Promise<NotificationPrefs> {
     hrvDropEnabled,
     rhrSpikeEnabled,
     trendDeclineEnabled,
+    coachCheckinsEnabled,
   ] = await AsyncStorage.multiGet([
     K.DIGEST_ENABLED,
     K.DIGEST_HOUR,
@@ -166,6 +178,7 @@ async function loadPrefs(): Promise<NotificationPrefs> {
     K.HRV_DROP_ENABLED,
     K.RHR_SPIKE_ENABLED,
     K.TREND_DECLINE_ENABLED,
+    K.COACH_CHECKIN_ENABLED,
   ]);
 
   return {
@@ -177,6 +190,7 @@ async function loadPrefs(): Promise<NotificationPrefs> {
     hrvDropEnabled:      (hrvDropEnabled[1]       ?? 'false') === 'true',
     rhrSpikeEnabled:     (rhrSpikeEnabled[1]      ?? 'false') === 'true',
     trendDeclineEnabled: (trendDeclineEnabled[1]  ?? 'false') === 'true',
+    coachCheckinsEnabled: (coachCheckinsEnabled[1] ?? 'true') === 'true',
   };
 }
 
@@ -190,6 +204,7 @@ async function savePrefs(p: NotificationPrefs): Promise<void> {
     [K.HRV_DROP_ENABLED,      p.hrvDropEnabled      ? 'true' : 'false'],
     [K.RHR_SPIKE_ENABLED,     p.rhrSpikeEnabled     ? 'true' : 'false'],
     [K.TREND_DECLINE_ENABLED, p.trendDeclineEnabled ? 'true' : 'false'],
+    [K.COACH_CHECKIN_ENABLED, p.coachCheckinsEnabled ? 'true' : 'false'],
   ]);
 }
 
@@ -359,6 +374,92 @@ const TREND_DECLINE_COPY = [
     body: 'Three consecutive dips in your readiness score. Worth understanding what\'s driving it.',
   },
 ];
+
+// ── Coach check-in ────────────────────────────────────────────────────────────
+// Tapping the notification opens the coach with `q` pre-filled (see
+// app/_layout.tsx). First match in this order wins.
+
+const COACH_CHECKIN_COPY: Array<{ type: string; body: string; q: string }> = [
+  {
+    type: 'consecutive_hrv_drop',
+    body: "Your HRV has dropped three mornings in a row. Want to talk through this week's training?",
+    q:    "My HRV has dropped three mornings in a row. Should I change this week's training?",
+  },
+  {
+    type: 'consecutive_score_decline',
+    body: 'Your readiness has slipped three days running. Worth a quick check-in?',
+    q:    "My readiness has dropped three days in a row. What's going on and what should I change?",
+  },
+  {
+    type: 'sleep_debt',
+    body: "You're carrying some sleep debt. Want a plan to catch up?",
+    q:    "I'm carrying sleep debt. How should I adjust training while I catch up?",
+  },
+  {
+    type: 'stress_accumulation',
+    body: 'Stress has been building for a few days. Want to look at it together?',
+    q:    'My stress score has been building for days. What should I do about it?',
+  },
+  {
+    type: 'persistent_low',
+    body: "Your scores have been low all week. Let's figure out why.",
+    q:    "My scores have been low all week. What's the most likely cause?",
+  },
+];
+
+const COACH_CHECKIN_MIN_DAYS = 3;
+
+/** Whole calendar days between two local 'YYYY-MM-DD' strings (b minus a). */
+function calendarDaysBetween(a: string, b: string): number {
+  const [ay, am, ad] = a.split('-').map(Number);
+  const [by, bm, bd] = b.split('-').map(Number);
+  return Math.round((Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)) / 86_400_000);
+}
+
+// Module-level so two screens (or two quick reloads) can't both pass the
+// 3-day check before either has written the last-sent date.
+let coachCheckinInFlight = false;
+
+async function scheduleCoachCheckinIfDue(patterns: PatternInsight[], isPro: boolean): Promise<void> {
+  if (IS_EXPO_GO || !isPro)   return;
+  if (coachCheckinInFlight)   return;
+  coachCheckinInFlight = true;
+  try {
+    const match = COACH_CHECKIN_COPY.find(c =>
+      patterns.some(p => p.type === c.type && (p.severity === 'warning' || p.severity === 'alert')),
+    );
+    if (!match) return;
+
+    // Read the pref and permission fresh: callers run this from a data-load
+    // effect, often before the hook's own state has loaded. Never prompt here.
+    const enabled = (await AsyncStorage.getItem(K.COACH_CHECKIN_ENABLED)) ?? 'true';
+    if (enabled !== 'true') return;
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') return;
+
+    const today = todayStr();
+    const last  = await AsyncStorage.getItem(K.COACH_CHECKIN_LAST);
+    if (last) {
+      const days = calendarDaysBetween(last, today);
+      if (Number.isFinite(days) && days < COACH_CHECKIN_MIN_DAYS) return;
+    }
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Your coach',
+        body:  match.body,
+        data:  { type: 'coach', q: match.q },
+      },
+      trigger: { seconds: 5, repeats: false },
+    });
+    await AsyncStorage.setItem(K.COACH_CHECKIN_LAST, today);
+    track('coach_checkin_sent', { pattern: match.type });
+  } catch (err) {
+    console.warn('[Notifications] coach check-in failed (non-fatal):', err);
+  } finally {
+    coachCheckinInFlight = false;
+  }
+}
 
 // ── Score history helpers (for trend detection) ───────────────────────────────
 
@@ -642,6 +743,15 @@ export function useNotifications(): UseNotificationsReturn {
     });
   }, [prefs.trendDeclineEnabled, permissionStatus]);
 
+  // ── Coach check-in (Pro) ──────────────────────────────────────────────────
+  // Stable identity and no hook state: it reads pref + permission from source,
+  // so a stale closure in the caller can't act on outdated values.
+
+  const checkAndScheduleCoachCheckin = useCallback(
+    (patterns: PatternInsight[], isPro: boolean) => scheduleCoachCheckinIfDue(patterns, isPro),
+    [],
+  );
+
   return {
     prefs,
     isLoading,
@@ -653,5 +763,6 @@ export function useNotifications(): UseNotificationsReturn {
     checkAndAlertHRV,
     checkAndAlertRHR,
     checkAndAlertTrend,
+    checkAndScheduleCoachCheckin,
   };
 }

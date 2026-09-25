@@ -103,6 +103,8 @@ interface DailyBriefing {
   headline:    string;   // One sentence — the TL;DR
   overview:    string;   // 2 sentences: what's happening in the body today
   doToday:     string[]; // 2–3 concrete actions
+  /** 1.0.4: 3 questions the user might ask the coach next, in their own voice. Optional; older clients ignore it. */
+  followUps:   string[];
 }
 
 // ─── Prompt ───────────────────────────────────────────────────────────────────
@@ -134,7 +136,14 @@ DO_TODAY:
 2. <a concrete action for today, max 18 words>
 3. <a concrete action for today, max 18 words — omit this line entirely if two are enough>
 
+FOLLOW_UPS:
+1. <a question the user would naturally ask their coach next, in the first person, max 9 words>
+2. <another such question>
+3. <another such question>
+
 Every DO_TODAY item must be something the user can actually do today and must follow from the data above. Do not restate the overview.
+
+FOLLOW_UPS are tap-to-ask questions shown under the briefing. Make each one specific to today's numbers and different from the others, for example "Why is my HRV down today?", "Can I still do intervals?", "What should I change tonight?". Never generic ("Tell me more").
 
 If you recommend a sleep duration, use the 7 hour guideline the app scores against. Do not invent a different figure.`;
 
@@ -268,7 +277,15 @@ function parseBriefing(raw: string): DailyBriefing {
     throw new Error('Unexpected AI response format');
   }
 
-  return { headline, overview, doToday };
+  // Follow-ups are an extra, never a reason to fail the briefing.
+  const fuBlock   = raw.match(/FOLLOW_UPS:\s*\n([\s\S]+?)(?=\n[A-Z_]+:|$)/)?.[1] ?? '';
+  const followUps = fuBlock
+    .split('\n')
+    .map(line => line.replace(/^\s*(\d+\.|[-•])\s*/, '').trim())
+    .filter(q => q.length > 0 && q.length <= 80)
+    .slice(0, 3);
+
+  return { headline, overview, doToday, followUps };
 }
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
@@ -335,7 +352,7 @@ serve(async (req: Request) => {
       },
       body: JSON.stringify({
         model:      'claude-haiku-4-5-20251001',
-        max_tokens: 350,
+        max_tokens: 450,   // 1.0.4: room for the three follow-up questions
         system:     SYSTEM_PROMPT,
         messages:   [{ role: 'user', content: buildPrompt(input) }],
       }),

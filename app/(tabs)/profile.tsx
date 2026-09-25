@@ -6,7 +6,9 @@ import { SafeAreaView }              from 'react-native-safe-area-context';
 import { useEffect, useRef, useState } from 'react';
 import AsyncStorage                  from '@react-native-async-storage/async-storage';
 import Constants                     from 'expo-constants';
-import { useRouter }                 from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback }               from 'react';
+import { loadCoachMemory, removeCoachMemory, clearCoachMemory, type MemoryItem } from '@services/coachMemory';
 import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
 import { useAuth }                   from '@contexts/AuthContext';
 import { supabase }                 from '@services/supabase';
@@ -137,6 +139,73 @@ function formatJoinedDate(iso: string): string {
 }
 
 // ─── Reusable settings row components ─────────────────────────────────────────
+
+/**
+ * What the coach has remembered from conversations (1.0.4). Stored on this
+ * device only; the user can remove any item or clear the list.
+ */
+function CoachMemorySection() {
+  const [items, setItems] = useState<MemoryItem[]>([]);
+
+  useFocusEffect(useCallback(() => {
+    let live = true;
+    loadCoachMemory().then(m => { if (live) setItems(m); });
+    return () => { live = false; };
+  }, []));
+
+  const confirmClear = () => {
+    Alert.alert('Clear coach memory', 'Your coach will forget everything on this list. Your chats and scores are not affected.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Clear', style: 'destructive', onPress: () => { clearCoachMemory().then(() => setItems([])); } },
+    ]);
+  };
+
+  return (
+    <>
+      <SectionLabel title="WHAT YOUR COACH REMEMBERS" />
+      <SettingsCard>
+        {items.length === 0 ? (
+          <RowBase
+            label="Nothing yet"
+            sublabel="Mention a goal, a race date or an injury in a chat and your coach will keep it in mind."
+            right={null}
+            topBorder={false}
+          />
+        ) : (
+          items.map((m, i) => (
+            <RowBase
+              key={m.text}
+              label={m.text}
+              sublabel={`Saved ${m.savedOn}`}
+              topBorder={i > 0}
+              right={
+                <TouchableOpacity
+                  onPress={() => { removeCoachMemory(m.text).then(setItems); }}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Forget: ${m.text}`}
+                >
+                  <Ionicons name="close-circle-outline" size={22} color={colors.text.tertiary} />
+                </TouchableOpacity>
+              }
+            />
+          ))
+        )}
+        {items.length > 0 && (
+          <RowBase
+            label="Clear all"
+            topBorder
+            onPress={confirmClear}
+            right={<Ionicons name="trash-outline" size={20} color={colors.error} />}
+          />
+        )}
+      </SettingsCard>
+      <Text style={styles.sectionHint}>
+        🔒 Kept on this phone only and sent with your coach questions so answers stay consistent. Remove anything you don't want remembered.
+      </Text>
+    </>
+  );
+}
 
 function SectionLabel({ title }: { title: string }) {
   return <Text style={styles.sectionLabel}>{title}</Text>;
@@ -427,6 +496,21 @@ function NotificationsContent() {
               }
             }
             await updatePrefs({ trendDeclineEnabled: value });
+          }}
+        />
+        <ToggleRow
+          label="Coach check-ins"
+          sublabel="A nudge from your coach when a pattern needs attention, at most every 3 days"
+          value={prefs.coachCheckinsEnabled}
+          onValueChange={async (value) => {
+            if (value && !hasPermission) {
+              const granted = await requestPermissions();
+              if (!granted) {
+                Alert.alert('Notifications blocked', 'Enable notifications for Readiness in iOS Settings → Readiness → Notifications.', [{ text: 'OK' }]);
+                return;
+              }
+            }
+            await updatePrefs({ coachCheckinsEnabled: value });
           }}
         />
       </SettingsCard>
@@ -1100,6 +1184,9 @@ export default function ProfileScreen() {
         >
           <NotificationsContent />
         </ProGate>
+
+        {/* ── Coach memory ────────────────────────────────────────────────── */}
+        <CoachMemorySection />
 
         {/* ── Support ─────────────────────────────────────────────────────── */}
         <SectionLabel title="SUPPORT" />

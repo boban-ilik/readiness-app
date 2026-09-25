@@ -27,6 +27,8 @@ export interface DailyBriefing {
   headline: string;
   overview: string;
   doToday:  string[];
+  /** 1.0.4: questions to ask the coach next. Absent from older cached briefings. */
+  followUps?: string[];
 }
 
 // ─── Feedback ─────────────────────────────────────────────────────────────────
@@ -212,6 +214,9 @@ export async function fetchDailyBriefing(
     }
 
     const briefing: DailyBriefing = await res.json();
+    briefing.followUps = Array.isArray(briefing.followUps)
+      ? briefing.followUps.filter((q): q is string => typeof q === 'string' && q.trim().length > 0).slice(0, 3)
+      : [];
     await setCache(briefing, fingerprint);
     return briefing;
 

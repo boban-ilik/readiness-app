@@ -3,6 +3,8 @@ import { Slot, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { enableScreens } from 'react-native-screens';
 import { AuthProvider, useAuth } from '@contexts/AuthContext';
 import { SubscriptionProvider } from '@contexts/SubscriptionContext';
@@ -30,12 +32,27 @@ if (__DEV__) {
 
 const ONBOARDING_KEY = '@readiness/onboarding_complete';
 
+// Same guard as useNotifications: the native module is absent in Expo Go.
+const IS_EXPO_GO =
+  Constants.appOwnership === 'expo' ||
+  (Constants.executionEnvironment as string) === 'storeClient';
+
+/** The question a coach check-in carries, or null for any other notification. */
+function coachQuestionFrom(response: Notifications.NotificationResponse): string | null {
+  if (response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return null;
+  const data = response.notification.request.content.data;
+  if (data?.type !== 'coach') return null;
+  return typeof data.q === 'string' && data.q.trim() ? data.q : null;
+}
+
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
   const segments = useSegments();
   const router = useRouter();
   const hasNavigated = useRef(false);
+  const [pendingCoachQ, setPendingCoachQ] = useState<string | null>(null);
+  const handledResponseIds = useRef(new Set<string>());
 
   // Re-read whenever the signed-in user changes. AuthContext wipes device-local
   // data before publishing the new user, so a different account signing in has
@@ -114,6 +131,45 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       })
       .catch(() => {});
   }, [segments, onboardingDone]);
+
+  // Coach check-in taps. The listener covers taps while the app runs; the
+  // last-response read covers a cold start. Both can report the same cold
+  // start tap, so responses are deduped by notification identifier. Other
+  // notification types just open the app, as before.
+  useEffect(() => {
+    if (IS_EXPO_GO) return;
+    // The handled id is also kept on the device: if the OS reports the same
+    // "last response" on a later launch, the coach must not reopen every time.
+    const HANDLED_KEY = '@readiness/last_coach_notification_id';
+    const handle = async (response: Notifications.NotificationResponse | null) => {
+      if (!response) return;
+      const id = response.notification.request.identifier;
+      if (handledResponseIds.current.has(id)) return;
+      handledResponseIds.current.add(id);
+      const q = coachQuestionFrom(response);
+      if (!q) return;
+      const lastHandled = await AsyncStorage.getItem(HANDLED_KEY).catch(() => null);
+      if (lastHandled === id) return;
+      AsyncStorage.setItem(HANDLED_KEY, id).catch(() => {});
+      setPendingCoachQ(q);
+    };
+    const sub = Notifications.addNotificationResponseReceivedListener(r => { handle(r); });
+    Notifications.getLastNotificationResponseAsync().then(handle).catch(() => {});
+    return () => sub.remove();
+  }, []);
+
+  // Open the coach only once the user is signed in, onboarded, and the gate's
+  // own redirect has landed on an app screen. Pushing earlier would race the
+  // router.replace above and either be wiped or land behind login/onboarding.
+  useEffect(() => {
+    if (!pendingCoachQ) return;
+    if (isLoading || !user || onboardingDone !== true) return;
+    if (!hasNavigated.current) return;
+    const root = segments[0] as string | undefined;
+    if (!root || root === '(auth)' || root === 'onboarding') return;
+    setPendingCoachQ(null);
+    router.push({ pathname: '/coach-chat', params: { q: pendingCoachQ, source: 'notification' } });
+  }, [pendingCoachQ, isLoading, user, onboardingDone, segments, router]);
 
   const showSpinner = isLoading || onboardingDone === null;
 

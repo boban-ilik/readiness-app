@@ -13,6 +13,7 @@ import type { PatternInsight } from '@services/patternAnalysis';
 import type { WorkloadResult } from '@services/workloadAnalysis';
 import type { LifeEvent } from '@services/lifeEvents';
 import type { UserProfile } from '@services/userProfile';
+import type { CoachExtras } from '@services/coachContext';
 
 const SUPABASE_URL      = process.env.EXPO_PUBLIC_SUPABASE_URL      ?? '';
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
@@ -25,6 +26,25 @@ export interface ChatMessage {
    * before this field existed, which are treated as older than today.
    */
   date?:   string;
+  /** Facts the coach saved from this answer, shown under it (display only) */
+  remembered?: string[];
+  /** The user's thumbs rating of a coach answer (display only) */
+  rating?: 'up' | 'down';
+}
+
+export interface CoachReply {
+  answer:   string;
+  /** New durable facts to remember (0-3); empty from servers older than 1.0.4 */
+  remember: string[];
+  /** Free-tier questions left this week; null for trial and Pro */
+  freeRemaining: number | null;
+}
+
+/** Failure with a kind the screen can act on (show the paywall, say come back tomorrow). */
+export class CoachError extends Error {
+  constructor(public kind: 'pro_required' | 'daily_limit' | 'other', message: string) {
+    super(message);
+  }
 }
 
 export async function askCoach(
@@ -38,7 +58,8 @@ export async function askCoach(
   lifeEvents:  LifeEvent[],
   history:     ChatMessage[],
   profile:     UserProfile = {},
-): Promise<string> {
+  extras:      Partial<CoachExtras> = {},
+): Promise<CoachReply> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Not signed in');
   if (!SUPABASE_URL) throw new Error('Supabase not configured');
@@ -88,20 +109,30 @@ export async function askCoach(
         })),
         // The Edge Function spreads these straight into the Anthropic messages
         // array, which rejects unexpected keys, so `date` is stripped here.
-        history: history.map(m => ({ role: m.role, content: m.content })),
+        history: history.map(m => ({ role: m.role, content: m.content })).slice(-6),
         profile,
+        memory:    extras.memory ?? [],
+        trend:     extras.trend ?? [],
+        scoreMath: extras.scoreMath ?? [],
+        strava:    extras.strava ?? [],
       }),
     });
 
-    if (res.status === 402) throw new Error('This needs Readiness Pro.');
-    if (res.status === 429) throw new Error('You have reached today\'s limit for this. Try again tomorrow.');
+    if (res.status === 402) {
+      throw new CoachError('pro_required', "You've used this week's 3 free questions. Readiness Pro gives you unlimited coaching.");
+    }
+    if (res.status === 429) throw new CoachError('daily_limit', 'You have reached today\'s limit for this. Try again tomorrow.');
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body.error ?? `HTTP ${res.status}`);
+      throw new CoachError('other', body.error ?? `HTTP ${res.status}`);
     }
 
-    const { answer } = await res.json();
-    return answer ?? '';
+    const body = await res.json();
+    return {
+      answer:        typeof body.answer === 'string' ? body.answer : '',
+      remember:      Array.isArray(body.remember) ? body.remember.filter((m: unknown) => typeof m === 'string') : [],
+      freeRemaining: typeof body.freeRemaining === 'number' ? body.freeRemaining : null,
+    };
   } finally {
     clearTimeout(timeout);
   }

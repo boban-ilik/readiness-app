@@ -26,7 +26,13 @@ export type AnalyticsEvent =
   | 'restore_success'
   | 'calibration_report_shown'
   | 'calibration_keep_pro'
-  | 'score_math_opened';
+  | 'score_math_opened'
+  // Coach (1.0.4). Never the message text, only where it came from.
+  | 'coach_message_sent'     // { source: 'typed' | 'chip' | 'briefing' | 'notification', pro }
+  | 'coach_answer_rated'     // { rating: 'up' | 'down' }
+  | 'coach_followup_tapped'  // { pro }
+  | 'coach_memory_saved'     // { count }
+  | 'coach_checkin_sent';    // { pattern }
 
 type Props = Record<string, string | number | boolean | null>;
 

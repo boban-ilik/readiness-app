@@ -25,6 +25,7 @@ import { analyzePatterns, type PatternInsight } from '@services/patternAnalysis'
 import { analyzeWorkload, type WorkloadResult } from '@services/workloadAnalysis';
 import { fetchRecentEvents, type LifeEvent } from '@services/lifeEvents';
 import { setCoachSession } from '@services/coachSession';
+import { track } from '@services/analytics';
 import { useSubscription } from '@contexts/SubscriptionContext';
 import type { ReadinessResult } from '@utils/readiness';
 import type { HealthData } from '@/types/index';
@@ -261,11 +262,11 @@ export default function DailyBriefingModal({
     }
   }
 
-  function handleOpenCoach() {
-    // The weekly free briefing opens this modal for free users, but the coach
-    // itself stays Pro: every chat turn is a metered API call.
-    if (!isPro) { onClose(); presentPaywall(); return; }
+  function handleOpenCoach(question?: string) {
+    // From 1.0.4 free users reach the coach too: the server allows them three
+    // questions a week and the coach screen shows what's left.
     if (!readiness || !healthData) return;
+    if (question) track('coach_followup_tapped', { pro: isPro });
     setCoachSession({
       readiness,
       healthData,
@@ -276,7 +277,9 @@ export default function DailyBriefingModal({
       lifeEvents: lifeEventsRef.current,
     });
     onClose();
-    router.push('/coach-chat');
+    router.push(question
+      ? { pathname: '/coach-chat', params: { q: question, source: 'briefing' } }
+      : '/coach-chat');
   }
 
   return (
@@ -409,17 +412,30 @@ export default function DailyBriefingModal({
                   <View style={styles.chatHeaderTop}>
                     <Text style={styles.chatTitle}>Ask your coach</Text>
                   </View>
-                  <Text style={styles.chatSub}>Open a dedicated chat screen for questions answered with your actual data.</Text>
+                  <Text style={styles.chatSub}>Tap a question and your coach answers it with your actual numbers.</Text>
                 </View>
-                <View style={styles.chatPreviewCard}>
-                  <Text style={styles.chatPreviewTitle}>Coach chat works better full screen</Text>
-                  <Text style={styles.chatPreviewBody}>
-                    Ask follow-up questions, keep the latest reply visible, and type without the keyboard crushing the layout.
-                  </Text>
-                  <TouchableOpacity style={styles.chatOpenBtn} onPress={handleOpenCoach} activeOpacity={0.8}>
-                    <Text style={styles.chatOpenBtnText}>Open coach chat</Text>
-                  </TouchableOpacity>
-                </View>
+                {briefing.followUps && briefing.followUps.length > 0 && (
+                  <View style={styles.followUps}>
+                    {briefing.followUps.map(q => (
+                      <TouchableOpacity
+                        key={q}
+                        style={styles.followUpChip}
+                        onPress={() => handleOpenCoach(q)}
+                        activeOpacity={0.8}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.followUpText}>{q}</Text>
+                        <Text style={styles.followUpArrow}>›</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+                <TouchableOpacity style={styles.chatOpenBtn} onPress={() => handleOpenCoach()} activeOpacity={0.8}>
+                  <Text style={styles.chatOpenBtnText}>Ask your own question</Text>
+                </TouchableOpacity>
+                {!isPro && (
+                  <Text style={styles.followUpNote}>Free accounts get 3 coach questions a week.</Text>
+                )}
               </View>
             )}
 
@@ -750,6 +766,38 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     lineHeight: 20,
     color: colors.text.secondary,
+  },
+  followUps: {
+    gap: spacing[2],
+    marginBottom: spacing[3],
+  },
+  followUpChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing[2],
+    backgroundColor: colors.bg.tertiary,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+  },
+  followUpText: {
+    flex: 1,
+    color: colors.text.primary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+  followUpArrow: {
+    color: colors.amber[400],
+    fontSize: fontSize.lg,
+  },
+  followUpNote: {
+    color: colors.text.tertiary,
+    fontSize: fontSize.xs,
+    textAlign: 'center',
+    marginTop: spacing[2],
   },
   chatOpenBtn: {
     alignSelf: 'flex-start',

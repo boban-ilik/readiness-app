@@ -91,7 +91,7 @@ function ProSummaryCard({ onPress }: { onPress: () => void }) {
         <Text style={styles.proSummaryTitle}>Go beyond the score</Text>
       </View>
       <Text style={styles.proSummaryBody}>
-        Unlock deeper recovery, nutrition guidance, weekly trends, the 3-day forecast, coach chat and full activity context in one place.
+        Unlock deeper recovery, nutrition guidance, weekly trends, the 3-day forecast, unlimited coach chat and full activity context in one place.
       </Text>
       <Text style={styles.proSummaryCta}>See what’s included · $9.99/mo →</Text>
     </TouchableOpacity>
@@ -250,6 +250,7 @@ export default function HomeScreen() {
     checkAndAlertHRV,
     checkAndAlertRHR,
     checkAndAlertTrend,
+    checkAndScheduleCoachCheckin,
   } = useNotifications();
 
   // Strava — fetch 28 days to power both the last-workout card and the 4-week trend card
@@ -381,6 +382,9 @@ export default function HomeScreen() {
         setLifeEvents(events);
 
         const patterns = await analyzePatterns(user.id);
+        // Patterns only exist here, not in the alert effect below. Dedupe
+        // (3 days) and an in-flight lock live in the hook.
+        checkAndScheduleCoachCheckin(patterns, isPro);
 
         // Fetch yesterday's score for the delta display (non-blocking via parallel)
         const yesterdayStr = (() => {

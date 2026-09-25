@@ -30,12 +30,15 @@ export interface GateOptions {
   fn:                   AiFn;
   /** Calls per UTC day for any tier. */
   dailyCap:             number;
-  /** Free tier may call this once per ISO week (the free weekly briefing). */
-  freeWeeklyAllowance?: boolean;
+  /**
+   * Free-tier calls per ISO week (Monday 00:00 UTC). `true` means 1, kept for
+   * the weekly briefing; a number allows that many (coach chat: 3).
+   */
+  freeWeeklyAllowance?: boolean | number;
 }
 
 export type GateResult =
-  | { ok: true;  userId: string; tier: Tier }
+  | { ok: true;  userId: string; tier: Tier; /** Free-tier calls left this week after this one; null for other tiers. */ freeRemaining: number | null }
   | { ok: false; response: Response };
 
 const TRIAL_MS       = 7 * 24 * 60 * 60 * 1000;
@@ -165,14 +168,17 @@ export async function gate(
   const tier  = await resolveTier(authed);
   const admin = adminClient();
 
+  let freeRemaining: number | null = null;
   if (tier === 'free') {
-    if (!opts.freeWeeklyAllowance) {
+    const allowance = opts.freeWeeklyAllowance === true ? 1 : Number(opts.freeWeeklyAllowance || 0);
+    if (allowance <= 0) {
       return { ok: false, response: json({ error: 'pro_required' }, 402, cors) };
     }
     const thisWeek = await countCalls(admin, authed.id, opts.fn, startOfIsoWeekUtc());
-    if (thisWeek >= 1) {
-      return { ok: false, response: json({ error: 'pro_required' }, 402, cors) };
+    if (thisWeek >= allowance) {
+      return { ok: false, response: json({ error: 'pro_required', freeRemaining: 0 }, 402, cors) };
     }
+    freeRemaining = allowance - thisWeek - 1;
   }
 
   const today = await countCalls(admin, authed.id, opts.fn, startOfUtcDay());
@@ -187,13 +193,13 @@ export async function gate(
     console.warn(`[entitlement] ${opts.fn}: tier unverified for ${authed.id} (RevenueCat key missing or unreachable)`);
   }
 
-  return { ok: true, userId: authed.id, tier };
+  return { ok: true, userId: authed.id, tier, freeRemaining };
 }
 
 // ─── Body ─────────────────────────────────────────────────────────────────────
 
-export async function readJsonBody<T>(req: Request): Promise<T | 'too_large' | 'invalid'> {
+export async function readJsonBody<T>(req: Request, maxBytes = MAX_BODY_BYTES): Promise<T | 'too_large' | 'invalid'> {
   const raw = await req.text();
-  if (raw.length > MAX_BODY_BYTES) return 'too_large';
+  if (raw.length > maxBytes) return 'too_large';
   try { return JSON.parse(raw) as T; } catch { return 'invalid'; }
 }
