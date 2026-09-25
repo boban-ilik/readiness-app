@@ -238,14 +238,14 @@ const styles = StyleSheet.create({
     borderColor:       colors.border.subtle,
     maxWidth:          140,
   },
-  chipEmoji: { fontSize: 12 },
+  chipEmoji: { fontSize: 13 },
   chipLabel: {
     fontSize: fontSize.xs,
     color:    colors.text.secondary,
   },
 
   hint: {
-    fontSize:  10,
+    fontSize:  11,
     color:     colors.text.tertiary,
     opacity:   0.6,
     marginLeft: spacing[1],

@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   },
   bestLabel: {
     color: colors.text.tertiary,
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: fontWeight.bold,
     letterSpacing: 1,
   },

@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   scroll:    { padding: spacing[5], paddingBottom: spacing[8] },
   kicker: {
     color: colors.text.accent,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
     letterSpacing: 1.5,
     marginTop: spacing[5],
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   },
   lede: {
     color: colors.text.secondary,
-    fontSize: 15,
+    fontSize: 17,
     lineHeight: 22,
     marginTop: spacing[3],
     marginBottom: spacing[5],
@@ -212,12 +212,12 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     color: colors.text.secondary,
-    fontSize: 14,
+    fontSize: 16,
     lineHeight: 21,
   },
   cardFoot: {
     color: colors.text.tertiary,
-    fontSize: 12,
+    fontSize: 13,
     lineHeight: 18,
     marginTop: spacing[3],
   },
@@ -227,12 +227,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 6,
   },
-  rowLabel: { color: colors.text.secondary, fontSize: 14 },
-  rowValue: { color: colors.text.primary, fontSize: 15, fontWeight: '700' },
+  rowLabel: { color: colors.text.secondary, fontSize: 16 },
+  rowValue: { color: colors.text.primary, fontSize: 17, fontWeight: '700' },
   ctaBlock: { marginTop: spacing[3], alignItems: 'stretch' },
   ctaText: {
     color: colors.text.secondary,
-    fontSize: 14,
+    fontSize: 16,
     lineHeight: 21,
     marginBottom: spacing[4],
     textAlign: 'center',
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   ctaButtonText: { color: colors.bg.primary, fontSize: 16, fontWeight: '800' },
   dismiss: {
     color: colors.text.tertiary,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
     marginTop: spacing[4],
     paddingVertical: 6,

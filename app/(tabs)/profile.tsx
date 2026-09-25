@@ -1483,8 +1483,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cameraIcon: {
-    fontSize: 11,
-    lineHeight: 14,
+    fontSize: 12,
+    lineHeight: 16,
   },
   heroInfo: {
     flex: 1,

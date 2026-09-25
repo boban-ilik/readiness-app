@@ -1145,7 +1145,7 @@ const styles = StyleSheet.create({
   },
   aiBadgeText: {
     color: '#a78bfa',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: fontWeight.bold,
     letterSpacing: 0.5,
   },
@@ -1273,7 +1273,7 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
   },
   metricBtnNoData: {
-    fontSize: 8,
+    fontSize: 11,
     color:    colors.text.tertiary,
   },
   chartEmpty: {
@@ -1319,7 +1319,7 @@ const styles = StyleSheet.create({
   },
   calHeaderText: {
     color: colors.text.tertiary,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: fontWeight.semiBold,
     letterSpacing: 0.5,
   },
@@ -1331,18 +1331,18 @@ const styles = StyleSheet.create({
   },
   calDayNum: {
     color: colors.text.tertiary,
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: fontWeight.medium,
-    lineHeight: 12,
+    lineHeight: 15,
   },
   calDayNumToday: {
     color: colors.amber[400],
     fontWeight: fontWeight.bold,
   },
   calCellScore: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: fontWeight.bold,
-    lineHeight: 11,
+    lineHeight: 15,
   },
   calLegend: {
     flexDirection: 'row',
@@ -1363,7 +1363,7 @@ const styles = StyleSheet.create({
   },
   calLegendLabel: {
     color: colors.text.tertiary,
-    fontSize: 10,
+    fontSize: 11,
   },
 
   // ── Day detail card (calendar tap) ────────────────────────────────────────
@@ -1463,7 +1463,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     color: colors.text.tertiary,
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: fontWeight.semiBold,
     letterSpacing: 1,
   },
@@ -1531,7 +1531,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   compBarLabel: {
-    fontSize: 8,
+    fontSize: 11,
     fontWeight: fontWeight.semiBold,
     letterSpacing: 0.2,
   },

@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
   },
   aiBadgeText: {
     color: colors.amber[400],
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: fontWeight.bold,
     letterSpacing: 0.5,
   },

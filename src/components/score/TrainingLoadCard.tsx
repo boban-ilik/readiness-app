@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   pillIcon: {
-    fontSize: 13,
+    fontSize: 15,
   },
   pillText: {
     color: colors.text.secondary,

@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     marginTop:      -spacing[1],   // -4
   },
   dayLabel: {
-    fontSize:  9,
+    fontSize:  11,
     color:     colors.text.tertiary,
     textAlign: 'center',
     flex:      1,

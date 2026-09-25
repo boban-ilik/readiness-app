@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
     marginTop:         1,
   },
   aiBadgeText: {
-    fontSize:   10,
+    fontSize:   11,
     fontWeight: fontWeight.semiBold,
     color:      '#A78BFA',
   },
@@ -577,7 +577,7 @@ const styles = StyleSheet.create({
     alignItems:    'flex-start',
   },
   bullet: {
-    fontSize:  8,
+    fontSize:  11,
     marginTop: 8,
   },
   bulletText: {
@@ -775,7 +775,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border.subtle,
   },
   sessionLabel: {
-    fontSize:  9,
+    fontSize:  11,
     color:     colors.text.tertiary,
     opacity:   0.6,
     letterSpacing: 0.5,
@@ -817,7 +817,7 @@ const styles = StyleSheet.create({
     borderColor:     colors.border.subtle,
   },
   bubbleLabel: {
-    fontSize:   9,
+    fontSize:   11,
     fontWeight: fontWeight.semiBold,
     color:      colors.text.tertiary,
     letterSpacing: 0.6,

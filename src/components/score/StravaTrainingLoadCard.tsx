@@ -102,7 +102,7 @@ const barStyles = StyleSheet.create({
     flex:       1,            // equal column widths
   },
   valLabel: {
-    fontSize:   10,
+    fontSize:   11,
     fontWeight: fontWeight.semiBold,
     height:     14,           // reserve space even when empty
     textAlign:  'center',
@@ -136,7 +136,7 @@ const barStyles = StyleSheet.create({
   },
   weekLabel: {
     color:    colors.text.tertiary,
-    fontSize: 9,
+    fontSize: 11,
   },
 });
 
@@ -206,7 +206,7 @@ const ratioStyles = StyleSheet.create({
   },
   labelText: {
     color:    colors.text.tertiary,
-    fontSize: 8,
+    fontSize: 11,
     width:    '20%',
     textAlign: 'center',
   },
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
     paddingVertical:   3,
   },
   trendEmoji: {
-    fontSize: 11,
+    fontSize: 12,
   },
   trendLabel: {
     fontSize:   fontSize.xs,
@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
   },
   stravaBadgeText: {
     color:      STRAVA_ORANGE,
-    fontSize:   10,
+    fontSize:   11,
     fontWeight: fontWeight.semiBold,
   },
 
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
   },
   loadUnit: {
     color:     colors.text.tertiary,
-    fontSize:  9,
+    fontSize:  11,
     textAlign: 'center',
     marginTop: spacing[1],
   },

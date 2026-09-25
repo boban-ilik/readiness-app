@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     borderWidth:       1,
   },
   riskBadgeText: {
-    fontSize:   10,
+    fontSize:   11,
     fontWeight: fontWeight.bold,
     letterSpacing: 0.3,
   },
@@ -295,10 +295,10 @@ const styles = StyleSheet.create({
     backgroundColor:   colors.bg.secondary,
   },
   pillIcon: {
-    fontSize: 11,
+    fontSize: 12,
   },
   pillText: {
-    fontSize:   11,
+    fontSize:   12,
     fontWeight: fontWeight.medium,
   },
 
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     marginBottom:  spacing[3],
   },
   sectionSubLabel: {
-    fontSize:     9,
+    fontSize:     11,
     fontWeight:   fontWeight.bold,
     color:        colors.text.tertiary,
     letterSpacing: 1.2,
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     gap:           spacing[2],
   },
   signalIcon: {
-    fontSize: 14,
+    fontSize: 16,
     width:    20,
   },
   signalLabelWrap: {
@@ -353,11 +353,11 @@ const styles = StyleSheet.create({
     borderRadius:      radius.sm,
   },
   severityText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: fontWeight.semiBold,
   },
   chevron: {
-    fontSize: 9,
+    fontSize: 11,
     color:    colors.text.tertiary,
   },
   signalDetail: {
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
     marginTop:     1,
   },
   actionIndexText: {
-    fontSize:   11,
+    fontSize:   12,
     fontWeight: fontWeight.bold,
   },
   actionText: {
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
 
   // Disclaimer
   disclaimer: {
-    fontSize:   10,
+    fontSize:   11,
     color:      colors.text.tertiary,
     lineHeight: 14,
     marginTop:  spacing[1],

@@ -58,9 +58,9 @@ const pillStyles = StyleSheet.create({
     borderRadius:      radius.full,
     alignSelf:         'flex-start',
   },
-  emoji: { fontSize: 10 },
+  emoji: { fontSize: 11 },
   label: {
-    fontSize:   10,
+    fontSize:   11,
     fontWeight: fontWeight.semiBold,
     letterSpacing: 0.2,
   },
@@ -92,7 +92,7 @@ const trendStyles = StyleSheet.create({
     borderRadius:      99,
   },
   text: {
-    fontSize:   10,
+    fontSize:   11,
     fontWeight: fontWeight.semiBold,
     letterSpacing: 0.2,
   },
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     gap: spacing[1],
   },
   summaryEyebrow: {
-    fontSize: 10,
+    fontSize: 11,
     color: colors.text.accent,
     fontWeight: fontWeight.bold,
     letterSpacing: 1,
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   sectionNote: {
-    fontSize:          10,
+    fontSize:          11,
     color:             colors.text.tertiary,
     opacity:           0.75,
     paddingHorizontal: spacing[1],
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     gap: spacing[2],
   },
   scoreCaption: {
-    fontSize: 10,
+    fontSize: 11,
     color: colors.text.tertiary,
     marginTop: 2,
   },
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
     gap: spacing[1],
   },
   factorLabel: {
-    fontSize: 10,
+    fontSize: 11,
     color: colors.text.tertiary,
     fontWeight: fontWeight.semiBold,
     textTransform: 'uppercase',
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
 
   rangeNote: {
-    fontSize: 10,
+    fontSize: 11,
     color:    colors.text.tertiary,
     opacity:  0.7,
   },

@@ -838,7 +838,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing[5],
   },
   trialBadgeIcon: {
-    fontSize: 14,
+    fontSize: 16,
   },
   trialBadgeText: {
     color: colors.amber[400],

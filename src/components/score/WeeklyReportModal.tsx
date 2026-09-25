@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
   },
   dayChipLabel: {
     color:        colors.text.tertiary,
-    fontSize:     9,
+    fontSize:     11,
     fontWeight:   fontWeight.semiBold,
     letterSpacing: 0.8,
   },
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
     gap:        spacing[1],
   },
   barScore: {
-    fontSize:   9,
+    fontSize:   11,
     fontWeight: fontWeight.bold,
   },
   barTrackWrap: {
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
   },
   barLabel: {
     color:    colors.text.tertiary,
-    fontSize: 10,
+    fontSize: 11,
   },
   barLabelToday: {
     color:      colors.amber[400],
@@ -630,7 +630,7 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
   },
   compBadge: {
-    fontSize:      8,
+    fontSize:      11,
     fontWeight:    fontWeight.bold,
     letterSpacing: 0.5,
     borderWidth:   1,
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
   },
   aiBadgeText: {
     color:      '#a78bfa',
-    fontSize:   9,
+    fontSize:   11,
     fontWeight: fontWeight.bold,
     letterSpacing: 0.5,
   },

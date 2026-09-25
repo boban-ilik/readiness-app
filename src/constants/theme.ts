@@ -81,10 +81,10 @@ export const fontFamily = {
 } as const;
 
 export const fontSize = {
-  xs:   11,
-  sm:   13,
-  base: 15,
-  md:   17,
+  xs:   12,
+  sm:   15,
+  base: 17,
+  md:   18,
   lg:   20,
   xl:   24,
   '2xl': 30,

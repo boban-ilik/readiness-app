@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     paddingVertical:   4,
   },
   phaseEmoji: {
-    fontSize: 13,
+    fontSize: 15,
   },
   phaseName: {
     fontSize:   fontSize.sm,
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   },
   expandIcon: {
     color:    colors.text.tertiary,
-    fontSize: 10,
+    fontSize: 11,
   },
 
   // ── Context note ──────────────────────────────────────────────────────────
@@ -355,6 +355,6 @@ const sectionStyles = StyleSheet.create({
   },
   privacy: {
     color:    colors.text.tertiary,
-    fontSize: 10,
+    fontSize: 11,
   },
 });

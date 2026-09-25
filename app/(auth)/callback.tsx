@@ -155,7 +155,7 @@ export default function AuthCallbackScreen() {
       <Text
         style={{
           color: error ? '#F87171' : colors.text.secondary,
-          fontSize: 14,
+          fontSize: 16,
           marginTop: 10,
           textAlign: 'center',
           lineHeight: 20,

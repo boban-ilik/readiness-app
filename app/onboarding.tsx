@@ -1132,7 +1132,7 @@ const styles = StyleSheet.create({
   },
   freqCheckMark: {
     color: colors.text.inverse,
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: fontWeight.bold,
   },
 
@@ -1186,7 +1186,7 @@ const styles = StyleSheet.create({
   },
   goalCheckMark: {
     color: colors.text.inverse,
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: fontWeight.bold,
   },
 

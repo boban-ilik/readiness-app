@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border.default,
   },
   hydrationIcon: {
-    fontSize: 14,
+    fontSize: 16,
     lineHeight: 20,
   },
   hydrationText: {

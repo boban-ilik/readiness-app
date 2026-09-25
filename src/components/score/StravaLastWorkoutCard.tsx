@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   },
   stravaBadgeText: {
     color:      STRAVA_ORANGE,
-    fontSize:   10,
+    fontSize:   11,
     fontWeight: fontWeight.semiBold,
   },
   card: {
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     paddingVertical:   2,
   },
   sufferText: {
-    fontSize:   10,
+    fontSize:   11,
     fontWeight: fontWeight.bold,
   },
 });

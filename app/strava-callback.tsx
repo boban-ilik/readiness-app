@@ -60,7 +60,7 @@ export default function StravaCallbackScreen() {
       <Text
         style={{
           color: colors.text.secondary,
-          fontSize: 14,
+          fontSize: 16,
           marginTop: 8,
           textAlign: 'center',
         }}

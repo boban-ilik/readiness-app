@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
     maxHeight: 120,
     color: colors.text.primary,
     fontSize: fontSize.base,
-    lineHeight: 20,
+    lineHeight: 23,
     paddingTop: 0,
     paddingBottom: 0,
   },

@@ -881,7 +881,7 @@ const styles = StyleSheet.create({
     justifyContent:  'center',
   },
   shareBtnIcon: {
-    fontSize: 14,
+    fontSize: 16,
     color:    colors.text.secondary,
   },
   freeBadge: {
@@ -949,7 +949,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   scoreDelta: {
-    fontSize:    10,
+    fontSize:    11,
     fontWeight:  fontWeight.semiBold,
     marginTop:   spacing[0.5],
     letterSpacing: 0.2,
@@ -970,7 +970,7 @@ const styles = StyleSheet.create({
     marginBottom:   spacing[4],
   },
   confidenceIcon: {
-    fontSize:   13,
+    fontSize:   15,
     lineHeight: 18,
   },
   confidenceText: {
@@ -1024,7 +1024,7 @@ const styles = StyleSheet.create({
   },
   insufficientEyebrow: {
     color: colors.amber[400],
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: fontWeight.semiBold,
     letterSpacing: 1.5,
   },
@@ -1063,7 +1063,7 @@ const styles = StyleSheet.create({
   },
   proSummaryBadgeText: {
     color: colors.bg.primary,
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: fontWeight.bold,
     letterSpacing: 1,
   },
