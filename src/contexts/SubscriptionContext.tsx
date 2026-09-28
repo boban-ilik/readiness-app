@@ -93,6 +93,8 @@ interface SubscriptionContextType {
   isPro: boolean;
   /** True when Pro access comes from the calibration-week trial rather than a purchase */
   isTrialActive: boolean;
+  /** True when Pro is a one-time lifetime purchase (Founder), with no subscription to manage */
+  isLifetime: boolean;
   /** Whole days of trial remaining (0 when expired or not applicable) */
   trialDaysLeft: number;
   /** Raw tier string — useful for analytics / display */
@@ -177,8 +179,15 @@ async function getRevenueCatUI(): Promise<{ default: { presentPaywall: (p: objec
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
+/** A Pro entitlement with no expiry date is a lifetime (Founder) purchase. */
+function isLifetimeEntitlement(info: { entitlements: { active: Record<string, { expirationDate?: string | null } | undefined> } }): boolean {
+  const pro = info.entitlements.active[ENTITLEMENT_PRO];
+  return !!pro && pro.expirationDate == null;
+}
+
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [isPro,      setIsPro]      = useState(false);
+  const [isLifetime, setIsLifetime] = useState(false);
   const [isLoading,  setIsLoading]  = useState(true);
   const [rcReady,    setRcReady]    = useState(false);
   const [identityReady, setIdentityReady] = useState(false);
@@ -235,13 +244,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
         const info = await Purchases.getCustomerInfo();
         if (!cancelled) {
-          setIsPro(devProRef.current || !!info.entitlements.active[ENTITLEMENT_PRO]);
+          setIsPro(devProRef.current || !!info.entitlements.active[ENTITLEMENT_PRO]); setIsLifetime(isLifetimeEntitlement(info));
         }
 
         // Real-time updates: fires after purchase, restore, or subscription change
         Purchases.addCustomerInfoUpdateListener((updatedInfo: CustomerInfo) => {
           if (!cancelled) {
-            setIsPro(devProRef.current || !!updatedInfo.entitlements.active[ENTITLEMENT_PRO]);
+            setIsPro(devProRef.current || !!updatedInfo.entitlements.active[ENTITLEMENT_PRO]); setIsLifetime(isLifetimeEntitlement(updatedInfo));
           }
         });
 
@@ -283,14 +292,14 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         if (userId) {
           const { customerInfo } = await Purchases.logIn(userId);
           if (!cancelled) {
-            setIsPro(devProRef.current || !!customerInfo.entitlements.active[ENTITLEMENT_PRO]);
+            setIsPro(devProRef.current || !!customerInfo.entitlements.active[ENTITLEMENT_PRO]); setIsLifetime(isLifetimeEntitlement(customerInfo));
           }
         } else {
           // logOut() rejects when the current user is already anonymous —
           // that's an expected no-op, swallowed by the catch below.
           const customerInfo = await Purchases.logOut();
           if (!cancelled) {
-            setIsPro(devProRef.current || !!customerInfo.entitlements.active[ENTITLEMENT_PRO]);
+            setIsPro(devProRef.current || !!customerInfo.entitlements.active[ENTITLEMENT_PRO]); setIsLifetime(isLifetimeEntitlement(customerInfo));
           }
         }
       } catch (e) {
@@ -311,7 +320,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       const Purchases = await getPurchases();
       if (!Purchases) return;
       const info = await Purchases.getCustomerInfo();
-      setIsPro(devProRef.current || !!info.entitlements.active[ENTITLEMENT_PRO]);
+      setIsPro(devProRef.current || !!info.entitlements.active[ENTITLEMENT_PRO]); setIsLifetime(isLifetimeEntitlement(info));
     } catch (e) {
       console.warn('[Subscription] refreshEntitlements failed:', e);
     }
@@ -385,6 +394,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         // active trial and vice versa.
         isPro: isPro || isTrialActive,
         isTrialActive: isTrialActive && !isPro,
+        isLifetime,
         trialDaysLeft,
         tier: isPro || isTrialActive ? 'pro' : 'free',
         isLoading,

@@ -64,3 +64,31 @@ describe('dailyOvernightHRV', () => {
     expect(byDay['2026-09-04']).toBe(40);
   });
 });
+
+describe('sleep-window HRV (1.0.4, Breathe sessions)', () => {
+  const at = (iso: string, ms: number) => ({ value: ms / 1000, startDate: iso });
+  const now = new Date('2026-09-23T09:30:00');
+  const sleep = { start: '2026-09-22T23:00:00', end: '2026-09-23T06:30:00' };
+  const samples = [
+    at('2026-09-23T02:00:00', 50),
+    at('2026-09-23T04:00:00', 54),
+    at('2026-09-23T07:15:00', 95),   // morning Breathe session, awake
+  ];
+
+  it('uses only readings taken while asleep when sleep is known', () => {
+    expect(summariseTodayHRV(samples, now, sleep)).toEqual({ value: 52, count: 2, daytime: false });
+  });
+
+  it('falls back to the evening-to-noon window without sleep data', () => {
+    expect(summariseTodayHRV(samples, now)?.value).toBe(66);   // (50 + 54 + 95) / 3
+  });
+
+  it('falls back when no reading falls inside the sleep window', () => {
+    expect(summariseTodayHRV([at('2026-09-23T07:15:00', 95)], now, sleep)?.value).toBe(95);
+  });
+
+  it('keeps history to in-sleep readings for nights with known sleep', () => {
+    const byDay = dailyOvernightHRV(samples, { '2026-09-23': sleep });
+    expect(byDay['2026-09-23']).toBe(52);
+  });
+});

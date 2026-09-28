@@ -9,6 +9,8 @@ declare module 'react-native-purchases' {
   export interface PurchasesEntitlementInfo {
     isActive: boolean;
     productIdentifier: string;
+    /** null for a lifetime (non-expiring) entitlement, as in the real SDK */
+    expirationDate: string | null;
   }
 
   export interface PurchasesEntitlementInfos {

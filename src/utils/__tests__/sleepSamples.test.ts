@@ -7,7 +7,7 @@ const s = (start: string, end: string, value: string) => ({ startDate: start, en
 describe('summariseSleepSamples', () => {
   it('reports deep, REM and efficiency as not measured for an unstaged night', () => {
     const r = summariseSleepSamples([s('2026-09-22T23:00:00', '2026-09-23T06:00:00', 'ASLEEP')]);
-    expect(r).toEqual({ duration: 420, deep: null, rem: null, efficiency: null });
+    expect(r).toMatchObject({ duration: 420, deep: null, rem: null, efficiency: null });
   });
 
   it('counts stages and ignores the duplicate generic ASLEEP sample', () => {
@@ -17,7 +17,7 @@ describe('summariseSleepSamples', () => {
       s('2026-09-23T03:00:00', '2026-09-23T04:30:00', 'DEEP'),
       s('2026-09-23T04:30:00', '2026-09-23T06:00:00', 'REM'),
     ]);
-    expect(r).toEqual({ duration: 420, deep: 90, rem: 90, efficiency: null });
+    expect(r).toMatchObject({ duration: 420, deep: 90, rem: 90, efficiency: null });
   });
 
   it('computes efficiency only when in-bed time exists', () => {
@@ -45,5 +45,48 @@ describe('unstaged night in the score', () => {
     const r = calculateReadiness(data);
     expect(r.components.sleep).toBe(100);
     expect(r.score).toBe(70);
+  });
+});
+
+import { splitSleepSessions, sleepByDay } from '../sleepSamples';
+
+describe('sleep sessions (1.0.4)', () => {
+  const night = [
+    s('2026-09-22T22:40:00', '2026-09-22T23:50:00', 'CORE'),
+    s('2026-09-22T23:50:00', '2026-09-23T01:10:00', 'DEEP'),
+    s('2026-09-23T01:10:00', '2026-09-23T05:00:00', 'CORE'),
+    s('2026-09-23T05:00:00', '2026-09-23T06:30:00', 'REM'),
+  ];
+
+  it('keeps stages that end before midnight in the same night', () => {
+    const byDay = sleepByDay(night);
+    expect(Object.keys(byDay)).toEqual(['2026-09-23']);
+    expect(byDay['2026-09-23'].duration).toBe(470);   // 22:40 to 06:30
+    expect(byDay['2026-09-23'].deep).toBe(80);
+  });
+
+  it('records the session start and end', () => {
+    const r = sleepByDay(night)['2026-09-23'];
+    expect(new Date(r.start!).getHours()).toBe(22);
+    expect(new Date(r.end!).getHours()).toBe(6);
+  });
+
+  it('skips an afternoon nap and splits on a long gap', () => {
+    const withNap = [...night, s('2026-09-23T14:00:00', '2026-09-23T15:10:00', 'ASLEEP')];
+    expect(splitSleepSessions(withNap)).toHaveLength(2);
+    expect(Object.keys(sleepByDay(withNap))).toEqual(['2026-09-23']);
+  });
+});
+
+describe('warning banner with only a typed-in HRV (1.0.4)', () => {
+  it('does not claim heart rate is tracked', () => {
+    const data: HealthData = {
+      date: '2026-09-28', hrv: 55, hrvSource: 'manual', restingHeartRate: null,
+      sleepDuration: null, deepSleep: null, remSleep: null, sleepEfficiency: null,
+      stressScore: null, daytimeAvgHR: null, steps: null, activeCalories: null, exerciseMinutes: null,
+    };
+    const msg = calculateReadiness(data).dataQuality.warningMessage ?? '';
+    expect(msg).toContain('HRV you entered');
+    expect(msg).not.toContain('Heart rate is tracked');
   });
 });

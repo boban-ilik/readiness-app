@@ -71,8 +71,31 @@ export interface TodayHRV {
  * 3. Otherwise null. A reading older than a day is not "today's HRV"; the
  *    UI shows the missing-HRV banner and offers manual entry instead.
  */
-export function summariseTodayHRV(samples: HRVSample[], now: Date = new Date()): TodayHRV | null {
+export interface SleepWindow { start: string | Date; end: string | Date }
+
+function inWindow(t: Date, w: SleepWindow): boolean {
+  return t >= new Date(w.start) && t <= new Date(w.end);
+}
+
+export function summariseTodayHRV(
+  samples: HRVSample[],
+  now: Date = new Date(),
+  sleep: SleepWindow | null = null,
+): TodayHRV | null {
   if (!samples?.length) return null;
+
+  // When last night's sleep is known, only readings taken while asleep count.
+  // Apple Watch also writes an HRV sample during every Breathe session (and
+  // other still, awake moments); those raise the number by the act of slow
+  // breathing and are not overnight recovery. Without sleep data, fall back
+  // to the fixed evening-to-noon window below.
+  if (sleep) {
+    const asleep = samples.filter(s => { const t = sampleTime(s); return inWindow(t, sleep) && t <= now; });
+    if (asleep.length > 0) {
+      const mean = asleep.reduce((sum, s) => sum + toMs(s.value), 0) / asleep.length;
+      return { value: Math.round(mean), count: asleep.length, daytime: false };
+    }
+  }
 
   const windowEnd = new Date(now);
   windowEnd.setHours(OVERNIGHT_END_HOUR, 0, 0, 0);
@@ -108,14 +131,24 @@ export function summariseTodayHRV(samples: HRVSample[], now: Date = new Date()):
  * readings fall back to the mean of those, so a watch that never samples at
  * night still gets a baseline.
  */
-export function dailyOvernightHRV(samples: HRVSample[]): Record<string, number> {
+export function dailyOvernightHRV(
+  samples: HRVSample[],
+  sleepByDay: Record<string, SleepWindow> = {},
+): Record<string, number> {
   const overnight: Record<string, number[]> = {};
   const daytime:   Record<string, number[]> = {};
+  const inSleep:   Record<string, number[]> = {};
 
   for (const s of samples) {
     const t = sampleTime(s);
     if (isNaN(t.getTime())) continue;
     const ms = toMs(s.value);
+    // A sample inside a known sleep session belongs to that night; samples
+    // outside it (a morning Breathe session, say) never count as overnight
+    // for a day whose sleep is known.
+    const nightKey = overnightDayKey(t);
+    const w = sleepByDay[nightKey];
+    if (w && inWindow(t, w)) (inSleep[nightKey] ??= []).push(ms);
     if (isOvernightHour(t)) {
       (overnight[overnightDayKey(t)] ??= []).push(ms);
     } else {
@@ -124,9 +157,9 @@ export function dailyOvernightHRV(samples: HRVSample[]): Record<string, number> 
   }
 
   const out: Record<string, number> = {};
-  const keys = new Set([...Object.keys(overnight), ...Object.keys(daytime)]);
+  const keys = new Set([...Object.keys(inSleep), ...Object.keys(overnight), ...Object.keys(daytime)]);
   for (const k of keys) {
-    const vals = overnight[k]?.length ? overnight[k] : daytime[k];
+    const vals = inSleep[k]?.length ? inSleep[k] : overnight[k]?.length ? overnight[k] : daytime[k];
     if (!vals?.length) continue;
     out[k] = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
   }

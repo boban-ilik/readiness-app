@@ -375,6 +375,19 @@ function buildSleep(score: number, h: HealthData | null): BreakdownDetail {
     });
   }
 
+  // No recorded night: the score is the neutral 50 placeholder. Describing
+  // "last night's sleep" here would invent a night nobody measured.
+  if (sleepDuration == null) {
+    return {
+      icon: '🌙', label: 'Sleep', weight: '40%',
+      dateContext: lastNightContext(),
+      score, statusLabel, statusColor,
+      metrics,
+      interpretation: `No sleep was recorded last night, so Sleep counts as a neutral ${Math.round(score)} in your score: it neither helps nor hurts. It is a placeholder, not a measurement of how you slept.`,
+      advice: 'Wear your watch to bed with sleep tracking turned on in its app, so tomorrow\'s score includes your real sleep. Sleep is 40% of the score, the largest single part.',
+    };
+  }
+
   // ── Interpretation ──────────────────────────────────────────────────────────
   const parts: string[] = [];
 

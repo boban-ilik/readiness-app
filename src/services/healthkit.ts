@@ -12,7 +12,7 @@
 
 import { Platform } from 'react-native';
 import { summariseTodayHRV, dailyOvernightHRV, OVERNIGHT_START_HOUR, type HRVSample } from '@utils/hrvSamples';
-import { summariseSleepSamples, type SleepSummary } from '@utils/sleepSamples';
+import { summariseSleepSamples, splitSleepSessions, sleepByDay, type SleepSummary } from '@utils/sleepSamples';
 import type { HealthData } from '@/types/index';
 
 // react-native-health is only available on iOS native builds.
@@ -98,10 +98,11 @@ export async function fetchTodaysHealthData(): Promise<HealthData | null> {
   sleepStart.setDate(sleepStart.getDate() - 2);
   sleepStart.setHours(18, 0, 0, 0); // 6 pm, two days ago
 
+  const sleepP = fetchSleepData(sleepStart.toISOString(), now.toISOString());
   const [hrv, rhr, sleep, daytimeHR, steps, activeCalories, exerciseMinutes] = await Promise.allSettled([
-    fetchLatestHRV(),                                        // has its own 24 h window
+    fetchLatestHRV(sleepP),                                  // own window; limited to the sleep session when known
     fetchRestingHeartRate(rhrStart.toISOString(), now.toISOString()),
-    fetchSleepData(sleepStart.toISOString(), now.toISOString()),
+    sleepP,
     fetchDaytimeAvgHR(),                                     // waking-hours HR for stress proxy
     fetchYesterdaySteps(),                                   // yesterday midnight→midnight
     fetchYesterdayActiveCalories(),                          // yesterday active kcal
@@ -130,9 +131,11 @@ export async function fetchTodaysHealthData(): Promise<HealthData | null> {
 
 // ─── Individual metric fetchers ───────────────────────────────────────────────
 
-function fetchLatestHRV(): Promise<number | null> {
+function fetchLatestHRV(sleep: Promise<SleepSummary | null>): Promise<number | null> {
   // 36 h covers "yesterday 8 pm to today noon" plus the 24 h daytime
-  // fallback. Selection lives in summariseTodayHRV (pure, unit-tested).
+  // fallback. Selection lives in summariseTodayHRV (pure, unit-tested). When
+  // last night's sleep session is known, only readings taken during it count
+  // (keeps Apple Watch Breathe-session samples out of the overnight value).
   const now       = new Date();
   const startDate = new Date(now.getTime() - 36 * 60 * 60 * 1000);
 
@@ -152,13 +155,16 @@ function fetchLatestHRV(): Promise<number | null> {
           console.log('[Readiness] HRV: no samples in last 36 h');
           return resolve(null);
         }
-        const today = summariseTodayHRV(results as HRVSample[], now);
-        if (!today) {
-          console.log('[Readiness] HRV: samples exist but none from the last day');
-          return resolve(null);
-        }
-        console.log(`[Readiness] HRV ${today.value} ms from ${today.count} ${today.daytime ? 'daytime' : 'overnight'} sample(s)`);
-        resolve(today.value);
+        sleep.catch(() => null).then((night) => {
+          const sleepWindow = night?.start && night?.end ? { start: night.start, end: night.end } : null;
+          const today = summariseTodayHRV(results as HRVSample[], now, sleepWindow);
+          if (!today) {
+            console.log('[Readiness] HRV: samples exist but none from the last day');
+            return resolve(null);
+          }
+          console.log(`[Readiness] HRV ${today.value} ms from ${today.count} ${today.daytime ? 'daytime' : 'overnight'} sample(s)${sleepWindow ? ', sleep window known' : ''}`);
+          resolve(today.value);
+        });
       }
     );
   });
@@ -243,7 +249,10 @@ function fetchHRVSamples(days: number): Promise<HRVSample[]> {
 
 /** Daily overnight HRV (ms) keyed by local date, for History and correlations. */
 export async function fetchHRVByDay(days: number): Promise<Record<string, number>> {
-  const byDay = dailyOvernightHRV(await fetchHRVSamples(days));
+  const [samples, nights] = await Promise.all([fetchHRVSamples(days), fetchSleepByDay(days)]);
+  const windows: Record<string, { start: string; end: string }> = {};
+  for (const [day, n] of Object.entries(nights)) if (n.start && n.end) windows[day] = { start: n.start, end: n.end };
+  const byDay = dailyOvernightHRV(samples, windows);
   console.log('[Readiness] HRV history days:', Object.keys(byDay).length);
   return byDay;
 }
@@ -315,21 +324,9 @@ export function fetchSleepByDay(days: number): Promise<Record<string, SleepDay>>
       (err: any, samples: any[]) => {
         if (err || !samples?.length) return resolve({});
 
-        // Group samples by wake-up date; skip afternoon naps / misattributed chunks
-        const groups: Record<string, any[]> = {};
-        for (const s of samples) {
-          const endDate = new Date(s.endDate);
-          if (endDate.getHours() >= 14) continue; // nap / noise
-          const key = localDateStr(endDate);
-          if (!groups[key]) groups[key] = [];
-          groups[key].push(s);
-        }
-
-        const result: Record<string, SleepDay> = {};
-        for (const [date, daySamples] of Object.entries(groups)) {
-          const summary = summariseSleepSamples(daySamples, 60); // at least 1 h, filters sensor noise
-          if (summary) result[date] = summary;
-        }
+        // Whole sessions keyed by wake-up date; naps (ending 14:00 or later)
+        // skipped. See sleepByDay for why this is per session, not per sample.
+        const result: Record<string, SleepDay> = sleepByDay(samples, 60); // at least 1 h, filters sensor noise
         resolve(result);
       },
     );
@@ -670,29 +667,7 @@ function fetchSleepData(startDate: string, endDate: string): Promise<SleepSummar
       // each night separately, so we sort samples by start time, split into
       // sessions wherever there is a gap > 4 hours (daytime waking period),
       // and take only the final session = last night's sleep.
-      const sorted = [...results].sort(
-        (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
-      );
-
-      const SESSION_GAP_MS = 4 * 60 * 60 * 1000; // 4 h gap = new sleep session
-      const sessions: any[][] = [];
-      let current: any[] = [];
-
-      for (const s of sorted) {
-        if (current.length === 0) {
-          current.push(s);
-        } else {
-          const lastEnd   = new Date(current[current.length - 1].endDate).getTime();
-          const thisStart = new Date(s.startDate).getTime();
-          if (thisStart - lastEnd > SESSION_GAP_MS) {
-            sessions.push(current);
-            current = [s];
-          } else {
-            current.push(s);
-          }
-        }
-      }
-      if (current.length > 0) sessions.push(current);
+      const sessions = splitSleepSessions(results as any[]);
 
       const session = sessions[sessions.length - 1] ?? [];
       console.log(`[Readiness] Sleep sessions in window: ${sessions.length} — using last (${session.length} samples)`);

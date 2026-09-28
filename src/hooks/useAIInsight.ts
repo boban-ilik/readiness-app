@@ -60,6 +60,8 @@ export function useAIInsight({
       !!component &&
       component !== 'activity' &&
       !!healthData &&
+      // Nothing to interpret: the static copy explains the neutral placeholder.
+      !(component === 'sleep' && healthData.sleepDuration == null) &&
       !!process.env.EXPO_PUBLIC_SUPABASE_URL; // skip silently if Supabase not configured
 
     if (!shouldFetch) {

@@ -531,7 +531,7 @@ function NotificationsContent() {
 export default function ProfileScreen() {
   const router                             = useRouter();
   const { user, signOut }                  = useAuth();
-  const { isPro, isTrialActive, trialDaysLeft, debugSetPro, presentPaywall, presentCustomerCenter } = useSubscription();
+  const { isPro, isTrialActive, isLifetime, trialDaysLeft, debugSetPro, presentPaywall, presentCustomerCenter } = useSubscription();
 
   // ── Profile fields ──────────────────────────────────────────────────────────
   const [userName,     setUserName]     = useState<string>('');
@@ -986,8 +986,9 @@ export default function ProfileScreen() {
             />
           </TouchableOpacity>
           {/* Trial users have nothing to manage in the Customer Center — they
-              have no subscription yet. Show them the upgrade path instead. */}
-          {isPro && !isTrialActive && (
+              have no subscription yet. Show them the upgrade path instead.
+              Founder (lifetime) buyers have no subscription either. */}
+          {isPro && !isTrialActive && !isLifetime && (
             <RowBase
               label="Manage subscription"
               sublabel="Cancel, upgrade, request refund, or contact support"

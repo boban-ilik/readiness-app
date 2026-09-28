@@ -20,6 +20,65 @@ export interface SleepSummary {
   deep:       number | null;  // null when the device records no stages
   rem:        number | null;  // null when the device records no stages
   efficiency: number | null;  // null when no in-bed time was recorded
+  /** Earliest start and latest end of the session's samples (ISO), used to
+   *  keep HRV readings to the time actually asleep. */
+  start?:     string;
+  end?:       string;
+}
+
+const SESSION_GAP_MS = 4 * 60 * 60 * 1000; // a gap over 4 h starts a new session
+/** Sessions ending at or after this local hour are naps, not the night's sleep. */
+export const NAP_END_HOUR = 14;
+
+/**
+ * Split sleep samples into sessions: sorted by start, a new session begins
+ * after a gap of more than 4 hours. A night's stage samples stay together
+ * even when some of them end before midnight.
+ */
+export function splitSleepSessions<T extends SleepSampleLike>(samples: T[]): T[][] {
+  const sorted = [...samples].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+  const sessions: T[][] = [];
+  let current: T[] = [];
+  let currentEnd = 0;
+  for (const s of sorted) {
+    const start = new Date(s.startDate).getTime();
+    const end   = new Date(s.endDate).getTime();
+    if (current.length > 0 && start - currentEnd > SESSION_GAP_MS) {
+      sessions.push(current);
+      current = [];
+      currentEnd = 0;
+    }
+    current.push(s);
+    currentEnd = Math.max(currentEnd, end);
+  }
+  if (current.length > 0) sessions.push(current);
+  return sessions;
+}
+
+function localDay(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * One sleep summary per wake-up date (local), from whole sessions. Sessions
+ * that end at or after 14:00 are naps and skipped. If two sessions end on the
+ * same date, the longer one is the night.
+ *
+ * Before 1.0.4 History grouped individual samples by their own end date and
+ * dropped every sample ending after 14:00, which split a night at midnight
+ * and lost the stages recorded before it.
+ */
+export function sleepByDay(samples: SleepSampleLike[], minAsleepMinutes = 60): Record<string, SleepSummary> {
+  const out: Record<string, SleepSummary> = {};
+  for (const session of splitSleepSessions(samples)) {
+    const summary = summariseSleepSamples(session, minAsleepMinutes);
+    if (!summary?.end) continue;
+    const end = new Date(summary.end);
+    if (end.getHours() >= NAP_END_HOUR) continue;
+    const key = localDay(end);
+    if (!out[key] || summary.duration > out[key].duration) out[key] = summary;
+  }
+  return out;
 }
 
 const STAGE_VALUES = ['CORE', 'DEEP', 'REM', 'ASLEEP_CORE', 'ASLEEP_DEEP', 'ASLEEP_REM'];
@@ -57,10 +116,18 @@ export function summariseSleepSamples(
 
   if (asleep < minAsleepMinutes || asleep === 0) return null;
 
+  // Session bounds from the samples that describe sleep itself (not AWAKE).
+  const asleepish = samples.filter(x => x.value !== 'AWAKE' && x.value !== 'ASLEEP_AWAKE');
+  const starts = asleepish.map(x => new Date(x.startDate).getTime()).filter(Number.isFinite);
+  const ends   = asleepish.map(x => new Date(x.endDate).getTime()).filter(Number.isFinite);
+
   return {
     duration:   Math.round(asleep),
     deep:       hasStages ? Math.round(deep) : null,
     rem:        hasStages ? Math.round(rem)  : null,
     efficiency: inBed > 0 ? Math.round((asleep / inBed) * 100) : null,
+    ...(starts.length && ends.length
+      ? { start: new Date(Math.min(...starts)).toISOString(), end: new Date(Math.max(...ends)).toISOString() }
+      : {}),
   };
 }

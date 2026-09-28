@@ -266,6 +266,9 @@ function assessDataQuality(data: HealthData): DataQuality {
   } else if (confidence === 'medium') {
     if (!hasHRV && !hasRHR) {
       warningMessage = 'Sleep is tracked. Wear your watch snugly overnight to add heart rate, or tap to enter HRV yourself.';
+    } else if (!hasSleep && !hasRHR && data.hrvSource === 'manual') {
+      // Only a typed-in HRV: nothing was tracked, so don't claim it was.
+      warningMessage = 'This score uses the HRV you entered. Wear a watch to bed to add sleep and resting heart rate, most of your score.';
     } else if (!hasSleep) {
       warningMessage = 'Heart rate is tracked. Wear your watch to bed to add sleep, the largest part of your score.';
     } else if (!hasHRV) {

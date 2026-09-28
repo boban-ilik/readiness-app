@@ -188,7 +188,10 @@ function buildActivityDetail(h: HealthData | null, today: TodayActivity | null):
 
 // Build a human-readable detail line for the Sleep card.
 function buildSleepDetail(h: HealthData | null): string | undefined {
-  if (!h?.sleepDuration) return undefined;
+  if (!h) return undefined;
+  // Without a recorded night the Sleep score is a neutral 50, not a
+  // measurement; say so on the card instead of showing a bare 50.
+  if (!h.sleepDuration) return 'No sleep recorded · counted as a neutral 50';
   const totalH = Math.floor(h.sleepDuration / 60);
   const totalM = h.sleepDuration % 60;
   const parts = [`${totalH}h ${totalM}m`];
