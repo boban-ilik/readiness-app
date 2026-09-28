@@ -1,0 +1,32 @@
+{
+  "query": "how to improve hrv",
+  "locale": "us/en",
+  "provider": "ahrefs serp-overview",
+  "captured_at": "2026-09-25",
+  "pages": [
+    {
+      "url": "https://www.polar.com/en/guide/my-hrv-is-very-low",
+      "title": "My HRV is Very Low. Can I Increase My Heart Rate Variability? (Polar)",
+      "observed_position": 6,
+      "selection_basis": "observed_rank",
+      "reason": "Highest-ranking external page whose job is the reader task (my HRV is low, how do I raise it): position 6 for 'how to improve hrv' and position 2 for the co-primary 'how to increase hrv'; cited by the AI Overview on both queries. Wearable-vendor guide with six improvement levers, each tied to a linked study.",
+      "capture_path": "polar-my-hrv-is-very-low.md"
+    },
+    {
+      "url": "https://ucfhealth.com/our-services/cardiology/how-to-improve-heart-rate-variability/",
+      "title": "How to Improve Heart Rate Variability: 9 Things to Consider (UCF Health)",
+      "observed_position": 7,
+      "selection_basis": "observed_rank",
+      "reason": "Second-highest dedicated how-to-improve page: position 7 for 'how to improve hrv' and 9 for 'how to increase hrv'; cited by the AI Overview on both. Academic medical practice page (2023) covering factors, box breathing, sleep, activity, nutrition and baseline measurement; no references.",
+      "capture_path": "ucf-how-to-improve-hrv.md"
+    },
+    {
+      "url": "https://www.differenthealth.com/blog/how-to-improve-hrv",
+      "title": "How to Increase HRV: 5 Proven Ways to Improve It (Different Health)",
+      "observed_position": 9,
+      "selection_basis": "observed_rank",
+      "reason": "Third-highest dedicated page: position 9 for 'how to improve hrv' and 6 for 'how to increase hrv'; cited by the AI Overview on both. The only page that already ranks levers by strength of evidence and gives a tracking method, so it is the closest competitor to the intake angle.",
+      "capture_path": "differenthealth-how-to-improve-hrv.md"
+    }
+  ]
+}

@@ -1,0 +1,364 @@
+{
+  "approval_mode": "guided",
+  "archetype": {
+    "recommended": null,
+    "selected": null
+  },
+  "artifacts": {
+    "article.md": {
+      "bytes": 23337,
+      "sha256": "6faf75c60eb67ebb53b54eb5a9e8a5d33def40016c9ea6d074e7e934ed6b8d62",
+      "status": "completed"
+    },
+    "brief.md": {
+      "bytes": 15115,
+      "sha256": "6633efc3d88ac9e04517e20f73f6ce1387902373bf5b05a7591d432c62e70b88",
+      "status": "completed"
+    },
+    "draft.md": {
+      "bytes": 23124,
+      "sha256": "d707b1caaa6972da474cec9ac2e17c67b191153f36269b286f874c48c6c330b9",
+      "status": "completed"
+    },
+    "qa.md": {
+      "bytes": 3811,
+      "sha256": "8b8646e1615ee132d8768aa9043eb73b9945eaff2444bd26dde097689181c1a8",
+      "status": "completed"
+    },
+    "research.md": {
+      "bytes": 73104,
+      "sha256": "de5d874f7e2425e6ae806e28cc63861f32a0344b4a81cbbeb4e11bfc2fae79e2",
+      "status": "completed"
+    },
+    "run.json": {
+      "status": "completed"
+    }
+  },
+  "checkpoints": {
+    "archetype": true,
+    "brief": true
+  },
+  "competitor_benchmark": {
+    "competitor_sha256": "65a6b626121df322e5ee09d191023b99293559dd1338a4bf50a6de3de39d968e",
+    "evidence_ref": "research.md#serp-and-competitor-benchmark",
+    "ranking_evidence": {
+      "basis": "observed_serp",
+      "inspected_results": [
+        {
+          "disposition": "excluded",
+          "observed_position": 2,
+          "reason": "General 'what is HRV' health-library explainer; improvement content is two bullets and one biofeedback sentence (about 100 words). Excluded on format and depth, not authority; its relevant passages are benchmarked in research.md section 3.",
+          "url": "https://my.clevelandclinic.org/health/symptoms/21773-heart-rate-variability-hrv"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 4,
+          "reason": "Academic review of exercise therapy in cardiac patients (Routledge 2010); evidence lead E33, not an editorial competitor.",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2903986/"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 5,
+          "reason": "Discussion thread, not an article; Reddit blocked curl and WebFetch, title only.",
+          "url": "https://www.reddit.com/r/triathlon/comments/1o89vkv/true_unhinged_tips_to_increase_hrv/"
+        },
+        {
+          "disposition": "selected",
+          "observed_position": 6,
+          "reason": "Highest-ranking external page whose job is the reader task; #2 for the co-primary; AI Overview source on both queries.",
+          "url": "https://www.polar.com/en/guide/my-hrv-is-very-low"
+        },
+        {
+          "disposition": "selected",
+          "observed_position": 7,
+          "reason": "Second-highest dedicated how-to-improve page; #9 for the co-primary; AI Overview source on both queries.",
+          "url": "https://ucfhealth.com/our-services/cardiology/how-to-improve-heart-rate-variability/"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 8,
+          "reason": "Video (Huberman clip, 8 min 45 s), not an article; its claim is registered in E39 and tested against E15.",
+          "url": "https://www.youtube.com/watch?v=2M0yhiUmHpo"
+        },
+        {
+          "disposition": "selected",
+          "observed_position": 9,
+          "reason": "Third-highest dedicated page; #6 for the co-primary; AI Overview source on both; the only page already ranking levers by evidence, so the closest competitor to the intake angle.",
+          "url": "https://www.differenthealth.com/blog/how-to-improve-hrv"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 10,
+          "reason": "Discussion thread, not an article; capture blocked, title only.",
+          "url": "https://www.reddit.com/r/whoop/comments/ku8idw/if_you_really_want_to_increase_hrv_let_me_show/"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 11,
+          "reason": "Outside the top ten organic rows for the primary query (#10 for the co-primary); HTTP 403 on curl and WebFetch, not inspected.",
+          "url": "https://mcpress.mayoclinic.org/healthy-heart/can-tracking-heart-rate-variability-improve-your-health/"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 12,
+          "reason": "Outside the top ten; physio-clinic post selling a PDF tracker, skimmed only.",
+          "url": "https://www.sbphysio.com/blog//blog/how-to-improve-hrv"
+        }
+      ],
+      "inspection_complete": true,
+      "reference": "Ahrefs SERP overview, keyword 'how to improve hrv', US, captured 2026-09-25, retrieved by the orchestrator (.runtime/serp-how-to-improve-hrv-us.json); co-primary 'how to increase hrv', US, 2026-09-25 (.runtime/serp-how-to-increase-hrv-us.json) as corroboration."
+    },
+    "rationale": "The three highest-ranking external articles whose job is the reader task (raise a low HRV) were captured in full and benchmarked passage by passage against primary sources (research.md section 3). Every other top-ten organic or discussion row for the primary query is excluded with a reason. All three selected pages also rank in the top ten for the co-primary 'how to increase hrv' and are cited by the AI Overview on both queries, supporting one article for both. Positions are from the primary query's SERP. Position 5 is a Reddit discussions box holding two threads; the r/triathlon thread is listed and the r/welltory thread (https://www.reddit.com/r/welltory/comments/1fohl3r/my_hrv_is_low_how_can_i_improve_it_part_1_proven/) is excluded for the same reason: Discussion thread on a vendor subreddit, not an article; capture blocked, title only. The Oura page (https://ouraring.com/blog/8-ways-to-improve-your-hrv/) ranks only on the co-primary query (position 11) and is excluded: Not in the primary-query set; #11 for the co-primary only (outside its top ten). Client-rendered; read via WebFetch summary as a lead only (E39).",
+    "recorded_at": "2026-09-25T17:18:43.697354+00:00",
+    "research_sha256": "de5d874f7e2425e6ae806e28cc63861f32a0344b4a81cbbeb4e11bfc2fae79e2",
+    "run_id": "2026-09-25-how-to-improve-hrv",
+    "source_sha256": null,
+    "status": "benchmarked"
+  },
+  "competitor_pages": {
+    "bytes": 34017,
+    "captured_at": "2026-09-25",
+    "locale": "us/en",
+    "pages": [
+      {
+        "bytes": 11612,
+        "observed_position": 6,
+        "reason": "Highest-ranking external page whose job is the reader task (my HRV is low, how do I raise it): position 6 for 'how to improve hrv' and position 2 for the co-primary 'how to increase hrv'; cited by the AI Overview on both queries. Wearable-vendor guide with six improvement levers, each tied to a linked study.",
+        "selection_basis": "observed_rank",
+        "sha256": "695cf347781273b6e45e598a30713083e4c2173fc143aa06876c4a52eeb36c86",
+        "title": "My HRV is Very Low. Can I Increase My Heart Rate Variability? (Polar)",
+        "url": "https://www.polar.com/en/guide/my-hrv-is-very-low"
+      },
+      {
+        "bytes": 8478,
+        "observed_position": 7,
+        "reason": "Second-highest dedicated how-to-improve page: position 7 for 'how to improve hrv' and 9 for 'how to increase hrv'; cited by the AI Overview on both. Academic medical practice page (2023) covering factors, box breathing, sleep, activity, nutrition and baseline measurement; no references.",
+        "selection_basis": "observed_rank",
+        "sha256": "e4336adc0d59350483e1a5a305b48510b8b5cdaa41c459bb2498a247af1c5318",
+        "title": "How to Improve Heart Rate Variability: 9 Things to Consider (UCF Health)",
+        "url": "https://ucfhealth.com/our-services/cardiology/how-to-improve-heart-rate-variability/"
+      },
+      {
+        "bytes": 11218,
+        "observed_position": 9,
+        "reason": "Third-highest dedicated page: position 9 for 'how to improve hrv' and 6 for 'how to increase hrv'; cited by the AI Overview on both. The only page that already ranks levers by strength of evidence and gives a tracking method, so it is the closest competitor to the intake angle.",
+        "selection_basis": "observed_rank",
+        "sha256": "453a900ff0a623ba098d697bcf2cb48dac6d899245fd9f957203196bec666815",
+        "title": "How to Increase HRV: 5 Proven Ways to Improve It (Different Health)",
+        "url": "https://www.differenthealth.com/blog/how-to-improve-hrv"
+      }
+    ],
+    "provider": "ahrefs serp-overview",
+    "query": "how to improve hrv",
+    "sha256": "65a6b626121df322e5ee09d191023b99293559dd1338a4bf50a6de3de39d968e",
+    "snapshot_path": ".runtime/competitor-pages.json"
+  },
+  "consent": {
+    "apify": null,
+    "openrouter": {
+      "events": []
+    }
+  },
+  "current_stage": "qa",
+  "doctrine": {
+    "files": [
+      {
+        "bytes": 1859,
+        "path": "ai-visibility.md",
+        "sha256": "ca9850ff7d19ded6c9917e7db8c5a30a5f1c3eff042f1046a8a6ca0fe56a973a"
+      },
+      {
+        "bytes": 4936,
+        "path": "editing.md",
+        "sha256": "780a6312311d3675be998a1e9820d15eb3a1523de995225281c8f2c38df00944"
+      },
+      {
+        "bytes": 5612,
+        "path": "links.md",
+        "sha256": "e8b023c0522c6ad32344bd1d64ea082c1f91f02450766f7dda941d0bc6eda691"
+      },
+      {
+        "bytes": 2848,
+        "path": "sources-evidence.md",
+        "sha256": "10b3ab3031dd8472e48c93e698029211ffbb6bdfa5749da0e962d5f161d62ed9"
+      },
+      {
+        "bytes": 3661,
+        "path": "voice.md",
+        "sha256": "5d00c742d4e1353b41ccc7478912dd2515079a88b700b7cbf416ca553c5d4111"
+      },
+      {
+        "bytes": 5882,
+        "path": "writing.md",
+        "sha256": "d878fd031213771e5a81315f32797f32c3f717039d4c0ae7ac779ad6bcbc8136"
+      }
+    ],
+    "hash": "8a473bcf31622b9906b2129ef590923eb39737ef9a6d85e444d5c4d7a0a711c5",
+    "paths": [
+      "ai-visibility.md",
+      "editing.md",
+      "links.md",
+      "sources-evidence.md",
+      "voice.md",
+      "writing.md"
+    ],
+    "root": "/Users/bobanilikj/.claude/plugins/cache/authority-hacker-plugins/seo-article-writer-v2/0.1.13/doctrine",
+    "snapshot_path": ".runtime/doctrine-snapshot.json",
+    "snapshot_sha256": "aa49d4e672126c94fdf55e9788db90e2a1e82bf1aaff814432cccfa28f8db85c",
+    "source": "bundled",
+    "warnings": [
+      "no user doctrine loaded; using bundled doctrine"
+    ]
+  },
+  "failure": null,
+  "final_gate": {
+    "edited_before_humanize": {
+      "bytes": 23364,
+      "sha256": "521f1d0815408c26b630c063ca726aea72137d7642e06ea7e2ee3f36d59de43c"
+    },
+    "humanizer": {
+      "input_sha256": "521f1d0815408c26b630c063ca726aea72137d7642e06ea7e2ee3f36d59de43c",
+      "output_sha256": "6faf75c60eb67ebb53b54eb5a9e8a5d33def40016c9ea6d074e7e934ed6b8d62"
+    },
+    "passed": true,
+    "qa_decision": "passed",
+    "site_url": "https://thereadiness.app/blog/how-to-increase-hrv/"
+  },
+  "last_valid_artifact": "qa.md",
+  "mode": "new",
+  "model_routes": {
+    "editor": {
+      "effective": "claude-opus-5-5",
+      "fallback_used": false,
+      "provider": "native",
+      "requested": "automatic"
+    },
+    "writer": {
+      "effective": "claude-opus-5-5",
+      "fallback_used": false,
+      "provider": "native",
+      "requested": "automatic"
+    }
+  },
+  "openrouter_calls": [],
+  "openrouter_candidates_purged": 0,
+  "openrouter_responses_purged": 0,
+  "openrouter_totals": {
+    "accepted_calls": 0,
+    "cost_usd": 0.0,
+    "logical_calls": 0,
+    "provider_generations": 0,
+    "rejected_calls": 0,
+    "unknown_cost_calls": 0
+  },
+  "profile": {
+    "hash": null,
+    "name": null,
+    "root": null,
+    "selection": "bundled"
+  },
+  "provenance": {
+    "history": {
+      "editor": [
+        {
+          "attempt": 1,
+          "bytes": 23357,
+          "id": "a1e30f78abe2c3f5d",
+          "kind": "subagent",
+          "model_route": {
+            "effective": "claude-opus-5-5",
+            "fallback_used": false,
+            "provider": "native",
+            "requested": "automatic"
+          },
+          "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-09-25-how-to-improve-hrv/.runtime/edited-before-humanize.md",
+          "sha256": "f7db77700e290aaf4e8df6073e81104221a6cab1d9a018cdc1eb98e11e473528"
+        },
+        {
+          "attempt": 2,
+          "bytes": 23364,
+          "id": "a1e30f78abe2c3f5d",
+          "kind": "subagent",
+          "model_route": {
+            "effective": "claude-opus-5-5",
+            "fallback_used": false,
+            "provider": "native",
+            "requested": "automatic"
+          },
+          "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-09-25-how-to-improve-hrv/.runtime/edited-before-humanize.md",
+          "sha256": "521f1d0815408c26b630c063ca726aea72137d7642e06ea7e2ee3f36d59de43c",
+          "supersedes_sha256": "f7db77700e290aaf4e8df6073e81104221a6cab1d9a018cdc1eb98e11e473528"
+        }
+      ],
+      "writer": [
+        {
+          "attempt": 1,
+          "bytes": 23124,
+          "id": "a6810a097fd80bba0",
+          "kind": "subagent",
+          "model_route": {
+            "effective": "claude-opus-5-5",
+            "fallback_used": false,
+            "provider": "native",
+            "requested": "automatic"
+          },
+          "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-09-25-how-to-improve-hrv/draft.md",
+          "sha256": "d707b1caaa6972da474cec9ac2e17c67b191153f36269b286f874c48c6c330b9"
+        }
+      ]
+    },
+    "outputs": {
+      "editor": {
+        "attempt": 2,
+        "bytes": 23364,
+        "id": "a1e30f78abe2c3f5d",
+        "kind": "subagent",
+        "model_route": {
+          "effective": "claude-opus-5-5",
+          "fallback_used": false,
+          "provider": "native",
+          "requested": "automatic"
+        },
+        "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-09-25-how-to-improve-hrv/.runtime/edited-before-humanize.md",
+        "sha256": "521f1d0815408c26b630c063ca726aea72137d7642e06ea7e2ee3f36d59de43c",
+        "supersedes_sha256": "f7db77700e290aaf4e8df6073e81104221a6cab1d9a018cdc1eb98e11e473528"
+      },
+      "writer": {
+        "attempt": 1,
+        "bytes": 23124,
+        "id": "a6810a097fd80bba0",
+        "kind": "subagent",
+        "model_route": {
+          "effective": "claude-opus-5-5",
+          "fallback_used": false,
+          "provider": "native",
+          "requested": "automatic"
+        },
+        "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-09-25-how-to-improve-hrv/draft.md",
+        "sha256": "d707b1caaa6972da474cec9ac2e17c67b191153f36269b286f874c48c6c330b9"
+      }
+    }
+  },
+  "qa": {
+    "editor_fresh_context": true,
+    "execution_contexts": {
+      "editor": {
+        "id": "a1e30f78abe2c3f5d",
+        "kind": "subagent"
+      },
+      "writer": {
+        "id": "a6810a097fd80bba0",
+        "kind": "subagent"
+      }
+    },
+    "writer_fresh_context": true
+  },
+  "rejected_openrouter_outputs_purged": 0,
+  "research_stop_closed": true,
+  "run_contract_version": 4,
+  "run_id": "2026-09-25-how-to-improve-hrv",
+  "schema_version": 1,
+  "source_presentation": "automatic",
+  "status": "completed",
+  "topic": null
+}
