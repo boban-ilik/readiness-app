@@ -125,6 +125,16 @@ export async function evaluateActiveIllness(): Promise<{ episode: IllnessEpisode
   return { episode: { ...ep, recoveredDate: status.recoveredDate ?? undefined }, status };
 }
 
+/**
+ * Whether training is held at Easy Day, from storage alone (no HealthKit), so
+ * the widget's first update after launch is already capped. The hook's full
+ * evaluation corrects it if the readings came back since.
+ */
+export async function isIllnessCapStored(): Promise<boolean> {
+  const ep = activeEpisode(await loadIllnessEpisodes());
+  return !!ep && !ep.recoveredDate;
+}
+
 /** Cheap tag for cache keys: changes when an episode starts, recovers or ends. */
 export async function illnessCacheTag(): Promise<string> {
   const ep = activeEpisode(await loadIllnessEpisodes());

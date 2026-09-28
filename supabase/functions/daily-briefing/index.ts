@@ -183,7 +183,8 @@ function buildPrompt(input: DailyBriefingInput): string {
     lines.push(`  Sleep duration: ${hrs} hours${note}`);
   }
   if (h.sleepEfficiency !== null) {
-    lines.push(`  Sleep efficiency: ${Math.round(h.sleepEfficiency * 100)}%`);
+    // Already a percentage (0-100) from the app, like coach-chat and ai-insight
+    lines.push(`  Sleep efficiency: ${Math.round(h.sleepEfficiency)}%`);
   }
   if (h.deepSleep !== null) {
     lines.push(`  Deep sleep: ${h.deepSleep} min`);

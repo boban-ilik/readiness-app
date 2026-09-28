@@ -45,10 +45,14 @@ Four things, weighted rather than treated as equals:
 
 | Signal | Share of sleep score | Target |
 |---|---|---|
-| **Duration** | 50% | 8 hours |
+| **Duration** | 50% | 7 hours |
 | **Deep sleep** | 20% | 20% of total sleep |
 | **REM sleep** | 20% | 25% of total sleep |
 | **Efficiency** | 10% | 85% of time in bed |
+
+The 7-hour target is the adult guideline from the American Academy of Sleep
+Medicine and Sleep Research Society (seven or more hours a night), so people
+meeting it aren't scored as short on sleep.
 
 **Duration carries half the weight on purpose.** Sleep stages are interesting,
 but total time asleep is both the stronger signal and the one you can actually

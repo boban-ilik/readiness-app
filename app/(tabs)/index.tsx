@@ -48,6 +48,7 @@ import { fetchTodayActivity, type TodayActivity } from '@services/healthkit';
 import { analyzePatterns } from '@services/patternAnalysis';
 import { analyzeWorkload } from '@services/workloadAnalysis';
 import { computeForecast, applyIllnessRecovery, type ReadinessForecast } from '@services/readinessForecast';
+import { recordForecast } from '@services/forecastLog';
 import { fetchRecentEvents, tagEvent, type LifeEvent } from '@services/lifeEvents';
 import { supabase } from '@services/supabase';
 import type { HealthData } from '@/types/index';
@@ -427,7 +428,11 @@ export default function HomeScreen() {
           return;
         }
 
-        setForecast(computeForecast(scoreForForecast, patterns, workload));
+        const next = computeForecast(scoreForForecast, patterns, workload);
+        setForecast(next);
+        // Collected for everyone (the strip itself is Pro) so a future
+        // track record already has history when it ships.
+        recordForecast(next);
       } catch (e) {
         console.warn('[HomeScreen] contextual data load error:', e);
       }

@@ -92,6 +92,9 @@ const USER_SCOPED_KEYS = [
   // Back-from-illness episodes and the "feeling unwell?" snooze
   '@readiness/illness_episodes_v1',
   '@readiness/illness_nudge_dismissed',
+
+  // What the 3-day forecast predicted, for a future accuracy record
+  '@readiness/forecast_log_v1',
 ];
 
 /**

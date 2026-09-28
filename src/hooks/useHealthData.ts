@@ -18,10 +18,10 @@ import { computeRHRBaseline, computeHRVBaseline } from '@utils/index';
 import type { HealthData } from '../types';
 import { supabase } from '@services/supabase';
 import { upsertTodayScore } from '@services/scoreSync';
-import { pushScoreToWidget } from '@services/widgetBridge';
+import { pushScoreToWidget, setWidgetIllnessCap } from '@services/widgetBridge';
 import { localDateStr } from '@utils/index';
 import { excludeIllnessDays } from '@utils/illnessRecovery';
-import { loadIllnessEpisodes } from '@services/illnessEpisode';
+import { loadIllnessEpisodes, isIllnessCapStored } from '@services/illnessEpisode';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -379,11 +379,15 @@ export function useHealthData(): UseHealthDataReturn {
         // ── Fire-and-forget widget update ──────────────────────────────────
         // Push the new score to the iOS App Group so the home screen widget
         // reflects the latest result without a network round-trip.
-        try {
-          pushScoreToWidget(result);
-        } catch (e) {
-          console.warn('[Readiness] pushScoreToWidget failed (non-fatal):', e);
-        }
+        // The illness cap is read first so the widget never shows an uncapped
+        // training call for the seconds before the Today hook catches up.
+        isIllnessCapStored()
+          .catch(() => false)
+          .then(cap => {
+            setWidgetIllnessCap(cap);
+            pushScoreToWidget(result);
+          })
+          .catch(e => console.warn('[Readiness] pushScoreToWidget failed (non-fatal):', e));
       }
     } catch (err: any) {
       // Silent background refreshes swallow errors — don't disrupt the UI
