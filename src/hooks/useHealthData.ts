@@ -20,6 +20,8 @@ import { supabase } from '@services/supabase';
 import { upsertTodayScore } from '@services/scoreSync';
 import { pushScoreToWidget } from '@services/widgetBridge';
 import { localDateStr } from '@utils/index';
+import { excludeIllnessDays } from '@utils/illnessRecovery';
+import { loadIllnessEpisodes } from '@services/illnessEpisode';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -108,7 +110,11 @@ export async function getPersonalRHRBaseline(): Promise<number> {
   const cached = await loadCachedBaseline();
   if (cached !== null) return cached;
 
-  const history  = await fetchRHRHistory(30);
+  // Days inside a Sick episode stay out, so an illness can't drag "usual" with it
+  const episodes = await loadIllnessEpisodes();
+  const history  = episodes.length
+    ? Object.values(excludeIllnessDays(await fetchRHRByDay(30), episodes, localDateStr()))
+    : await fetchRHRHistory(30);
   const baseline = computeRHRBaseline(history);
   console.log('[Readiness] RHR baseline computed:', baseline, 'bpm from', history.length, 'days');
 
@@ -142,7 +148,10 @@ export async function getPersonalHRVBaseline(): Promise<number> {
   const cached = await loadCachedHRVBaseline();
   if (cached !== null) return cached;
 
-  const history  = await fetchHRVHistory(30);
+  const episodes = await loadIllnessEpisodes();
+  const history  = episodes.length
+    ? Object.values(excludeIllnessDays(await fetchHRVByDay(30), episodes, localDateStr()))
+    : await fetchHRVHistory(30);
   const baseline = computeHRVBaseline(history);
   console.log('[Readiness] HRV baseline computed:', baseline, 'ms from', history.length, 'days');
 

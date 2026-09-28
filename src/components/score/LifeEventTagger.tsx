@@ -32,9 +32,12 @@ import { localDateStr } from '@utils/index';
 interface Props {
   events:    LifeEvent[];
   onTagged:  (events: LifeEvent[]) => void;   // called with updated list after add/remove
+  /** Sick was tagged, or a Sick tag removed (with its date) */
+  onSickTagged?:  () => void;
+  onSickRemoved?: (date: string) => void;
 }
 
-export default function LifeEventTagger({ events, onTagged }: Props) {
+export default function LifeEventTagger({ events, onTagged, onSickTagged, onSickRemoved }: Props) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedType, setSelectedType] = useState<EventType | null>(null);
   const [notes,        setNotes]        = useState('');
@@ -51,6 +54,7 @@ export default function LifeEventTagger({ events, onTagged }: Props) {
       const newEvent = await tagEvent(selectedType, notes.trim() || undefined);
       if (newEvent) {
         onTagged([newEvent, ...events]);
+        if (newEvent.event_type === 'illness') onSickTagged?.();
       }
       setModalVisible(false);
       setSelectedType(null);
@@ -62,7 +66,9 @@ export default function LifeEventTagger({ events, onTagged }: Props) {
 
   async function handleRemove(id: string) {
     await removeEvent(id);
+    const removed = events.find(e => e.id === id);
     onTagged(events.filter(e => e.id !== id));
+    if (removed?.event_type === 'illness') onSickRemoved?.(removed.date);
   }
 
   const meta = EVENT_TYPES.find(e => e.type === selectedType);

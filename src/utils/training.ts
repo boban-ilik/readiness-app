@@ -223,11 +223,22 @@ function buildRationale(
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 
+/** Highest score that still maps to "Easy Day"; the cap while recovering from illness. */
+export const EASY_DAY_MAX_SCORE = 55;
+
+const ILLNESS_CAP_RATIONALE =
+  'Your score alone would allow more, but your resting heart rate or HRV is not back to ' +
+  'where it was before you were sick. People usually feel better before their body has ' +
+  'recovered, so keep it easy until your numbers are back.';
+
 export function getTrainingRecommendation(
   score: number,
   components: { recovery: number; sleep: number; stress: number },
+  opts?: { illnessCap?: boolean },
 ): TrainingRecommendation {
-  const tier = TIERS.find(t => score >= t.minScore) ?? TIERS[TIERS.length - 1];
+  const capped = !!opts?.illnessCap && score > EASY_DAY_MAX_SCORE;
+  const effective = capped ? EASY_DAY_MAX_SCORE : score;
+  const tier = TIERS.find(t => effective >= t.minScore) ?? TIERS[TIERS.length - 1];
 
   return {
     intensity:           tier.intensity,
@@ -240,6 +251,6 @@ export function getTrainingRecommendation(
     rpe:                 tier.rpe,
     effortDescription:   tier.effortDescription,
     suggestedActivities: tier.suggestedActivities,
-    rationale:           buildRationale(score, components, tier.intensity),
+    rationale:           capped ? ILLNESS_CAP_RATIONALE : buildRationale(score, components, tier.intensity),
   };
 }

@@ -40,7 +40,19 @@ const bridge = NativeModules.ReadinessDataBridge as
  * Call this immediately after computing/updating the readiness result.
  * Any error is swallowed — widget data is best-effort.
  */
+// While a Sick episode is recovering, the widget's training call is capped
+// the same way as Today's. Set by useIllnessRecovery; re-pushes the last score.
+let illnessCap = false;
+let lastResult: ReadinessResult | null = null;
+
+export function setWidgetIllnessCap(on: boolean): void {
+  if (on === illnessCap) return;
+  illnessCap = on;
+  if (lastResult) pushScoreToWidget(lastResult);
+}
+
 export function pushScoreToWidget(result: ReadinessResult): void {
+  lastResult = result;
   if (Platform.OS !== 'ios') return;
   if (!bridge?.writeScore)   return;
 
@@ -48,7 +60,7 @@ export function pushScoreToWidget(result: ReadinessResult): void {
 
   try {
     if (bridge.writeScoreWithTraining) {
-      const training = getTrainingRecommendation(score, components);
+      const training = getTrainingRecommendation(score, components, { illnessCap });
       bridge.writeScoreWithTraining(
         Math.round(score),
         getScoreLabel(score),

@@ -20,6 +20,7 @@ import { OvertrainingWarningCard } from '@components/score/OvertrainingWarningCa
 import TrendInsightCard from '@components/score/TrendInsightCard';
 import ForecastStrip from '@components/score/ForecastStrip';
 import LifeEventTagger from '@components/score/LifeEventTagger';
+import { IllnessRecoveryCard, IllnessNudgeCard } from '@components/score/IllnessRecoveryCard';
 import BreakdownModal from '@components/score/BreakdownModal';
 import DailyBriefingModal from '@components/score/DailyBriefingModal';
 import CalibrationReportModal from '@components/score/CalibrationReportModal';
@@ -37,6 +38,8 @@ import { useCalibrationStatus } from '@hooks/useCalibrationStatus';
 import { useRatingPrompt } from '@hooks/useRatingPrompt';
 import { useCycleTracking } from '@hooks/useCycleTracking';
 import { useOvertrainingWarning } from '@hooks/useOvertrainingWarning';
+import { useIllnessRecovery } from '@hooks/useIllnessRecovery';
+import { cancelIllnessEpisodeStartedOn } from '@services/illnessEpisode';
 import { PROFILE_SEX_KEY } from '@services/userProfile';
 import { formatDisplayDate } from '@utils/index';
 import { computeActivityScore } from '@utils/breakdown';
@@ -45,7 +48,7 @@ import { fetchTodayActivity, type TodayActivity } from '@services/healthkit';
 import { analyzePatterns } from '@services/patternAnalysis';
 import { analyzeWorkload } from '@services/workloadAnalysis';
 import { computeForecast, type ReadinessForecast } from '@services/readinessForecast';
-import { fetchRecentEvents, type LifeEvent } from '@services/lifeEvents';
+import { fetchRecentEvents, tagEvent, type LifeEvent } from '@services/lifeEvents';
 import { supabase } from '@services/supabase';
 import type { HealthData } from '@/types/index';
 import { NAME_KEY } from '../onboarding';
@@ -276,6 +279,7 @@ export default function HomeScreen() {
   const [isSharing,       setIsSharing]       = useState(false);
   const [todayActivity,   setTodayActivity]   = useState<TodayActivity | null>(null);
   const [lifeEvents,      setLifeEvents]      = useState<LifeEvent[]>([]);
+  const illness = useIllnessRecovery(`${isLoading}|${isRefreshing}|${readiness?.score ?? ''}`);
   const [forecast,        setForecast]        = useState<ReadinessForecast | null>(null);
   const [yesterdayScore,  setYesterdayScore]  = useState<number | null>(null);
   const shareCardRef = useRef<View>(null);
@@ -588,6 +592,21 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
+        {/* Back from illness: why training is held at Easy Day, or the
+            "feeling unwell?" prompt when resting HR has been up two days */}
+        {illness.status && <IllnessRecoveryCard status={illness.status} onEnd={illness.end} />}
+        {illness.nudge && (
+          <IllnessNudgeCard
+            elevation={illness.nudge.elevation}
+            onStart={async () => {
+              const ev = await tagEvent('illness');
+              if (ev) setLifeEvents(prev => [ev, ...prev]);
+              await illness.start('nudge');
+            }}
+            onDismiss={illness.dismissNudge}
+          />
+        )}
+
         {/* Today's recommendation — the answer to "what do I do today?", so it
             sits directly under the score and is free: users act on the score
             before deciding whether they need the deeper Pro analysis. */}
@@ -597,6 +616,7 @@ export default function HomeScreen() {
             <TrainingLoadCard
               score={score}
               components={readiness?.components ?? { recovery: 50, sleep: 50, stress: 50 }}
+              illnessCap={illness.capTraining}
             />
           </View>
         )}
@@ -770,7 +790,12 @@ export default function HomeScreen() {
         {hasUsableScore && (
           <View style={styles.trainingSection}>
             <Text style={styles.sectionTitle}>WHAT'S AFFECTING YOU</Text>
-            <LifeEventTagger events={lifeEvents} onTagged={setLifeEvents} />
+            <LifeEventTagger
+              events={lifeEvents}
+              onTagged={setLifeEvents}
+              onSickTagged={() => illness.start('tag')}
+              onSickRemoved={async date => { await cancelIllnessEpisodeStartedOn(date); illness.reload(); }}
+            />
           </View>
         )}
 

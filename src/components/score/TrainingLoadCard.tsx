@@ -8,6 +8,7 @@
  * Props:
  *   score      — today's overall readiness score (0–100)
  *   components — recovery / sleep / stress sub-scores
+ *   illnessCap — hold the call at Easy Day while recovering from illness
  */
 
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
@@ -27,6 +28,7 @@ import {
 interface TrainingLoadCardProps {
   score:      number;
   components: ReadinessResult['components'];
+  illnessCap?: boolean;
 }
 
 // ─── Zone badge ───────────────────────────────────────────────────────────────
@@ -45,8 +47,9 @@ function ZoneBadge({ zone, color }: { zone: number; color: string }) {
 export default function TrainingLoadCard({
   score,
   components,
+  illnessCap = false,
 }: TrainingLoadCardProps) {
-  const rec = getTrainingRecommendation(score, components);
+  const rec = getTrainingRecommendation(score, components, { illnessCap });
   const [effortExpanded, setEffortExpanded] = useState(false);
 
   const durationText =
@@ -130,7 +133,9 @@ export default function TrainingLoadCard({
 
       {/* ── Footer ── */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Based on today's readiness score</Text>
+        <Text style={styles.footerText}>
+          {illnessCap ? 'Held at Easy Day while you recover' : "Based on today's readiness score"}
+        </Text>
         <View style={[styles.scoreDot, { backgroundColor: rec.zoneColor }]} />
         <Text style={[styles.footerScore, { color: rec.zoneColor }]}>
           {score}

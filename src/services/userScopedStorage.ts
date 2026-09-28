@@ -88,6 +88,10 @@ const USER_SCOPED_KEYS = [
   '@readiness/phase_baseline_v1',
   '@readiness/coach_memory_v1',
   '@readiness/coach_free_remaining_v1',
+
+  // Back-from-illness episodes and the "feeling unwell?" snooze
+  '@readiness/illness_episodes_v1',
+  '@readiness/illness_nudge_dismissed',
 ];
 
 /**
