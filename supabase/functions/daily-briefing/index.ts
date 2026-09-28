@@ -18,6 +18,7 @@
 
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import { gate, readJsonBody } from '../_shared/entitlement.ts';
+import { sanitiseIllness, illnessLines, ILLNESS_RULE, type IllnessInput } from '../_shared/illness.ts';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin':  '*',
@@ -97,6 +98,8 @@ interface DailyBriefingInput {
   } | null;
   /** User's rating of yesterday's briefing. Used to calibrate today's specificity. */
   yesterdayFeedback?: BriefingFeedback | null;
+  /** Back-from-illness episode, when one is running or just recovered (1.0.4). */
+  illness?:           IllnessInput | null;
 }
 
 interface DailyBriefing {
@@ -145,7 +148,9 @@ Every DO_TODAY item must be something the user can actually do today and must fo
 
 FOLLOW_UPS are tap-to-ask questions shown under the briefing. Make each one specific to today's numbers and different from the others, for example "Why is my HRV down today?", "Can I still do intervals?", "What should I change tonight?". Never generic ("Tell me more").
 
-If you recommend a sleep duration, use the 7 hour guideline the app scores against. Do not invent a different figure.`;
+If you recommend a sleep duration, use the 7 hour guideline the app scores against. Do not invent a different figure.
+
+${ILLNESS_RULE}`;
 
 function buildPrompt(input: DailyBriefingInput): string {
   const { score, scoreLabel, components, healthData: h, rhrBaseline, hrvBaseline, patterns, workload } = input;
@@ -244,6 +249,12 @@ function buildPrompt(input: DailyBriefingInput): string {
     lines.push('  Use this to interpret the data, never to override it. If HRV or RHR shifts match the expected pattern for this phase, say so plainly and do not attribute them to overtraining or poor recovery. Phase effects vary between individuals, so frame them with "commonly" or "often", never as certainty. Never give medical, fertility, or contraception advice.');
   }
 
+  // ── Back from illness ───────────────────────────────────────────────────────
+  if (input.illness) {
+    lines.push('');
+    lines.push(...illnessLines(input.illness));
+  }
+
   // ── Yesterday's briefing feedback ───────────────────────────────────────────
   if (input.yesterdayFeedback?.rating === 'unhelpful') {
     lines.push('');
@@ -329,6 +340,7 @@ serve(async (req: Request) => {
       });
     }
     const input: DailyBriefingInput = parsed;
+    input.illness = sanitiseIllness(input.illness);
 
     if (typeof input.score !== 'number' || !input.components || !input.healthData) {
       return new Response(JSON.stringify({ error: 'Invalid input' }), {

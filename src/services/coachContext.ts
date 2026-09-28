@@ -3,7 +3,8 @@
  *
  * The extra context the coach gets from 1.0.4 on: remembered facts, the last
  * 30 days of saved scores and metrics, today's score worked step by step, and
- * Strava activities from the last 14 days. Each piece is optional: a failure
+ * Strava activities from the last 14 days, and any Sick episode's recovery.
+ * Each piece is optional: a failure
  * or timeout just leaves it out, and the coach answers with less.
  */
 
@@ -13,12 +14,16 @@ import { fetchStravaActivities } from '@services/strava';
 import { getScoreSnapshot } from '@services/scoreSession';
 import { buildScoreMath } from '@utils/scoreMath';
 import { loadCoachMemory } from '@services/coachMemory';
+import { evaluateActiveIllness } from '@services/illnessEpisode';
+import { illnessContext, type IllnessContext } from '@utils/illnessRecovery';
 
 export interface CoachExtras {
   memory:    string[];
   trend:     Array<{ date: string; score: number; recovery: number | null; sleep: number | null; stress: number | null; hrv: number | null; rhr: number | null; sleepMin: number | null }>;
   scoreMath: string[];
   strava:    Array<{ date: string; type: string; name: string | null; minutes: number; km: number | null; effort: number | null }>;
+  /** Not cached: tapping I'm better must reach the next answer */
+  illness:   IllnessContext | null;
 }
 
 const TTL_MS = 10 * 60 * 1000;
@@ -46,13 +51,18 @@ function scoreMathLines(): string[] {
 }
 
 export async function buildCoachExtras(): Promise<CoachExtras> {
-  const [memoryItems, { data: { session } }] = await Promise.all([loadCoachMemory(), supabase.auth.getSession()]);
+  const [memoryItems, { data: { session } }, active] = await Promise.all([
+    loadCoachMemory(),
+    supabase.auth.getSession(),
+    withTimeout(evaluateActiveIllness(), 6_000, null),
+  ]);
   const memory = memoryItems.map(m => m.text);
+  const illness = active ? illnessContext(active.episode, active.status) : null;
   const scoreMath = scoreMathLines();
   const userId = session?.user?.id ?? '';
 
   if (cache && cache.userId === userId && Date.now() - cache.at < TTL_MS) {
-    return { memory, scoreMath, trend: cache.trend, strava: cache.strava };
+    return { memory, scoreMath, illness, trend: cache.trend, strava: cache.strava };
   }
 
   const [rows, activities] = await Promise.all([
@@ -75,7 +85,7 @@ export async function buildCoachExtras(): Promise<CoachExtras> {
   }));
 
   cache = { at: Date.now(), userId, trend, strava };
-  return { memory, scoreMath, trend, strava };
+  return { memory, scoreMath, illness, trend, strava };
 }
 
 /** Drop cached history/Strava, e.g. after today's score is saved. */

@@ -47,7 +47,7 @@ import { STRESS_ELEVATION_LOW, STRESS_ELEVATION_HIGH } from '@utils/readiness';
 import { fetchTodayActivity, type TodayActivity } from '@services/healthkit';
 import { analyzePatterns } from '@services/patternAnalysis';
 import { analyzeWorkload } from '@services/workloadAnalysis';
-import { computeForecast, type ReadinessForecast } from '@services/readinessForecast';
+import { computeForecast, applyIllnessRecovery, type ReadinessForecast } from '@services/readinessForecast';
 import { fetchRecentEvents, tagEvent, type LifeEvent } from '@services/lifeEvents';
 import { supabase } from '@services/supabase';
 import type { HealthData } from '@/types/index';
@@ -782,7 +782,12 @@ export default function HomeScreen() {
         {isPro && forecast && hasUsableScore && (
           <View style={styles.trainingSection}>
             <Text style={styles.sectionTitle}>3-DAY FORECAST</Text>
-            <ForecastStrip forecast={forecast} />
+            <ForecastStrip
+              forecast={illness.capTraining && illness.status
+                ? applyIllnessRecovery(forecast, illness.status.backStreak)
+                : forecast}
+              illnessCap={illness.capTraining}
+            />
           </View>
         )}
 

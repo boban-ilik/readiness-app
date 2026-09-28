@@ -8,13 +8,13 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { fetchRHRByDay, fetchHRVByDay } from '@services/healthkit';
+import { fetchRHRByDay } from '@services/healthkit';
 import {
-  loadIllnessEpisodes, activeEpisode, startIllnessEpisode, endIllnessEpisode,
-  markIllnessRecovered, isIllnessNudgeSnoozed, snoozeIllnessNudge,
+  loadIllnessEpisodes, evaluateActiveIllness, startIllnessEpisode, endIllnessEpisode,
+  isIllnessNudgeSnoozed, snoozeIllnessNudge,
 } from '@services/illnessEpisode';
 import {
-  evaluateRecovery, shouldSuggestSickTag, excludeIllnessDays,
+  shouldSuggestSickTag, excludeIllnessDays,
   type IllnessEpisode, type RecoveryStatus,
 } from '@utils/illnessRecovery';
 import { computeRHRBaseline, localDateStr } from '@utils/index';
@@ -23,10 +23,6 @@ import { withTimeout } from '@hooks/useHealthData';
 import { track, trackDaily } from '@services/analytics';
 
 const EMPTY: Record<string, number> = {};
-
-function daysBetween(a: string, b: string): number {
-  return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
-}
 
 export interface IllnessRecovery {
   episode:      IllnessEpisode | null;
@@ -54,27 +50,17 @@ export function useIllnessRecovery(reloadKey: unknown): IllnessRecovery {
     let cancelled = false;
 
     (async () => {
-      const today    = localDateStr();
-      const episodes = await loadIllnessEpisodes();
-      const ep       = activeEpisode(episodes);
-
-      if (ep) {
-        const days = daysBetween(ep.startDate, today) + 2;
-        const [rhr, hrv] = await Promise.all([
-          withTimeout(fetchRHRByDay(days), 8_000, EMPTY),
-          withTimeout(fetchHRVByDay(days), 8_000, EMPTY),
-        ]);
-        const s = evaluateRecovery(ep, rhr, hrv, today);
-        if (s.recoveredDate && !ep.recoveredDate) {
-          await markIllnessRecovered(ep.startDate, s.recoveredDate);
-          track('illness_recovered', { days: daysBetween(ep.startDate, s.recoveredDate) });
-        }
+      const active = await evaluateActiveIllness();
+      if (active) {
         if (cancelled) return;
-        setEpisode({ ...ep, recoveredDate: s.recoveredDate ?? undefined });
-        setStatus(s);
+        setEpisode(active.episode);
+        setStatus(active.status);
         setNudge(null);
         return;
       }
+
+      const today    = localDateStr();
+      const episodes = await loadIllnessEpisodes();
 
       if (!cancelled) { setEpisode(null); setStatus(null); }
       if (await isIllnessNudgeSnoozed()) { if (!cancelled) setNudge(null); return; }

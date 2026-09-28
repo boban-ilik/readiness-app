@@ -9,7 +9,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchRHRByDay, fetchHRVByDay } from '@services/healthkit';
 import { computeRHRBaseline, computeHRVBaseline, localDateStr } from '@utils/index';
-import { excludeIllnessDays, type IllnessEpisode } from '@utils/illnessRecovery';
+import {
+  excludeIllnessDays, evaluateRecovery, type IllnessEpisode, type RecoveryStatus,
+} from '@utils/illnessRecovery';
+import { track } from '@services/analytics';
 
 export const ILLNESS_EPISODES_KEY     = '@readiness/illness_episodes_v1';
 export const ILLNESS_NUDGE_DISMISSED_KEY = '@readiness/illness_nudge_dismissed';
@@ -85,9 +88,47 @@ export async function startIllnessEpisode(source: IllnessEpisode['source']): Pro
   return { episode: ep, created: true };
 }
 
-export async function markIllnessRecovered(startDate: string, recoveredDate: string): Promise<void> {
+async function markIllnessRecovered(startDate: string, recoveredDate: string): Promise<void> {
   const episodes = await loadIllnessEpisodes();
   await saveEpisodes(episodes.map(e => (e.startDate === startDate && !e.recoveredDate ? { ...e, recoveredDate } : e)));
+}
+
+function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([p.catch(() => fallback), new Promise<T>(r => setTimeout(() => r(fallback), ms))]);
+}
+
+function daysBetween(a: string, b: string): number {
+  return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
+}
+
+/**
+ * The running episode checked against HealthKit now, or null when there is
+ * none. Records the recovery date the first time every reading is back. Used
+ * by Today, the coach and the morning briefing so all three agree.
+ */
+export async function evaluateActiveIllness(): Promise<{ episode: IllnessEpisode; status: RecoveryStatus } | null> {
+  const ep = activeEpisode(await loadIllnessEpisodes());
+  if (!ep) return null;
+
+  const today = localDateStr();
+  const days  = daysBetween(ep.startDate, today) + 2;
+  const empty: Record<string, number> = {};
+  const [rhr, hrv] = await Promise.all([
+    withTimeout(fetchRHRByDay(days), 8_000, empty),
+    withTimeout(fetchHRVByDay(days), 8_000, empty),
+  ]);
+  const status = evaluateRecovery(ep, rhr, hrv, today);
+  if (status.recoveredDate && !ep.recoveredDate) {
+    await markIllnessRecovered(ep.startDate, status.recoveredDate);
+    track('illness_recovered', { days: daysBetween(ep.startDate, status.recoveredDate) });
+  }
+  return { episode: { ...ep, recoveredDate: status.recoveredDate ?? undefined }, status };
+}
+
+/** Cheap tag for cache keys: changes when an episode starts, recovers or ends. */
+export async function illnessCacheTag(): Promise<string> {
+  const ep = activeEpisode(await loadIllnessEpisodes());
+  return ep ? `${ep.startDate}:${ep.recoveredDate ?? ''}` : '';
 }
 
 /** "I'm better" or dismissing the "you're back" card. */

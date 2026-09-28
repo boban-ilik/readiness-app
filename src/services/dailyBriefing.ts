@@ -17,6 +17,8 @@ import type { WorkloadResult } from '@services/workloadAnalysis';
 import type { LifeEvent } from '@services/lifeEvents';
 import { getCycleContext } from '@services/cycleTracking';
 import { localDateStr } from '@utils/index';
+import { evaluateActiveIllness, illnessCacheTag } from '@services/illnessEpisode';
+import { illnessContext } from '@utils/illnessRecovery';
 
 const SUPABASE_URL     = process.env.EXPO_PUBLIC_SUPABASE_URL     ?? '';
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
@@ -147,7 +149,8 @@ export async function fetchDailyBriefing(
 
   // Reuse today's briefing only if it was written from the same data. A score
   // that refreshes after HealthKit catches up must take its coaching with it.
-  const fingerprint = dataFingerprint(readiness, healthData);
+  // Tagging Sick, recovering or tapping I'm better also makes a new briefing
+  const fingerprint = `${dataFingerprint(readiness, healthData)}|ill:${await illnessCacheTag()}`;
   if (!forceRefresh) {
     const cached = await getCached(fingerprint);
     if (cached) return cached;
@@ -161,6 +164,8 @@ export async function fetchDailyBriefing(
   // Load yesterday's feedback before making the request so the AI can adjust tone
   const yesterdayFeedback = await loadYesterdayFeedback();
   const cycle = await getCycleContext();
+  const active = await evaluateActiveIllness().catch(() => null);
+  const illness = active ? illnessContext(active.episode, active.status) : null;
 
   const controller = new AbortController();
   const timeout    = setTimeout(() => controller.abort(), 25_000);
@@ -203,6 +208,7 @@ export async function fetchDailyBriefing(
         lifeEvents,
         yesterdayFeedback,
         cycle,
+        illness,
       }),
     });
 

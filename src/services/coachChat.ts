@@ -115,6 +115,7 @@ export async function askCoach(
         trend:     extras.trend ?? [],
         scoreMath: extras.scoreMath ?? [],
         strava:    extras.strava ?? [],
+        illness:   extras.illness ?? null,
       }),
     });
 

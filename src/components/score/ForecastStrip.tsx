@@ -15,6 +15,8 @@ import type { ReadinessForecast, DayForecast } from '@services/readinessForecast
 
 interface Props {
   forecast: ReadinessForecast;
+  /** Recovering from illness: no "Ready to push" and no best window */
+  illnessCap?: boolean;
 }
 
 // ─── Training recommendation ──────────────────────────────────────────────────
@@ -37,8 +39,9 @@ const REC_META: Record<TrainingRec, { emoji: string; label: string; bg: string; 
   rest:     { emoji: '🔴', label: 'Prioritise rest',  bg: '#DC262622', fg: '#F87171' },
 };
 
-function TrainingPill({ score }: { score: number }) {
-  const rec  = trainingRec(score);
+function TrainingPill({ score, capped }: { score: number; capped: boolean }) {
+  const raw  = trainingRec(score);
+  const rec  = capped && raw === 'push' ? 'moderate' : raw;
   const meta = REC_META[rec];
   return (
     <View style={[pillStyles.pill, { backgroundColor: meta.bg }]}>
@@ -134,12 +137,14 @@ function ForecastCard({
   previousScore,
   cardHeight,
   onMeasure,
+  illnessCap,
 }: {
   day: DayForecast;
   index: number;
   previousScore: number;
   cardHeight?: number;
   onMeasure: (event: LayoutChangeEvent) => void;
+  illnessCap: boolean;
 }) {
   const scoreColor = getScoreColor(day.score);
   const delta = day.score - previousScore;
@@ -172,7 +177,7 @@ function ForecastCard({
           </View>
         </View>
 
-        <TrainingPill score={day.score} />
+        <TrainingPill score={day.score} capped={illnessCap} />
 
         <View style={styles.factorBox}>
           <Text style={styles.factorLabel}>Main driver</Text>
@@ -190,7 +195,7 @@ function ForecastCard({
 
 // ─── Strip ────────────────────────────────────────────────────────────────────
 
-export default function ForecastStrip({ forecast }: Props) {
+export default function ForecastStrip({ forecast, illnessCap = false }: Props) {
   const [cardHeight, setCardHeight] = useState(0);
   // Take both ends of one sort. Sorting twice returned the same element when
   // every day scored alike — a stable sort preserves the original order — which
@@ -214,7 +219,18 @@ export default function ForecastStrip({ forecast }: Props) {
   return (
     <View style={styles.wrapper}>
       <View style={styles.summaryCard}>
-        {hasStandout ? (
+        {illnessCap ? (
+          <>
+            <View style={styles.summaryHeader}>
+              <Text style={styles.summaryEyebrow}>Recovering from illness</Text>
+              <Text style={styles.summaryTitle}>Keep all three days easy</Text>
+            </View>
+            <Text style={styles.summaryBody}>
+              Your resting heart rate or HRV is not back to where it was before you were sick.
+              Hard sessions wait until they are, even if the projected score rises first.
+            </Text>
+          </>
+        ) : hasStandout ? (
           <>
             <View style={styles.summaryHeader}>
               <Text style={styles.summaryEyebrow}>Best window</Text>
@@ -258,6 +274,7 @@ export default function ForecastStrip({ forecast }: Props) {
             previousScore={i === 0 ? forecast[0].score : forecast[i - 1].score}
             cardHeight={cardHeight || undefined}
             onMeasure={handleMeasure}
+            illnessCap={illnessCap}
           />
         ))}
       </ScrollView>

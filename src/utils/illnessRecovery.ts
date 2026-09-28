@@ -172,3 +172,38 @@ export function excludeIllnessDays<T>(
   }
   return out;
 }
+
+/**
+ * What the coach and the morning briefing are told about a Sick episode. The
+ * server validates it again and turns it into prompt lines
+ * (supabase/functions/_shared/illness.ts), so keep the two shapes in step.
+ */
+export interface IllnessContext {
+  startDate:        string;
+  day:              number;
+  state:            RecoveryStatus['state'];
+  recoveredDate:    string | null;
+  backStreak:       number;
+  requiredMornings: number;
+  suggestDoctor:    boolean;
+  signals: Array<{ label: string; unit: 'bpm' | 'ms'; latest: number | null; usual: number; back: boolean }>;
+}
+
+export function illnessContext(ep: IllnessEpisode, s: RecoveryStatus): IllnessContext {
+  return {
+    startDate:        ep.startDate,
+    day:              s.day,
+    state:            s.state,
+    recoveredDate:    s.recoveredDate,
+    backStreak:       s.backStreak,
+    requiredMornings: BACK_DAYS_REQUIRED,
+    suggestDoctor:    s.suggestDoctor,
+    signals: s.signals.map(x => ({
+      label:  x.label,
+      unit:   x.key === 'rhr' ? 'bpm' : 'ms',
+      latest: x.latest != null ? Math.round(x.latest) : null,
+      usual:  Math.round(x.usual),
+      back:   x.back,
+    })),
+  };
+}

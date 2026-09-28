@@ -311,3 +311,19 @@ function deriveKeyFactor(
   // ── No strong signal — use zone × trend matrix ────────────────────────────
   return NO_SIGNAL[scoreZone(score)][trendDir(diff)][idx];
 }
+
+// ─── Illness recovery ─────────────────────────────────────────────────────────
+// While a Sick episode is recovering, the main driver on every day is the
+// recovery itself: projected scores can rise before resting HR and HRV are
+// back, and a rising score must not read as a green light.
+
+export function applyIllnessRecovery(forecast: ReadinessForecast, backStreak: number): ReadinessForecast {
+  const factors = [
+    backStreak > 0
+      ? 'One more morning at your usual and normal training advice returns'
+      : 'Still recovering from illness: easy sessions only until resting HR and HRV are back',
+    'Recovery from illness in progress: no hard sessions until your numbers are back',
+    'The body often recovers after you feel better: let your numbers set the return',
+  ];
+  return forecast.map((d, i) => ({ ...d, keyFactor: factors[i] })) as ReadinessForecast;
+}
