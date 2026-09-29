@@ -350,6 +350,12 @@ const styles = StyleSheet.create({
     flexDirection:  'row',
     justifyContent: 'space-between',
     alignItems:     'flex-start',
+    // The card is a fixed 192 wide: with the larger 1.0.4 text (or iOS
+    // Larger Text) "Moderate confidence" no longer fits beside the day name
+    // and was cropped. Let the badge drop under it instead.
+    flexWrap:       'wrap',
+    columnGap:      spacing[2],
+    rowGap:         spacing[1],
     marginTop:      spacing[2],
   },
   dayLabel: {
