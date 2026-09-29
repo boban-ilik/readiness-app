@@ -120,7 +120,7 @@ export async function evaluateActiveIllness(): Promise<{ episode: IllnessEpisode
   const status = evaluateRecovery(ep, rhr, hrv, today);
   if (status.recoveredDate && !ep.recoveredDate) {
     await markIllnessRecovered(ep.startDate, status.recoveredDate);
-    track('illness_recovered', { days: daysBetween(ep.startDate, status.recoveredDate) });
+    track('illness_recovered');
   }
   return { episode: { ...ep, recoveredDate: status.recoveredDate ?? undefined }, status };
 }

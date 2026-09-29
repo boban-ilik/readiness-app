@@ -33,11 +33,14 @@ export type AnalyticsEvent =
   | 'coach_followup_tapped'  // { pro }
   | 'coach_memory_saved'     // { count }
   | 'coach_checkin_sent'     // { pattern }
+  // Illness events carry no readings or durations (privacy policy: product
+  // events hold no health values). hasRhr/hasHrv say only whether the watch
+  // records those at all.
   | 'illness_tracking_started' // { source: 'tag' | 'nudge', hasRhr, hasHrv }
-  | 'illness_nudge_shown'      // { elevation }
+  | 'illness_nudge_shown'
   | 'illness_nudge_dismissed'
-  | 'illness_recovered'        // { days }
-  | 'illness_ended';           // { day, recovered }
+  | 'illness_recovered'
+  | 'illness_ended';           // { recovered }
 
 type Props = Record<string, string | number | boolean | null>;
 

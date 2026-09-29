@@ -77,7 +77,7 @@ export function useIllnessRecovery(reloadKey: unknown): IllnessRecovery {
       if (cancelled) return;
       if (check.suggest && check.elevation != null) {
         setNudge({ elevation: check.elevation });
-        trackDaily('illness_nudge_shown', { elevation: check.elevation });
+        trackDaily('illness_nudge_shown');
       } else {
         setNudge(null);
       }
@@ -100,7 +100,7 @@ export function useIllnessRecovery(reloadKey: unknown): IllnessRecovery {
 
   const end = useCallback(async () => {
     if (!episode) return;
-    track('illness_ended', { day: status?.day ?? 0, recovered: status?.state === 'recovered' });
+    track('illness_ended', { recovered: status?.state === 'recovered' });
     await endIllnessEpisode(episode.startDate);
     reload();
   }, [episode, status, reload]);
