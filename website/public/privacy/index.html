@@ -65,7 +65,7 @@
     <div class="logo">READINESS</div>
 
     <h1>Privacy Policy</h1>
-    <p class="updated">Last updated: 24 September 2026</p>
+    <p class="updated">Last updated: 29 September 2026</p>
 
     <div class="card">
       <p>Readiness is built on a simple principle: <strong style="color:#E8EAF0">your health data belongs to you.</strong> We collect only what is necessary to calculate your daily readiness score and personalise your coaching. We never sell your data, never share it with advertisers, and never use it for purposes beyond the app.</p>
@@ -105,7 +105,7 @@
     <p>Profile data is stored on our secure servers (Supabase) solely to personalise your readiness context and coaching recommendations.</p>
 
     <p><strong style="color:#E8EAF0">Usage data</strong></p>
-    <p>The app records a small number of product events against your account (for example: app opened, score shown, paywall shown, briefing opened, onboarding completed) so we can see which parts of Readiness are used and where people get stuck. These events carry no health values. They are stored with the rest of your account data on Supabase in the EU, are never shared with anyone, and are deleted with your account. The app contains no crash-reporting, analytics or advertising SDKs from third parties.</p>
+    <p>The app records a small number of product events against your account (for example: app opened, score shown, paywall shown, briefing opened, onboarding completed) so we can see which parts of Readiness are used and where people get stuck. These events carry no health readings such as heart rate, HRV or sleep figures. A few record your use of illness tracking: that it started or ended, or that the app asked whether you feel unwell. They are stored with the rest of your account data on Supabase in the EU, are never shared with anyone, and are deleted with your account. The app contains no crash-reporting, analytics or advertising SDKs from third parties.</p>
     <p>The AI features also keep a per-account count of how many briefings, coach replies and reports were generated, and when, so we can apply the fair-use limits described in Section 2.</p>
 
     <h2>2. How We Use Your Data</h2>
@@ -131,7 +131,7 @@
 
     <h2>4. Data Storage, Retention &amp; International Transfers</h2>
     <p>Account and score data is stored on Supabase servers in the EU (Ireland). All data in transit is encrypted via TLS. Your readiness score is calculated on your device; the daily metrics behind it (HRV, resting heart rate, sleep duration and efficiency) are stored alongside the score so your history follows your account. That data is encrypted at rest by our hosting provider and protected by row-level security, so it is only readable through your own signed-in account.</p>
-    <p><strong style="color:#E8EAF0">Retention.</strong> Account, profile, and score data is kept for as long as your account is active, and permanently removed from our servers within 30 days of account deletion. Coach chat history, cached briefings, and preferences are stored only on your device; they are wiped when you sign into a different account and removed when you delete the app.</p>
+    <p><strong style="color:#E8EAF0">Retention.</strong> Account, profile, and score data is kept for as long as your account is active, and permanently removed from our servers within 30 days of account deletion. Coach chat history, the facts your coach remembers (which you can review and delete in Profile), your illness recovery tracking, past readiness forecasts, cached briefings, and preferences are stored only on your device; they are wiped when you sign into a different account and removed when you delete the app.</p>
     <p><strong style="color:#E8EAF0">International transfers.</strong> Some of our service providers process data in the United States: Anthropic (AI coaching text), RevenueCat (subscription management) and, for this website only, Google (analytics). Where personal data leaves the EEA or UK, the transfer takes place under each provider's data processing agreement, which incorporates the European Commission's Standard Contractual Clauses.</p>
 
     <h2>5. Third-Party Services</h2>
@@ -151,8 +151,9 @@
       <li>Yesterday's workouts (type, duration, calories and estimated load) and any life events you have logged, such as alcohol, illness or travel, since those are what let the coaching explain a change rather than just report it</li>
       <li>Patterns the app has detected over the previous weeks, in plain sentences (for example, a run of falling HRV readings or accumulated sleep debt)</li>
       <li>Your cycle phase, cycle day and cycle length, only if you have switched cycle tracking on</li>
+      <li>In the morning briefing and Coach Chat, while the app is tracking your recovery after you tagged a day as sick: the date you tagged it, how many days it has been, and your latest resting heart rate and HRV next to your usual values from before you were sick</li>
       <li>Your first name, so the reply can address you directly, and a thumbs-down you gave the previous briefing</li>
-      <li>In Coach Chat only: the messages you send, and your profile details (age, biological sex, height, weight, training frequency and primary goal) so the advice fits you</li>
+      <li>In Coach Chat only: the messages you send; your profile details (age, biological sex, height, weight, training frequency and primary goal) so the advice fits you; your daily scores and the heart rate variability, resting heart rate and sleep duration behind them for the last 30 days; the step-by-step calculation of today's score; your Strava activities from the last 14 days (type, name, duration, distance and Strava's effort score) if you have connected Strava; and the facts your coach has remembered from earlier chats</li>
     </ul>
     <p>We do not send your email address or any account identifier. Anthropic processes this data solely to generate the text you see, and not for advertising. Under Anthropic's API terms, data sent through the Claude platform is excluded from model training.</p>
     <p>Your readiness score and its Recovery, Sleep, and Stress breakdown are calculated on your device from Apple Health data. Anthropic is involved only when an AI feature produces text for you.</p>
