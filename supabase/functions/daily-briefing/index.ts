@@ -19,6 +19,7 @@
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import { gate, readJsonBody } from '../_shared/entitlement.ts';
 import { sanitiseIllness, illnessLines, ILLNESS_RULE, type IllnessInput } from '../_shared/illness.ts';
+import { sanitiseWater, waterLines, WATER_RULE, type WaterInput } from '../_shared/water.ts';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin':  '*',
@@ -100,6 +101,8 @@ interface DailyBriefingInput {
   yesterdayFeedback?: BriefingFeedback | null;
   /** Back-from-illness episode, when one is running or just recovered (1.0.4). */
   illness?:           IllnessInput | null;
+  /** Today's water from Apple Health and the user's target (1.0.4). */
+  water?:             WaterInput | null;
 }
 
 interface DailyBriefing {
@@ -150,7 +153,9 @@ FOLLOW_UPS are tap-to-ask questions shown under the briefing. Make each one spec
 
 If you recommend a sleep duration, use the 7 hour guideline the app scores against. Do not invent a different figure.
 
-${ILLNESS_RULE}`;
+${ILLNESS_RULE}
+
+${WATER_RULE}`;
 
 function buildPrompt(input: DailyBriefingInput): string {
   const { score, scoreLabel, components, healthData: h, rhrBaseline, hrvBaseline, patterns, workload } = input;
@@ -256,6 +261,11 @@ function buildPrompt(input: DailyBriefingInput): string {
     lines.push(...illnessLines(input.illness));
   }
 
+  if (input.water) {
+    lines.push('');
+    lines.push(...waterLines(input.water));
+  }
+
   // ── Yesterday's briefing feedback ───────────────────────────────────────────
   if (input.yesterdayFeedback?.rating === 'unhelpful') {
     lines.push('');
@@ -342,6 +352,7 @@ serve(async (req: Request) => {
     }
     const input: DailyBriefingInput = parsed;
     input.illness = sanitiseIllness(input.illness);
+    input.water = sanitiseWater(input.water);
 
     if (typeof input.score !== 'number' || !input.components || !input.healthData) {
       return new Response(JSON.stringify({ error: 'Invalid input' }), {

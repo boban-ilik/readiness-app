@@ -79,8 +79,9 @@
       <li>Sleep duration, stages, and efficiency</li>
       <li>Step count and active energy burned</li>
       <li>Exercise minutes and workouts</li>
+      <li>Water you drink, if you use the water button: Readiness saves each drink you add to Apple Health and reads back today's total, including water logged by other apps</li>
     </ul>
-    <p>This data is read directly from Apple Health on your device. It is processed locally to produce your readiness score and is only uploaded to our servers if you are signed in and have an active session.</p>
+    <p>This data is read directly from Apple Health on your device. The only thing Readiness writes to Apple Health is the water you add with the water button. It is processed locally to produce your readiness score and is only uploaded to our servers if you are signed in and have an active session.</p>
 
     <p><strong style="color:#E8EAF0">Strava data (optional)</strong></p>
     <ul>
@@ -123,7 +124,7 @@
     <h2>3. Legal Bases for Processing (GDPR)</h2>
     <p>For readers in the European Economic Area and the United Kingdom: the data controller is Boban Ilik, operating Readiness (contact details in Section 9). We rely on the following legal bases:</p>
     <ul>
-      <li><strong style="color:#E8EAF0">Explicit consent</strong> (Art. 6(1)(a) and Art. 9(2)(a)): for all health and fitness data. Health data is special-category data under the GDPR, and we process it only because you explicitly grant access: once through Apple's HealthKit permission screen, again for each optional connection such as Strava, and again when you switch on cycle tracking in your profile (with Apple's permission screen again before any cycle data is read from Apple Health). You can withdraw consent at any time by revoking HealthKit access, disconnecting Strava, switching cycle tracking off, or deleting your account; withdrawal does not affect the lawfulness of processing before it.</li>
+      <li><strong style="color:#E8EAF0">Explicit consent</strong> (Art. 6(1)(a) and Art. 9(2)(a)): for all health and fitness data. Health data is special-category data under the GDPR, and we process it only because you explicitly grant access: once through Apple's HealthKit permission screen, again for each optional connection such as Strava, again the first time you tap the water button, and again when you switch on cycle tracking in your profile (with Apple's permission screen again before any cycle data is read from Apple Health). You can withdraw consent at any time by revoking HealthKit access, disconnecting Strava, switching cycle tracking off, or deleting your account; withdrawal does not affect the lawfulness of processing before it.</li>
       <li><strong style="color:#E8EAF0">Performance of a contract</strong> (Art. 6(1)(b)): for your account, syncing your scores between devices, and managing your subscription.</li>
       <li><strong style="color:#E8EAF0">Legitimate interests</strong> (Art. 6(1)(f)): for keeping the service secure, for the product-usage events and AI usage counts described in Section 1, and for enforcing fair-use limits on the AI features.</li>
     </ul>
@@ -136,7 +137,7 @@
 
     <h2>5. Third-Party Services</h2>
     <ul>
-      <li><strong style="color:#E8EAF0">Apple HealthKit</strong>: data read locally on your device, governed by Apple's HealthKit policies</li>
+      <li><strong style="color:#E8EAF0">Apple HealthKit</strong>: data read locally on your device, plus the water you log, which is written to it, governed by Apple's HealthKit policies</li>
       <li><strong style="color:#E8EAF0">Strava API</strong>: only if you connect; governed by <a href="https://www.strava.com/legal/privacy" target="_blank">Strava's Privacy Policy</a></li>
       <li><strong style="color:#E8EAF0">Supabase</strong>: backend database and authentication; <a href="https://supabase.com/privacy" target="_blank">Supabase Privacy Policy</a></li>
       <li><strong style="color:#E8EAF0">RevenueCat</strong>: subscription management; <a href="https://www.revenuecat.com/privacy" target="_blank">RevenueCat Privacy Policy</a></li>
@@ -152,6 +153,7 @@
       <li>Patterns the app has detected over the previous weeks, in plain sentences (for example, a run of falling HRV readings or accumulated sleep debt)</li>
       <li>Your cycle phase, cycle day and cycle length, only if you have switched cycle tracking on</li>
       <li>In the morning briefing and Coach Chat, while the app is tracking your recovery after you tagged a day as sick: the date you tagged it, how many days it has been, and your latest resting heart rate and HRV next to your usual values from before you were sick</li>
+      <li>In the morning briefing and Coach Chat, if you log water: today's water total, your daily water target and your local hour</li>
       <li>Your first name, so the reply can address you directly, and a thumbs-down you gave the previous briefing</li>
       <li>In Coach Chat only: the messages you send; your profile details (age, biological sex, height, weight, training frequency and primary goal) so the advice fits you; your daily scores and the heart rate variability, resting heart rate and sleep duration behind them for the last 30 days; the step-by-step calculation of today's score; your Strava activities from the last 14 days (type, name, duration, distance and Strava's effort score) if you have connected Strava; and the facts your coach has remembered from earlier chats</li>
     </ul>

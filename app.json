@@ -31,7 +31,7 @@
       },
       "infoPlist": {
         "NSHealthShareUsageDescription": "Readiness reads your Apple Watch health data (HRV, resting heart rate, sleep, and period dates if you turn on cycle tracking) to calculate your daily readiness score.",
-        "NSHealthUpdateUsageDescription": "Readiness does not write any health data.",
+        "NSHealthUpdateUsageDescription": "Readiness saves the water you add with the water button to Apple Health, so other apps can see it too. It writes nothing else.",
         "NSCameraUsageDescription": "Readiness uses your camera to take a profile photo.",
         "NSPhotoLibraryUsageDescription": "Readiness uses your photo library to set a profile picture.",
         "ITSAppUsesNonExemptEncryption": false,

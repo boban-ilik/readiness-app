@@ -40,7 +40,9 @@ export type AnalyticsEvent =
   | 'illness_nudge_shown'
   | 'illness_nudge_dismissed'
   | 'illness_recovered'
-  | 'illness_ended';           // { recovered }
+  | 'illness_ended'            // { recovered }
+  | 'water_logged'             // { unit } (no amounts)
+  | 'water_undone';
 
 type Props = Record<string, string | number | boolean | null>;
 

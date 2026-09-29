@@ -16,6 +16,7 @@ import { buildScoreMath } from '@utils/scoreMath';
 import { loadCoachMemory } from '@services/coachMemory';
 import { evaluateActiveIllness } from '@services/illnessEpisode';
 import { illnessContext, type IllnessContext } from '@utils/illnessRecovery';
+import { waterContext } from '@services/water';
 
 export interface CoachExtras {
   memory:    string[];
@@ -24,6 +25,8 @@ export interface CoachExtras {
   strava:    Array<{ date: string; type: string; name: string | null; minutes: number; km: number | null; effort: number | null }>;
   /** Not cached: tapping I'm better must reach the next answer */
   illness:   IllnessContext | null;
+  /** Not cached: every tap on the water button should reach the next answer */
+  water:     Awaited<ReturnType<typeof waterContext>>;
 }
 
 const TTL_MS = 10 * 60 * 1000;
@@ -56,13 +59,14 @@ export async function buildCoachExtras(): Promise<CoachExtras> {
     supabase.auth.getSession(),
     withTimeout(evaluateActiveIllness(), 6_000, null),
   ]);
+  const water = await withTimeout(waterContext(), 4_000, null);
   const memory = memoryItems.map(m => m.text);
   const illness = active ? illnessContext(active.episode, active.status) : null;
   const scoreMath = scoreMathLines();
   const userId = session?.user?.id ?? '';
 
   if (cache && cache.userId === userId && Date.now() - cache.at < TTL_MS) {
-    return { memory, scoreMath, illness, trend: cache.trend, strava: cache.strava };
+    return { memory, scoreMath, illness, water, trend: cache.trend, strava: cache.strava };
   }
 
   const [rows, activities] = await Promise.all([
@@ -85,7 +89,7 @@ export async function buildCoachExtras(): Promise<CoachExtras> {
   }));
 
   cache = { at: Date.now(), userId, trend, strava };
-  return { memory, scoreMath, illness, trend, strava };
+  return { memory, scoreMath, illness, water, trend, strava };
 }
 
 /** Drop cached history/Strava, e.g. after today's score is saved. */

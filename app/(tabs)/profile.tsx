@@ -9,6 +9,8 @@ import Constants                     from 'expo-constants';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback }               from 'react';
 import { loadCoachMemory, removeCoachMemory, clearCoachMemory, type MemoryItem } from '@services/coachMemory';
+import { loadWaterPrefs, saveWaterUnit, saveWaterTarget } from '@services/water';
+import { TARGET_STEP_LITRES, TARGET_MIN_LITRES, TARGET_MAX_LITRES, clampTarget, litresToFlOz, type WaterUnit } from '@utils/water';
 import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
 import { useAuth }                   from '@contexts/AuthContext';
 import { supabase }                 from '@services/supabase';
@@ -139,6 +141,63 @@ function formatJoinedDate(iso: string): string {
 }
 
 // ─── Reusable settings row components ─────────────────────────────────────────
+
+/**
+ * Water units and daily target (1.0.4). Stored on this device; the target is
+ * kept in litres and only displayed in fl oz.
+ */
+function WaterSettingsSection() {
+  const [unit,   setUnit]   = useState<WaterUnit>('l');
+  const [target, setTarget] = useState(2.5);
+
+  useFocusEffect(useCallback(() => {
+    let live = true;
+    loadWaterPrefs().then(p => { if (live) { setUnit(p.unit); setTarget(p.targetLitres); } });
+    return () => { live = false; };
+  }, []));
+
+  function pickUnit() {
+    Alert.alert('Water units', undefined, [
+      { text: 'Litres (l)', onPress: () => { setUnit('l'); saveWaterUnit('l'); } },
+      { text: 'Fluid ounces (fl oz)', onPress: () => { setUnit('floz'); saveWaterUnit('floz'); } },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
+
+  function step(dir: 1 | -1) {
+    const next = clampTarget(target + dir * TARGET_STEP_LITRES[unit]);
+    setTarget(next);
+    saveWaterTarget(next);
+  }
+
+  const shown = unit === 'l' ? Math.round(target * 100) / 100 : Math.round(litresToFlOz(target));
+
+  return (
+    <>
+      <SectionLabel title="WATER" />
+      <SettingsCard>
+        <SelectRow
+          label="Units"
+          value={unit === 'l' ? 'Litres' : 'Fluid ounces'}
+          topBorder={false}
+          onPress={pickUnit}
+        />
+        <StepperRow
+          label="Daily target"
+          value={shown}
+          unit={unit === 'l' ? 'l' : 'fl oz'}
+          min={unit === 'l' ? TARGET_MIN_LITRES : Math.round(litresToFlOz(TARGET_MIN_LITRES))}
+          max={unit === 'l' ? TARGET_MAX_LITRES : Math.round(litresToFlOz(TARGET_MAX_LITRES))}
+          onDecrement={() => step(-1)}
+          onIncrement={() => step(1)}
+        />
+      </SettingsCard>
+      <Text style={styles.sectionHint}>
+        Water you add on Today is saved to Apple Health, and water logged in other apps counts too. Your coach sees today&apos;s total against this target.
+      </Text>
+    </>
+  );
+}
 
 /**
  * What the coach has remembered from conversations (1.0.4). Stored on this
@@ -1112,6 +1171,8 @@ export default function ProfileScreen() {
         <Text style={styles.sectionHint}>
           Used to personalise your coach recommendations and readiness context.
         </Text>
+
+        <WaterSettingsSection />
 
         {/* ── Cycle tracking — only shown for female users ────────────────── */}
         {sex === 'female' && (

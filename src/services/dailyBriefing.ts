@@ -19,6 +19,7 @@ import { getCycleContext } from '@services/cycleTracking';
 import { localDateStr } from '@utils/index';
 import { evaluateActiveIllness, illnessCacheTag } from '@services/illnessEpisode';
 import { illnessContext } from '@utils/illnessRecovery';
+import { waterContext } from '@services/water';
 
 const SUPABASE_URL     = process.env.EXPO_PUBLIC_SUPABASE_URL     ?? '';
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
@@ -166,6 +167,7 @@ export async function fetchDailyBriefing(
   const cycle = await getCycleContext();
   const active = await evaluateActiveIllness().catch(() => null);
   const illness = active ? illnessContext(active.episode, active.status) : null;
+  const water = await waterContext().catch(() => null);
 
   const controller = new AbortController();
   const timeout    = setTimeout(() => controller.abort(), 25_000);
@@ -209,6 +211,7 @@ export async function fetchDailyBriefing(
         yesterdayFeedback,
         cycle,
         illness,
+        water,
       }),
     });
 

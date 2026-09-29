@@ -95,6 +95,10 @@ const USER_SCOPED_KEYS = [
 
   // What the 3-day forecast predicted, for a future accuracy record
   '@readiness/forecast_log_v1',
+
+  // Water units and daily target (the Health permission flag is per device)
+  '@readiness/water_unit',
+  '@readiness/water_target_l',
 ];
 
 /**

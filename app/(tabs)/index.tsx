@@ -21,6 +21,8 @@ import TrendInsightCard from '@components/score/TrendInsightCard';
 import ForecastStrip from '@components/score/ForecastStrip';
 import LifeEventTagger from '@components/score/LifeEventTagger';
 import { IllnessRecoveryCard, IllnessNudgeCard } from '@components/score/IllnessRecoveryCard';
+import WaterRow from '@components/score/WaterRow';
+import { isWaterAvailable } from '@services/water';
 import BreakdownModal from '@components/score/BreakdownModal';
 import DailyBriefingModal from '@components/score/DailyBriefingModal';
 import CalibrationReportModal from '@components/score/CalibrationReportModal';
@@ -810,6 +812,15 @@ export default function HomeScreen() {
                 : forecast}
               illnessCap={illness.capTraining}
             />
+          </View>
+        )}
+
+        {/* Water: free for everyone, saved to Apple Health; the coach and
+            briefing see today's total against the user's target */}
+        {isWaterAvailable() && (
+          <View style={styles.trainingSection}>
+            <Text style={styles.sectionTitle}>HYDRATION</Text>
+            <WaterRow reloadKey={`${isLoading}|${isRefreshing}`} />
           </View>
         )}
 
