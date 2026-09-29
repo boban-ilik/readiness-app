@@ -406,7 +406,17 @@ serve(async (req: Request) => {
       { role: 'user', content: input.question },
     ];
 
-    const callClaude = (structured: boolean) => fetch('https://api.anthropic.com/v1/messages', {
+    // Coach runs on Claude Sonnet 5.5 (from 2026-09-29; was Haiku 4.5). Chat
+    // is a low-effort route: adaptive thinking at effort "low" skips thinking
+    // on most simple questions, and max_tokens leaves room for it when it
+    // does think. Haiku 4.5 stays as the fallback with its old request shape
+    // (it takes no effort setting), so the coach keeps answering if Sonnet
+    // rejects the request or declines to answer.
+    const SONNET = 'claude-sonnet-5-5';
+    const HAIKU  = 'claude-haiku-4-5-20251001';
+    const format = { type: 'json_schema', schema: RESPONSE_SCHEMA };
+
+    const callClaude = (model: string, structured: boolean) => fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type':      'application/json',
@@ -414,32 +424,46 @@ serve(async (req: Request) => {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model:      'claude-haiku-4-5-20251001',
-        max_tokens: 700,   // answer (2-4 sentences) plus the JSON wrapper and up to 3 facts
+        model,
+        // Haiku: answer (2-4 sentences) plus the JSON wrapper and up to 3 facts.
+        // Sonnet: the same plus any thinking, which counts toward max_tokens.
+        max_tokens: model === SONNET ? 4000 : 700,
         system:     SYSTEM_PROMPT,
         messages,
         // Structured output: the answer and any new facts come back as one
         // schema-valid JSON object instead of a text format we'd have to parse.
-        ...(structured ? { output_config: { format: { type: 'json_schema', schema: RESPONSE_SCHEMA } } } : {}),
+        ...(model === SONNET
+          ? { output_config: { effort: 'low', ...(structured ? { format } : {}) } }
+          : structured ? { output_config: { format } } : {}),
       }),
     });
 
     // Every app version shares this function, so a rejected request shape must
     // never take the coach down: on a 400, ask again as plain text (the answer
     // still arrives; nothing is remembered that turn).
-    let claudeRes = await callClaude(true);
-    if (claudeRes.status === 400) {
-      console.warn('[coach-chat] structured request rejected:', (await claudeRes.text()).slice(0, 300));
-      claudeRes = await callClaude(false);
+    const ask = async (model: string) => {
+      let res = await callClaude(model, true);
+      if (res.status === 400) {
+        console.warn(`[coach-chat] ${model} structured request rejected:`, (await res.text()).slice(0, 300));
+        res = await callClaude(model, false);
+      }
+      return res;
+    };
+
+    let claudeRes = await ask(SONNET);
+    let data = claudeRes.ok ? await claudeRes.json() : null;
+    if (!claudeRes.ok || data?.stop_reason === 'refusal') {
+      console.warn('[coach-chat] Sonnet 5.5', claudeRes.ok ? `declined (${data?.stop_details?.category ?? 'no category'})` : `failed ${claudeRes.status}`, '- answering with Haiku 4.5');
+      claudeRes = await ask(HAIKU);
+      data = claudeRes.ok ? await claudeRes.json() : null;
     }
 
-    if (!claudeRes.ok) {
+    if (!claudeRes.ok || !data) {
       return new Response(JSON.stringify({ error: `Upstream error: ${claudeRes.status}` }), {
         status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       });
     }
 
-    const data = await claudeRes.json();
     const text = (data.content ?? []).find((b: { type: string }) => b.type === 'text')?.text?.trim() ?? '';
 
     // A refusal or a max_tokens cut can leave text that isn't valid JSON; fall
