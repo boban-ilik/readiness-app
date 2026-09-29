@@ -128,12 +128,15 @@ export default function WaterRow({ reloadKey }: { reloadKey: unknown }) {
 }
 
 const styles = StyleSheet.create({
+  // Same shape as the Performance Fuel (Nutrition) card above it: full section
+  // width, xl corners, subtle border.
   card: {
-    marginHorizontal: spacing[4],
-    borderRadius:     radius.lg,
-    backgroundColor:  colors.bg.tertiary,
-    padding:          spacing[4],
-    gap:              spacing[3],
+    borderRadius:    radius.xl,
+    backgroundColor: colors.bg.tertiary,
+    padding:         spacing[5],
+    gap:             spacing[3],
+    borderWidth:     1,
+    borderColor:     colors.border.subtle,
   },
   topRow: {
     flexDirection:  'row',

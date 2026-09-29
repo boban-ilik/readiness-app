@@ -793,6 +793,16 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* Water, under Performance Fuel for Pro and in the same place for
+            free users. Free for everyone, saved to Apple Health; the coach and
+            briefing see today's total against the user's target */}
+        {isWaterAvailable() && (
+          <View style={styles.trainingSection}>
+            <Text style={styles.sectionTitle}>HYDRATION</Text>
+            <WaterRow reloadKey={`${isLoading}|${isRefreshing}`} />
+          </View>
+        )}
+
         {/* Recovery Trend — Pro feature */}
         {isPro && hasUsableScore && (
           <View style={styles.trainingSection}>
@@ -812,15 +822,6 @@ export default function HomeScreen() {
                 : forecast}
               illnessCap={illness.capTraining}
             />
-          </View>
-        )}
-
-        {/* Water: free for everyone, saved to Apple Health; the coach and
-            briefing see today's total against the user's target */}
-        {isWaterAvailable() && (
-          <View style={styles.trainingSection}>
-            <Text style={styles.sectionTitle}>HYDRATION</Text>
-            <WaterRow reloadKey={`${isLoading}|${isRefreshing}`} />
           </View>
         )}
 
