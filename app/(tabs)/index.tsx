@@ -315,7 +315,7 @@ export default function HomeScreen() {
   const handleClearManualHRV = useCallback(() => {
     Alert.alert(
       'Clear Manual HRV',
-      'Remove today\'s manually entered HRV? Your Recovery score will revert to RHR-only.',
+      'Remove today\'s manually entered HRV? Your score goes back to what Apple Health recorded for today, if anything.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -593,6 +593,23 @@ export default function HomeScreen() {
           >
             <Text style={styles.mathLinkText}>
               How today's score was calculated{scoreSnapshot?.uncorrectedScore != null ? ' · cycle-adjusted' : ''} ›
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Today's typed-in HRV, changeable by everyone. The Recovery detail
+            that also has this button is Pro, and free users without a watch
+            that writes HRV enter it every morning. */}
+        {hasUsableScore && readiness?.healthData?.hrvSource === 'manual' && (
+          <TouchableOpacity
+            style={styles.manualHrvLink}
+            onPress={handleEnterManualHRV}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Update today's HRV"
+          >
+            <Text style={styles.manualHrvLinkText}>
+              HRV {readiness.healthData.hrv} ms, entered by you today · <Text style={styles.mathLinkText}>Update</Text>
             </Text>
           </TouchableOpacity>
         )}
@@ -962,6 +979,17 @@ const styles = StyleSheet.create({
     color: colors.amber[400],
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+  },
+  manualHrvLink: {
+    alignSelf: 'center',
+    marginTop: -spacing[5],
+    marginBottom: spacing[6],
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[3],
+  },
+  manualHrvLinkText: {
+    color: colors.text.secondary,
+    fontSize: fontSize.sm,
   },
   insufficientActions: {
     flexDirection: 'row',

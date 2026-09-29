@@ -32,13 +32,18 @@ describe('summariseTodayHRV', () => {
     expect(r?.daytime).toBe(false);
   });
 
-  it('falls back to the newest daytime sample within 24 h and flags it', () => {
+  it('falls back to the newest daytime sample from today and flags it', () => {
     const later = new Date(2026, 8, 4, 16);
     const r = summariseTodayHRV([
       { value: 0.045, startDate: at(2026, 9, 4, 13) },
       { value: 0.055, startDate: at(2026, 9, 4, 15) },
     ], later);
     expect(r).toEqual({ value: 55, count: 1, daytime: true });
+  });
+
+  it("never uses yesterday afternoon's reading as this morning's", () => {
+    const morning = new Date(2026, 8, 5, 9);
+    expect(summariseTodayHRV([{ value: 0.055, startDate: at(2026, 9, 4, 15) }], morning)).toBeNull();
   });
 
   it('returns null when the newest sample is older than a day', () => {

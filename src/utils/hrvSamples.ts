@@ -66,10 +66,10 @@ export interface TodayHRV {
  * Today's HRV.
  *
  * 1. Mean of samples in the window [yesterday 20:00, today 12:00] local.
- * 2. Otherwise the newest sample from the last 24 h (a daytime reading:
- *    usable, flagged).
- * 3. Otherwise null. A reading older than a day is not "today's HRV"; the
- *    UI shows the missing-HRV banner and offers manual entry instead.
+ * 2. Otherwise the newest sample taken today since local midnight (a
+ *    daytime reading: usable, flagged).
+ * 3. Otherwise null. Yesterday's afternoon reading is not "today's HRV";
+ *    the UI shows the missing-HRV banner and offers manual entry instead.
  */
 export interface SleepWindow { start: string | Date; end: string | Date }
 
@@ -114,9 +114,13 @@ export function summariseTodayHRV(
     return { value: Math.round(mean), count: overnight.length, daytime: false };
   }
 
-  const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  // Today only. A rolling 24 h let yesterday afternoon's reading stand in for
+  // this morning's, so a user without an overnight reading saw yesterday's
+  // number and was never asked for today's.
+  const midnight = new Date(now);
+  midnight.setHours(0, 0, 0, 0);
   const recent = samples
-    .filter(s => { const t = sampleTime(s); return t >= dayAgo && t <= now; })
+    .filter(s => { const t = sampleTime(s); return t >= midnight && t <= now; })
     .sort((a, b) => sampleTime(b).getTime() - sampleTime(a).getTime());
   if (recent.length > 0) {
     return { value: toMs(recent[0].value), count: 1, daytime: true };

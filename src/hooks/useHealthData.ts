@@ -328,15 +328,15 @@ export function useHealthData(): UseHealthDataReturn {
 
       if (healthData) {
         // ── Manual HRV overlay ──────────────────────────────────────────────
-        // When HealthKit didn't return HRV (non-Apple Watch devices), check
-        // whether the user entered it manually for today.
+        // A value the user typed in for today wins over whatever HealthKit
+        // has: they entered it on purpose, usually because the automatic one
+        // is missing or wrong (a Garmin or Polar reading that never reaches
+        // Apple Health). The entry is keyed by date, so it never carries over.
         let mergedData = healthData;
-        if (healthData.hrv === null) {
-          const manualHrv = await loadManualHRV();
-          if (manualHrv !== null) {
-            mergedData = { ...healthData, hrv: manualHrv, hrvSource: 'manual' };
-            console.log('[Readiness] Using manual HRV:', manualHrv, 'ms');
-          }
+        const manualHrv = await loadManualHRV();
+        if (manualHrv !== null) {
+          mergedData = { ...healthData, hrv: manualHrv, hrvSource: 'manual' };
+          console.log('[Readiness] Using manual HRV:', manualHrv, 'ms', healthData.hrv !== null ? `(over HealthKit ${healthData.hrv} ms)` : '');
         }
 
         const result = calculateReadiness(mergedData, scoringHrvBase, scoringRhrBase);
