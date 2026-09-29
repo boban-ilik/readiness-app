@@ -217,7 +217,12 @@ private struct RectangularView: View {
     }
     .lineLimit(1)
     .minimumScaleFactor(0.8)
-    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(.horizontal, 10)
+    .padding(.vertical, 6)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    // Apple's frosted lock-screen backing, as the circular gauge has. Bare
+    // text disappeared into busy photo wallpapers, the training line first.
+    .background(AccessoryWidgetBackground().clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous)))
   }
 }
 
