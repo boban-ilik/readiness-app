@@ -6,7 +6,7 @@
  * one that produced the number. No em dashes in any string (house rule).
  */
 
-import { DEFAULTS, type ScoreExplanation } from './readiness';
+import { DEFAULTS, baselinePhrase, type ScoreExplanation } from './readiness';
 import type { PhaseBaselineResult } from './cycleBaselines';
 import type { CyclePhase } from './cyclePhase';
 
@@ -84,7 +84,7 @@ export function buildScoreMath(input: MathInput): MathSection[] {
   if (rec.hrv) {
     const diff = rec.hrv.value - rec.hrv.baseline;
     recLines.push(
-      `Heart rate variability: ${n1(rec.hrv.value)} ms against your ${n1(rec.hrv.baseline)} ms baseline, a difference of ${signed(diff)} ms.`,
+      `Heart rate variability: ${n1(rec.hrv.value)} ms against ${baselinePhrase('hrv', rec.hrv.baseline, n1(rec.hrv.baseline))}, a difference of ${signed(diff)} ms.`,
       `${signed(diff)} ÷ ${rec.hrv.spread} ms typical spread = ${signed(rec.hrv.z)}. 50 + ${signed(rec.hrv.z)} × 20 = ${n1(rec.hrv.score)}.`,
     );
   }
@@ -92,7 +92,7 @@ export function buildScoreMath(input: MathInput): MathSection[] {
     const d = rec.rhr.delta;
     const dir = d > 0 ? `${n1(d)} bpm below` : d < 0 ? `${n1(-d)} bpm above` : 'level with';
     recLines.push(
-      `Resting heart rate: ${n1(rec.rhr.value)} bpm, ${dir} your ${n1(rec.rhr.baseline)} bpm baseline.`,
+      `Resting heart rate: ${n1(rec.rhr.value)} bpm, ${dir} ${baselinePhrase('rhr', rec.rhr.baseline, n1(rec.rhr.baseline))}.`,
       `Each bpm below baseline is worth 3 points: 50 + ${signed(d)} × 3 = ${n1(rec.rhr.score)}.`,
     );
   }
@@ -165,7 +165,7 @@ export function buildScoreMath(input: MathInput): MathSection[] {
     'Each is the median of your last 30 days. The lowest 20% of variability nights (illness, alcohol, hard blocks) and the highest 20% of resting heart rate days are left out.',
   ];
   if (input.hrvBaselineAllMonth === DEFAULTS.HRV_BASELINE || input.rhrBaselineAllMonth === DEFAULTS.RHR_BASELINE) {
-    blLines.push(`Until your watch has 7 days of data, typical values stand in (${DEFAULTS.HRV_BASELINE} ms and ${DEFAULTS.RHR_BASELINE} bpm). If a number above matches one of those, that is probably why.`);
+    blLines.push(`Until there are 7 days of data (from your watch, or heart rate variability you enter yourself), typical values stand in (${DEFAULTS.HRV_BASELINE} ms and ${DEFAULTS.RHR_BASELINE} bpm). If a number above matches one of those, that is probably why.`);
   }
   sections.push({ key: 'baselines', title: 'Your baselines', lines: blLines });
 

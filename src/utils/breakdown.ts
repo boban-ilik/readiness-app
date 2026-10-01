@@ -14,7 +14,7 @@
 import type { HealthData } from '../types/index';
 // The sleep target lived here as a hardcoded 480 in five places. It now comes
 // from the scoring model, so copy and score can never drift apart again.
-import { STRESS_ELEVATION_LOW, STRESS_ELEVATION_HIGH, DEFAULTS } from '@utils/readiness';
+import { STRESS_ELEVATION_LOW, STRESS_ELEVATION_HIGH, DEFAULTS, baselinePhrase } from '@utils/readiness';
 
 const SLEEP_TARGET = DEFAULTS.OPTIMAL_SLEEP;        // 420 min (7h)
 const SLEEP_TARGET_H = SLEEP_TARGET / 60;           // 7
@@ -99,8 +99,8 @@ function buildRecovery(
     const sub   = delta <= -3
       ? `${Math.abs(delta)} bpm below your norm: heart is working less at rest, a strong recovery sign`
       : delta <= 2
-      ? `Within 2 bpm of your ${rhrBaseline} bpm baseline, normal overnight recovery`
-      : `${sign}${delta} bpm above your ${rhrBaseline} bpm baseline: heart is still working to clear yesterday's load`;
+      ? `Within 2 bpm of ${baselinePhrase('rhr', rhrBaseline)}, normal overnight recovery`
+      : `${sign}${delta} bpm above ${baselinePhrase('rhr', rhrBaseline)}: heart is still working to clear yesterday's load`;
     metrics.push({
       label:  'Resting Heart Rate',
       value:  `${rhr} bpm`,
@@ -118,10 +118,10 @@ function buildRecovery(
       ? ' · Manually entered, tap "Update heart rate variability" below to change'
       : '';
     const sub = delta >= 5
-      ? `${sign}${delta} ms above your ${hrvBaseline} ms baseline: nervous system is flexible and recovered${contextSuffix}`
+      ? `${sign}${delta} ms above ${baselinePhrase('hrv', hrvBaseline)}: nervous system is flexible and recovered${contextSuffix}`
       : delta >= -5
-      ? `Within 5 ms of your ${hrvBaseline} ms baseline, typical autonomic state${contextSuffix}`
-      : `${delta} ms below your ${hrvBaseline} ms baseline: nervous system is under load, a sign of fatigue or stress${contextSuffix}`;
+      ? `Within 5 ms of ${baselinePhrase('hrv', hrvBaseline)}, typical autonomic state${contextSuffix}`
+      : `${delta} ms below ${baselinePhrase('hrv', hrvBaseline)}: nervous system is under load, a sign of fatigue or stress${contextSuffix}`;
     metrics.push({
       label:  isManualHrv ? 'Heart Rate Variability (manual)' : 'Heart Rate Variability',
       value:  `${hrv} ms`,
@@ -224,11 +224,11 @@ function buildRecovery(
       ? ` (This reading was entered manually. Values from apps like HRV4Training, Elite HRV, or a Polar chest strap are reliable sources.)`
       : '';
     if (d >= 5) {
-      parts.push(`Your heart rate variability of ${hrv} ms is ${Math.round(d)} ms above your ${hrvBaseline} ms personal baseline. This means your nervous system is in a flexible, recovered state, ideal for a demanding workout or a high-pressure day.${manualNote}`);
+      parts.push(`Your heart rate variability of ${hrv} ms is ${Math.round(d)} ms above ${baselinePhrase('hrv', hrvBaseline)}. This means your nervous system is in a flexible, recovered state, ideal for a demanding workout or a high-pressure day.${manualNote}`);
     } else if (d >= -5) {
-      parts.push(`Your heart rate variability of ${hrv} ms is within 5 ms of your ${hrvBaseline} ms personal baseline. Your nervous system is operating in its typical range, neither particularly rested nor under significant strain.${manualNote}`);
+      parts.push(`Your heart rate variability of ${hrv} ms is within 5 ms of ${baselinePhrase('hrv', hrvBaseline)}. Your nervous system is operating in its typical range, neither particularly rested nor under significant strain.${manualNote}`);
     } else {
-      parts.push(`Your heart rate variability of ${hrv} ms is ${Math.abs(Math.round(d))} ms below your ${hrvBaseline} ms personal baseline. A dip below your own norm is a meaningful recovery signal. It typically reflects accumulated fatigue, a hard training block, illness, alcohol, or a rough night's sleep.${manualNote}`);
+      parts.push(`Your heart rate variability of ${hrv} ms is ${Math.abs(Math.round(d))} ms below ${baselinePhrase('hrv', hrvBaseline)}. A dip below your own norm is a meaningful recovery signal. It typically reflects accumulated fatigue, a hard training block, illness, alcohol, or a rough night's sleep.${manualNote}`);
     }
   } else if (rhr != null) {
     // HRV missing but RHR present — be transparent that the score is partial
@@ -506,10 +506,10 @@ function buildStress(score: number, h: HealthData | null, rhrBaseline: number, h
     const delta = Math.round(hrv - hrvBaseline);
     const sign  = delta >= 0 ? '+' : '';
     const sub   = delta >= 5
-      ? `${sign}${delta} ms above your ${hrvBaseline} ms baseline: nervous system is calm and adaptive`
+      ? `${sign}${delta} ms above ${baselinePhrase('hrv', hrvBaseline)}: nervous system is calm and adaptive`
       : delta >= -5
-      ? `${sign}${delta} ms from your ${hrvBaseline} ms baseline: autonomic balance is neutral, neither stressed nor recovered`
-      : `${delta} ms below your ${hrvBaseline} ms baseline: suppressed heart rate variability signals your body is managing more load than usual`;
+      ? `${sign}${delta} ms from ${baselinePhrase('hrv', hrvBaseline)}: autonomic balance is neutral, neither stressed nor recovered`
+      : `${delta} ms below ${baselinePhrase('hrv', hrvBaseline)}: suppressed heart rate variability signals your body is managing more load than usual`;
     metrics.push({
       label:  'Heart Rate Variability',
       value:  `${hrv} ms`,
@@ -525,10 +525,10 @@ function buildStress(score: number, h: HealthData | null, rhrBaseline: number, h
     // Waking HR always sits above resting HR; the bands are shared with the
     // scorer so this copy never calls an ordinary day "significant elevation".
     const sub       = elevation <= STRESS_ELEVATION_LOW
-      ? `${sign}${elevation} bpm above your ${rhrBaseline} bpm baseline: within the normal daytime range, a low-stress signal`
+      ? `${sign}${elevation} bpm above ${baselinePhrase('rhr', rhrBaseline)}: within the normal daytime range, a low-stress signal`
       : elevation <= STRESS_ELEVATION_HIGH
-      ? `${sign}${elevation} bpm above your ${rhrBaseline} bpm baseline: a typical waking day with some activity, caffeine, or moderate stress`
-      : `${sign}${elevation} bpm above your ${rhrBaseline} bpm baseline: well above a normal daytime average, which often signals physiological stress or poor recovery`;
+      ? `${sign}${elevation} bpm above ${baselinePhrase('rhr', rhrBaseline)}: a typical waking day with some activity, caffeine, or moderate stress`
+      : `${sign}${elevation} bpm above ${baselinePhrase('rhr', rhrBaseline)}: well above a normal daytime average, which often signals physiological stress or poor recovery`;
     metrics.push({
       label:  'Daytime Avg Heart Rate',
       value:  `${daytimeAvgHR} bpm`,
@@ -606,11 +606,11 @@ function buildStress(score: number, h: HealthData | null, rhrBaseline: number, h
   } else if (hrv != null) {
     const d = Math.round(hrv - hrvBaseline);
     if (d >= 5) {
-      parts.push(`Your overnight heart rate variability of ${hrv} ms is ${d} ms above your ${hrvBaseline} ms personal baseline. Higher variability than your own norm means your nervous system is flexible and responsive, not locked into a stressed, rigid rhythm, a reliable sign of low physiological stress.`);
+      parts.push(`Your overnight heart rate variability of ${hrv} ms is ${d} ms above ${baselinePhrase('hrv', hrvBaseline)}. Higher variability than your own norm means your nervous system is flexible and responsive, not locked into a stressed, rigid rhythm, a reliable sign of low physiological stress.`);
     } else if (d >= -5) {
-      parts.push(`Your overnight heart rate variability of ${hrv} ms is within 5 ms of your ${hrvBaseline} ms personal baseline. Your nervous system is operating at a typical level, not particularly stressed, but also not in a deeply recovered state.`);
+      parts.push(`Your overnight heart rate variability of ${hrv} ms is within 5 ms of ${baselinePhrase('hrv', hrvBaseline)}. Your nervous system is operating at a typical level, not particularly stressed, but also not in a deeply recovered state.`);
     } else {
-      parts.push(`Your overnight heart rate variability of ${hrv} ms is ${Math.abs(d)} ms below your ${hrvBaseline} ms personal baseline. A dip below your own norm is one of the clearest signs of elevated stress, whether from training load, accumulated fatigue, alcohol, illness, or life demands. Your body is managing more than it's letting on.`);
+      parts.push(`Your overnight heart rate variability of ${hrv} ms is ${Math.abs(d)} ms below ${baselinePhrase('hrv', hrvBaseline)}. A dip below your own norm is one of the clearest signs of elevated stress, whether from training load, accumulated fatigue, alcohol, illness, or life demands. Your body is managing more than it's letting on.`);
     }
   } else if (daytimeAvgHR != null) {
     const elevation = daytimeAvgHR - rhrBaseline;

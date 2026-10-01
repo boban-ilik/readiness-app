@@ -10,7 +10,7 @@
  * No external API calls — fully deterministic so it works offline.
  */
 
-import type { ReadinessResult } from '@utils/readiness';
+import { baselinePhrase, type ReadinessResult } from '@utils/readiness';
 import type { HealthData }       from '@/types/index';
 
 // ─── Output type ──────────────────────────────────────────────────────────────
@@ -80,6 +80,9 @@ export function getNutritionRecommendation(
   healthData:  HealthData | null,
   hrvBaseline: number,
   weightKg?:   number,
+  /** The user's own Hydration target, already formatted ("3 l", "101 fl oz"). When set it replaces the
+   *  bodyweight estimate so the card never shows a second, different water number. */
+  waterTarget?: string,
 ): NutritionRecommendation {
 
   const hrv          = healthData?.hrv          ?? null;
@@ -116,8 +119,9 @@ export function getNutritionRecommendation(
   if (clampedScore >= 75) {
     // ── Tier A — Performance fuelling ─────────────────────────────────────────
     const targets   = weightTargets(weightKg, 'A');
-    const hydration = targets
-      ? `Target ${targets.litres} L today. Add electrolytes if training > 60 min.`
+    const waterA = waterTarget ?? (targets ? `${targets.litres} L` : null);
+    const hydration = waterA
+      ? `Target ${waterA} today. Add electrolytes if training > 60 min.`
       : 'Target 2.5–3 L today. Add electrolytes if training > 60 min.';
 
     const prioritise = [
@@ -138,7 +142,7 @@ export function getNutritionRecommendation(
     const rationale = [
       `Readiness ${score} puts you in the performance tier.`,
       hrv !== null
-        ? `HRV ${hrv} ms (${hrvDelta !== null && hrvDelta >= 0 ? '+' : ''}${hrvDelta ?? '—'} vs your ${hrvBaseline} ms baseline) confirms low systemic stress.`
+        ? `HRV ${hrv} ms (${hrvDelta !== null && hrvDelta >= 0 ? '+' : ''}${hrvDelta ?? '—'} vs ${baselinePhrase('hrv', hrvBaseline)}) confirms low systemic stress.`
         : '',
       sleepH !== null
         ? `You got ${sleepH.toFixed(1)} h sleep, ${sleepH >= 7 ? 'solid recovery base.' : 'slightly short, so lean into protein and anti-oxidants.'}`
@@ -161,10 +165,11 @@ export function getNutritionRecommendation(
   if (clampedScore >= 50) {
     // ── Tier B — Maintenance / steady ─────────────────────────────────────────
     const targets   = weightTargets(weightKg, 'B');
-    const hydration = targets
+    const waterB = waterTarget ?? (targets ? `${targets.litres} L` : null);
+    const hydration = waterB
       ? (hasSleepDebt
-          ? `Aim for ${targets.litres} L. Water before coffee. Dehydration amplifies fatigue from poor sleep.`
-          : `Aim for ${targets.litres} L. Steady sips throughout the day.`)
+          ? `Aim for ${waterB}. Water before coffee. Dehydration amplifies fatigue from poor sleep.`
+          : `Aim for ${waterB}. Steady sips throughout the day.`)
       : (hasSleepDebt
           ? 'Aim for 2.5 L. Prioritise water before coffee. Dehydration amplifies fatigue from poor sleep.'
           : 'Aim for 2–2.5 L. Steady sips throughout the day.');
@@ -213,8 +218,9 @@ export function getNutritionRecommendation(
 
   // ── Tier C — Recovery priority (score < 50) ─────────────────────────────────
   const targetsC  = weightTargets(weightKg, 'C');
-  const hydration = targetsC
-    ? `Prioritise hydration. Aim for ${targetsC.litres} L. Add a pinch of sea salt to water if you feel sluggish.`
+  const waterC = waterTarget ?? (targetsC ? `${targetsC.litres} L` : null);
+  const hydration = waterC
+    ? `Prioritise hydration. Aim for ${waterC}. Add a pinch of sea salt to water if you feel sluggish.`
     : 'Prioritise hydration. Aim for 2.5–3 L. Add a pinch of sea salt to water if you feel sluggish.';
 
   const prioritise: string[] = [
@@ -239,7 +245,7 @@ export function getNutritionRecommendation(
   const rationale = [
     `Readiness ${score}: your body is asking for a recovery day.`,
     hrv !== null
-      ? `HRV ${hrv} ms is ${Math.round(Math.abs((hrvDelta ?? 0)))} ms ${(hrvDelta ?? 0) < 0 ? 'below' : 'above'} your ${hrvBaseline} ms baseline: ${hasInflammation ? 'inflammation or systemic stress is elevated.' : 'recovery is in progress.'}`
+      ? `HRV ${hrv} ms is ${Math.round(Math.abs((hrvDelta ?? 0)))} ms ${(hrvDelta ?? 0) < 0 ? 'below' : 'above'} ${baselinePhrase('hrv', hrvBaseline)}: ${hasInflammation ? 'inflammation or systemic stress is elevated.' : 'recovery is in progress.'}`
       : 'No HRV data, eating for recovery is the safe default.',
     sleepH !== null
       ? `${sleepH.toFixed(1)} h sleep last night, nutrition can help compensate for poor recovery.`

@@ -36,3 +36,26 @@ describe('water context on the server', () => {
     expect(sanitiseWater('lots')).toBeNull();
   });
 });
+
+describe('one water target on Today', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { getNutritionRecommendation } = require('../nutrition');
+  const comps = { recovery: 80, sleep: 80, stress: 80 };
+  it('uses the Hydration target instead of the bodyweight estimate', () => {
+    const withTarget = getNutritionRecommendation(81, comps, null, 55, 80, '3 l');
+    expect(withTarget.hydration).toMatch(/^Target 3 l today/);
+    const without = getNutritionRecommendation(81, comps, null, 55, 80);
+    expect(without.hydration).toMatch(/^Target \d+(\.\d)? L today/);
+  });
+});
+
+describe('baseline wording', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { baselinePhrase } = require('../readiness');
+  it('never calls the stand-in value yours', () => {
+    expect(baselinePhrase('hrv', 55)).toBe('a typical 55 ms');
+    expect(baselinePhrase('rhr', 60)).toBe('a typical 60 bpm');
+    expect(baselinePhrase('hrv', 62)).toBe('your 62 ms baseline');
+    expect(baselinePhrase('rhr', 52)).toBe('your 52 bpm baseline');
+  });
+});

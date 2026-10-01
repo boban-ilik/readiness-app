@@ -45,7 +45,7 @@ import { cancelIllnessEpisodeStartedOn } from '@services/illnessEpisode';
 import { PROFILE_SEX_KEY } from '@services/userProfile';
 import { formatDisplayDate } from '@utils/index';
 import { computeActivityScore } from '@utils/breakdown';
-import { STRESS_ELEVATION_LOW, STRESS_ELEVATION_HIGH } from '@utils/readiness';
+import { STRESS_ELEVATION_LOW, STRESS_ELEVATION_HIGH, isStandInBaseline } from '@utils/readiness';
 import { fetchTodayActivity, type TodayActivity } from '@services/healthkit';
 import { analyzePatterns } from '@services/patternAnalysis';
 import { analyzeWorkload } from '@services/workloadAnalysis';
@@ -125,7 +125,7 @@ function buildRecoveryDetail(h: HealthData | null, baseline: number): string | u
   if (h.restingHeartRate !== null) {
     const delta = h.restingHeartRate - baseline;
     const sign  = delta > 0 ? '+' : '';
-    parts.push(`RHR ${h.restingHeartRate}bpm (${sign}${delta} vs your ${baseline} avg)`);
+    parts.push(`RHR ${h.restingHeartRate}bpm (${sign}${delta} vs ${isStandInBaseline('rhr', baseline) ? `a typical ${baseline}` : `your ${baseline} avg`})`);
   }
   return `${lastNightLabel()} · ${parts.join(' · ')}`;
 }
@@ -151,7 +151,7 @@ function buildStressDetail(h: HealthData | null, rhrBaseline: number, hrvBaselin
     const trend = delta >= 5  ? 'Low stress'
                 : delta >= -5 ? 'Typical'
                 :               'Elevated stress';
-    return `${prefix} · HRV ${h.hrv}ms (${sign}${delta} vs ${hrvBaseline}ms baseline) · ${trend}`;
+    return `${prefix} · HRV ${h.hrv}ms (${sign}${delta} vs ${isStandInBaseline('hrv', hrvBaseline) ? `a typical ${hrvBaseline}ms` : `your ${hrvBaseline}ms baseline`}) · ${trend}`;
   }
   // Tier 3: Daytime HR elevation proxy (works for Garmin users without HRV sync)
   if (h.daytimeAvgHR != null) {

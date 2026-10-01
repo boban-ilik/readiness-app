@@ -18,6 +18,8 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getNutritionRecommendation } from '@utils/nutrition';
+import { isWaterAvailable, loadWaterPrefs } from '@services/water';
+import { formatWater } from '@utils/water';
 import { PROFILE_WEIGHT_KEY } from '@services/userProfile';
 import type { ReadinessResult } from '@utils/readiness';
 import type { HealthData }      from '@/types/index';
@@ -63,6 +65,7 @@ export default function NutritionCard({
 }: NutritionCardProps) {
   const router = useRouter();
   const [weightKg, setWeightKg] = useState<number | undefined>(undefined);
+  const [waterTarget, setWaterTarget] = useState<string | undefined>(undefined);
 
   // Weight is edited on the Profile tab while this screen stays mounted behind
   // it, so re-read on focus rather than once on mount — otherwise the targets
@@ -73,11 +76,17 @@ export default function NutritionCard({
       AsyncStorage.getItem(PROFILE_WEIGHT_KEY)
         .then(v => { if (active && v) setWeightKg(Number(v)); })
         .catch(() => { /* falls back to generic targets */ });
+      // One water number on Today: the target set for the Hydration row.
+      if (isWaterAvailable()) {
+        loadWaterPrefs()
+          .then(p => { if (active) setWaterTarget(formatWater(p.targetLitres, p.unit)); })
+          .catch(() => {});
+      }
       return () => { active = false; };
     }, []),
   );
 
-  const rec = getNutritionRecommendation(score, components, healthData, hrvBaseline, weightKg);
+  const rec = getNutritionRecommendation(score, components, healthData, hrvBaseline, weightKg, waterTarget);
 
   return (
     <View style={styles.card}>
@@ -122,7 +131,7 @@ export default function NutritionCard({
       >
         <Text style={styles.weightText}>
           {weightKg
-            ? `Hydration and protein scaled to ${weightKg} kg`
+            ? (waterTarget ? `Protein scaled to ${weightKg} kg, water from your Hydration target` : `Hydration and protein scaled to ${weightKg} kg`)
             : 'Add your weight for personal hydration and protein targets'}
         </Text>
         <Text style={styles.weightChevron}>{weightKg ? 'Update ›' : 'Add ›'}</Text>

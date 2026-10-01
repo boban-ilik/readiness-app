@@ -267,7 +267,8 @@ function StatItem({ label, value }: { label: string; value: string }) {
   return (
     <View style={statStyles.item}>
       <Text style={statStyles.value}>{value}</Text>
-      <Text style={statStyles.label}>{label}</Text>
+      {/* One line, shrinking if needed: "Sessions" broke into "Session / s" with the larger 1.0.4 text */}
+      <Text style={statStyles.label} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{label}</Text>
     </View>
   );
 }

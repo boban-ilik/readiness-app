@@ -5,7 +5,6 @@ import {
   requestHealthKitPermissions,
   fetchTodaysHealthData,
   fetchRHRHistory,
-  fetchHRVHistory,
   fetchHRVByDay,
   fetchRHRByDay,
   isHealthKitAvailable,
@@ -68,6 +67,25 @@ async function loadManualHRV(): Promise<number | null> {
   } catch {
     return null;
   }
+}
+
+/** HRV the user typed in over the last `days` days, keyed by local date. */
+async function loadManualHRVByDay(days: number): Promise<Record<string, number>> {
+  const dates: string[] = [];
+  for (let i = 0; i <= days; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    dates.push(localDateStr(d));
+  }
+  const out: Record<string, number> = {};
+  try {
+    const pairs = await AsyncStorage.multiGet(dates.map(d => `${MANUAL_HRV_KEY_PREFIX}${d}`));
+    pairs.forEach(([, raw], i) => {
+      const v = raw ? parseFloat(raw) : NaN;
+      if (!isNaN(v)) out[dates[i]] = v;
+    });
+  } catch { /* no manual history */ }
+  return out;
 }
 
 async function saveManualHRV(value: number): Promise<void> {
@@ -148,10 +166,16 @@ export async function getPersonalHRVBaseline(): Promise<number> {
   const cached = await loadCachedHRVBaseline();
   if (cached !== null) return cached;
 
-  const episodes = await loadIllnessEpisodes();
-  const history  = episodes.length
-    ? Object.values(excludeIllnessDays(await fetchHRVByDay(30), episodes, localDateStr()))
-    : await fetchHRVHistory(30);
+  // Typed-in HRV counts too: wearables that never write HRV to Apple Health
+  // (Garmin, Polar, Whoop, Oura) would otherwise be judged against the
+  // population stand-in forever. As in today's score, a typed-in value wins
+  // for its day. Days inside a Sick episode stay out.
+  const [fromHealth, manual, episodes] = await Promise.all([
+    fetchHRVByDay(30),
+    loadManualHRVByDay(30),
+    loadIllnessEpisodes(),
+  ]);
+  const history = Object.values(excludeIllnessDays({ ...fromHealth, ...manual }, episodes, localDateStr()));
   const baseline = computeHRVBaseline(history);
   console.log('[Readiness] HRV baseline computed:', baseline, 'ms from', history.length, 'days');
 

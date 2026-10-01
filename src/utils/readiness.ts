@@ -317,6 +317,20 @@ export function explainReadiness(
   return { recovery, sleep, stress, weights: { ...w }, raw, score: Math.round(clamp(raw, 0, 100)) };
 }
 
+/** True while a baseline is still the stand-in used before 7 days of data exist. */
+export function isStandInBaseline(kind: 'hrv' | 'rhr', value: number): boolean {
+  return value === (kind === 'hrv' ? DEFAULTS.HRV_BASELINE : DEFAULTS.RHR_BASELINE);
+}
+
+/**
+ * "your 62 ms baseline", or "a typical 55 ms" while the baseline is the
+ * stand-in: the app must not call a population default "yours".
+ */
+export function baselinePhrase(kind: 'hrv' | 'rhr', value: number, shown: string | number = value): string {
+  const unit = kind === 'hrv' ? 'ms' : 'bpm';
+  return isStandInBaseline(kind, value) ? `a typical ${shown} ${unit}` : `your ${shown} ${unit} baseline`;
+}
+
 export function calculateReadiness(
   healthData: HealthData,
   hrvBaseline?: number,
