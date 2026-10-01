@@ -20,6 +20,7 @@
 
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { parseReport } from '../_shared/report.ts';
 import { gate } from '../_shared/entitlement.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
@@ -54,6 +55,13 @@ function trend(scores: number[]): 'improving' | 'declining' | 'stable' {
 }
 
 // @ts-ignore
+const REPORT_SCHEMA = {
+  type: 'object',
+  properties: { summary: { type: 'string' }, tip: { type: 'string' } },
+  required: ['summary', 'tip'],
+  additionalProperties: false,
+};
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -142,10 +150,14 @@ Deno.serve(async (req: Request) => {
       `  "summary": "2-3 sentences describing the week's trend and any standout days",\n` +
       `  "tip": "one specific, actionable sentence for the coming week based on the weakest area"\n` +
       `}\n\n` +
-      `Tone: encouraging, evidence-based, personal. No generic platitudes.`;
+      `Tone: encouraging, evidence-based, personal. No generic platitudes.\n` +
+      `Spelling: British English. Punctuation: never use em dashes or en dashes; use a comma, a full stop or a colon.`;
 
     // ── Call Claude ───────────────────────────────────────────────────────────
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+    // Structured output makes the reply schema-valid JSON. Every app version
+    // shares this function, so if that request shape is ever rejected (400)
+    // ask again as plain text and rely on the tolerant parser below.
+    const callClaude = (structured: boolean) => fetch('https://api.anthropic.com/v1/messages', {
       method:  'POST',
       headers: {
         'Content-Type':      'application/json',
@@ -156,9 +168,15 @@ Deno.serve(async (req: Request) => {
         model:      'claude-haiku-4-5-20251001',
         max_tokens: 400,
         messages:   [{ role: 'user', content: prompt }],
+        ...(structured ? { output_config: { format: { type: 'json_schema', schema: REPORT_SCHEMA } } } : {}),
       }),
     });
 
+    let claudeRes = await callClaude(true);
+    if (claudeRes.status === 400) {
+      console.warn('[weekly-report] structured request rejected:', (await claudeRes.text()).slice(0, 300));
+      claudeRes = await callClaude(false);
+    }
     if (!claudeRes.ok) throw new Error(`Claude API error ${claudeRes.status}`);
 
     const claudeData = await claudeRes.json();
@@ -166,16 +184,7 @@ Deno.serve(async (req: Request) => {
     if (!rawText) throw new Error('Empty response from Claude');
 
     // Parse structured response; fall back gracefully if JSON is malformed
-    let summary = rawText;
-    let tip     = '';
-    try {
-      const parsed = JSON.parse(rawText);
-      summary = parsed.summary ?? rawText;
-      tip     = parsed.tip     ?? '';
-    } catch {
-      // Claude didn't return valid JSON — use the raw text as summary
-      summary = rawText;
-    }
+    const { summary, tip } = parseReport(rawText);
 
     const today = new Date().toISOString().split('T')[0];
 
