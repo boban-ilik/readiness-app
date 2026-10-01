@@ -68,10 +68,19 @@ async function loadCachedReport(): Promise<WeeklyReport | null> {
   try {
     const raw = await AsyncStorage.getItem(cacheKey());
     if (!raw) return null;
-    return JSON.parse(raw) as WeeklyReport;
+    const report = JSON.parse(raw) as WeeklyReport;
+    // Reports saved before the server fix (2026-10-01) could hold the model's
+    // raw reply, code fence and JSON included. Never show one: fetch again.
+    if (looksLikeRawReply(report.summary)) return null;
+    return report;
   } catch {
     return null;
   }
+}
+
+/** True when a summary is the model's unparsed reply rather than prose. */
+export function looksLikeRawReply(summary: string | undefined): boolean {
+  return !summary || /```/.test(summary) || /^\s*\{\s*"summary"/.test(summary);
 }
 
 async function saveCachedReport(report: WeeklyReport): Promise<void> {
@@ -87,18 +96,21 @@ async function saveCachedReport(report: WeeklyReport): Promise<void> {
 /**
  * Fetch this week's AI readiness report.
  *
- * Returns the cached report instantly if one exists for the current ISO week.
+ * Returns the cached report instantly if one exists for the current ISO week,
+ * unless `forceRefresh` is set (the refresh button).
  * Otherwise calls the Edge Function (which requires an active Supabase session
  * and at least 3 days of saved scores).
  *
  * @throws if Supabase is not configured, user is not authenticated, or the
  *         Edge Function returns an error.
  */
-export async function fetchWeeklyReport(): Promise<WeeklyReport> {
+export async function fetchWeeklyReport(forceRefresh = false): Promise<WeeklyReport> {
   if (!SUPABASE_URL) throw new Error('Supabase is not configured');
 
   // ── Cache hit ──────────────────────────────────────────────────────────────
-  const cached = await loadCachedReport();
+  // The refresh button passes forceRefresh: it used to reload this same
+  // cached copy, so a bad report could not be replaced until the next week.
+  const cached = forceRefresh ? null : await loadCachedReport();
   if (cached) return cached;
 
   // ── Auth ───────────────────────────────────────────────────────────────────

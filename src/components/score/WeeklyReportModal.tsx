@@ -186,11 +186,11 @@ export default function WeeklyReportModal({ visible, onClose }: WeeklyReportModa
     load();
   }, [visible]);
 
-  async function load() {
+  async function load(forceRefresh = false) {
     setLoading(true);
     setErr(null);
     try {
-      const r = await fetchWeeklyReport();
+      const r = await fetchWeeklyReport(forceRefresh);
       setReport(r);
     } catch (e: any) {
       setErr(e.message ?? 'Could not load weekly report.');
@@ -201,7 +201,7 @@ export default function WeeklyReportModal({ visible, onClose }: WeeklyReportModa
 
   async function handleRefresh() {
     setReport(null);
-    await load();
+    await load(true);
   }
 
   // ── Computed display values ──────────────────────────────────────────────────
@@ -269,7 +269,7 @@ export default function WeeklyReportModal({ visible, onClose }: WeeklyReportModa
             <View style={styles.errCard}>
               <Ionicons name="alert-circle-outline" size={20} color={colors.error} />
               <Text style={styles.errText}>{err}</Text>
-              <TouchableOpacity style={styles.retryBtn} onPress={load} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.retryBtn} onPress={() => load()} activeOpacity={0.8}>
                 <Text style={styles.retryBtnText}>Try again</Text>
               </TouchableOpacity>
             </View>
