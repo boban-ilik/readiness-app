@@ -43,6 +43,7 @@ export type AnalyticsEvent =
   | 'illness_ended'            // { recovered }
   | 'water_logged'             // { unit } (no amounts)
   | 'water_undone'
+  | 'feedback_opened'
   | 'rating_prompted';         // { moment: 'day7' | 'good_day' } (iOS may still not show the sheet)
 
 type Props = Record<string, string | number | boolean | null>;

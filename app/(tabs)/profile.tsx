@@ -10,6 +10,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback }               from 'react';
 import { loadCoachMemory, removeCoachMemory, clearCoachMemory, type MemoryItem } from '@services/coachMemory';
 import { loadWaterPrefs, saveWaterUnit, saveWaterTarget } from '@services/water';
+import { track } from '@services/analytics';
 import { TARGET_STEP_LITRES, TARGET_MIN_LITRES, TARGET_MAX_LITRES, clampTarget, litresToFlOz, type WaterUnit } from '@utils/water';
 import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
 import { useAuth }                   from '@contexts/AuthContext';
@@ -101,6 +102,10 @@ const AGE_KEY    = '@readiness/profile_age';
 const SEX_KEY    = '@readiness/profile_sex';
 const HEIGHT_KEY = '@readiness/profile_height_cm';
 const WEIGHT_KEY = '@readiness/profile_weight_kg';
+
+// Was support@readinessapp.com, a domain that is not ours and has no mail
+// records, so every in-app report bounced. Forwarded by Cloudflare Email Routing.
+const SUPPORT_EMAIL = 'support@thereadiness.app';
 const GOAL_KEY   = '@readiness/profile_goal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -878,14 +883,32 @@ export default function ProfileScreen() {
       `--- End of report ---`,
     );
 
-    const url = `mailto:support@readinessapp.com?subject=${subject}&body=${body}`;
+    await openSupportEmail(subject, body);
+  };
+
+  // ── Send feedback ───────────────────────────────────────────────────────────
+  // Ideas and praise, kept apart from bugs: a short open template, no
+  // reproduction steps to fill in.
+  const handleSendFeedback = async () => {
+    const version = Constants.expoConfig?.version ?? '—';
+    const subject = encodeURIComponent(`Feedback: Readiness v${version}`);
+    const body    = encodeURIComponent(
+      `What would make Readiness more useful for you?\n\n\n\n` +
+      `(App version ${version}. Boban reads every message.)`,
+    );
+    track('feedback_opened');
+    await openSupportEmail(subject, body);
+  };
+
+  const openSupportEmail = async (subject: string, body: string) => {
+    const url = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
     const canOpen = await Linking.canOpenURL(url);
     if (canOpen) {
       await Linking.openURL(url);
     } else {
       Alert.alert(
         'No email app found',
-        'Please email us directly at support@readinessapp.com',
+        `Please email us directly at ${SUPPORT_EMAIL}`,
         [{ text: 'OK' }],
       );
     }
@@ -953,7 +976,7 @@ export default function ProfileScreen() {
     } catch (e: any) {
       Alert.alert(
         'Could not delete account',
-        e.message ?? 'Something went wrong. Please try again or contact support@readinessapp.com.',
+        e.message ?? `Something went wrong. Please try again or contact ${SUPPORT_EMAIL}.`,
         [{ text: 'OK' }],
       );
     }
@@ -1267,6 +1290,12 @@ export default function ProfileScreen() {
             label="Report a bug"
             sublabel="Opens your email app with a pre-filled report"
             onPress={handleReportBug}
+            right={<Text style={styles.rowChevron}>›</Text>}
+          />
+          <RowBase
+            label="Send feedback"
+            sublabel="Tell us what would make Readiness better"
+            onPress={handleSendFeedback}
             right={<Text style={styles.rowChevron}>›</Text>}
           />
         </SettingsCard>
