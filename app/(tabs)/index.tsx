@@ -37,7 +37,7 @@ import { useStravaActivities } from '@hooks/useStravaActivities';
 import { useSubscription } from '@contexts/SubscriptionContext';
 import { useNotifications } from '@hooks/useNotifications';
 import { useCalibrationStatus } from '@hooks/useCalibrationStatus';
-import { useRatingPrompt } from '@hooks/useRatingPrompt';
+import { useRatingPrompt, useGoodDayRatingPrompt } from '@hooks/useRatingPrompt';
 import { useCycleTracking } from '@hooks/useCycleTracking';
 import { useOvertrainingWarning } from '@hooks/useOvertrainingWarning';
 import { useIllnessRecovery } from '@hooks/useIllnessRecovery';
@@ -447,6 +447,13 @@ export default function HomeScreen() {
   const score         = readiness?.score ?? 0;
   const hasInsufficientData = readiness?.dataQuality?.isInsufficient ?? false;
   const hasUsableScore = score > 0 && !hasInsufficientData;
+  // Second rating ask: a high-score day from day 3 on. Held back while any
+  // sheet is open and while the user is recovering from illness.
+  useGoodDayRatingPrompt(
+    hasUsableScore && !isLoading ? score : 0,
+    calibration.daysSinceJoined,
+    calibration.isLoading || reportVisible || briefingVisible || selectedCard !== null || illness.capTraining,
+  );
   const displayScore   = hasInsufficientData ? 0 : score;
   const scoreColor    = hasUsableScore ? getScoreColor(score) : colors.text.tertiary;
   const scoreLabel    = !hasUsableScore ? 'Not enough data' : getScoreLabel(score);
