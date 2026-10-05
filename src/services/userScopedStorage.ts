@@ -99,6 +99,9 @@ const USER_SCOPED_KEYS = [
   // Water units and daily target (the Health permission flag is per device)
   '@readiness/water_unit',
   '@readiness/water_target_l',
+
+  // What the user said about unusual readings
+  '@readiness/reading_check_v1',
 ];
 
 /**

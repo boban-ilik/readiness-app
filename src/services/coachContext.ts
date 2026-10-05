@@ -17,6 +17,7 @@ import { loadCoachMemory } from '@services/coachMemory';
 import { evaluateActiveIllness } from '@services/illnessEpisode';
 import { illnessContext, type IllnessContext } from '@utils/illnessRecovery';
 import { waterContext } from '@services/water';
+import { readingCheckContext } from '@services/readingCheck';
 
 export interface CoachExtras {
   memory:    string[];
@@ -27,6 +28,8 @@ export interface CoachExtras {
   illness:   IllnessContext | null;
   /** Not cached: every tap on the water button should reach the next answer */
   water:     Awaited<ReturnType<typeof waterContext>>;
+  /** Today's unusual reading and what the user said about it; not cached */
+  readingCheck: Awaited<ReturnType<typeof readingCheckContext>>;
 }
 
 const TTL_MS = 10 * 60 * 1000;
@@ -60,13 +63,17 @@ export async function buildCoachExtras(): Promise<CoachExtras> {
     withTimeout(evaluateActiveIllness(), 6_000, null),
   ]);
   const water = await withTimeout(waterContext(), 4_000, null);
+  const today = getScoreSnapshot()?.readiness.healthData;
+  const readingCheck = today
+    ? await withTimeout(readingCheckContext(today.hrv, today.restingHeartRate), 6_000, null)
+    : null;
   const memory = memoryItems.map(m => m.text);
   const illness = active ? illnessContext(active.episode, active.status) : null;
   const scoreMath = scoreMathLines();
   const userId = session?.user?.id ?? '';
 
   if (cache && cache.userId === userId && Date.now() - cache.at < TTL_MS) {
-    return { memory, scoreMath, illness, water, trend: cache.trend, strava: cache.strava };
+    return { memory, scoreMath, illness, water, readingCheck, trend: cache.trend, strava: cache.strava };
   }
 
   const [rows, activities] = await Promise.all([
@@ -89,7 +96,7 @@ export async function buildCoachExtras(): Promise<CoachExtras> {
   }));
 
   cache = { at: Date.now(), userId, trend, strava };
-  return { memory, scoreMath, illness, water, trend, strava };
+  return { memory, scoreMath, illness, water, readingCheck, trend, strava };
 }
 
 /** Drop cached history/Strava, e.g. after today's score is saved. */

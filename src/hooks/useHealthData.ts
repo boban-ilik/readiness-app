@@ -70,7 +70,7 @@ async function loadManualHRV(): Promise<number | null> {
 }
 
 /** HRV the user typed in over the last `days` days, keyed by local date. */
-async function loadManualHRVByDay(days: number): Promise<Record<string, number>> {
+export async function loadManualHRVByDay(days: number): Promise<Record<string, number>> {
   const dates: string[] = [];
   for (let i = 0; i <= days; i++) {
     const d = new Date();

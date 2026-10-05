@@ -22,6 +22,8 @@ import ForecastStrip from '@components/score/ForecastStrip';
 import LifeEventTagger from '@components/score/LifeEventTagger';
 import { IllnessRecoveryCard, IllnessNudgeCard } from '@components/score/IllnessRecoveryCard';
 import WaterRow from '@components/score/WaterRow';
+import ReadingCheckCard from '@components/score/ReadingCheckCard';
+import { useReadingCheck } from '@hooks/useReadingCheck';
 import { isWaterAvailable } from '@services/water';
 import BreakdownModal from '@components/score/BreakdownModal';
 import DailyBriefingModal from '@components/score/DailyBriefingModal';
@@ -283,6 +285,11 @@ export default function HomeScreen() {
   const [todayActivity,   setTodayActivity]   = useState<TodayActivity | null>(null);
   const [lifeEvents,      setLifeEvents]      = useState<LifeEvent[]>([]);
   const illness = useIllnessRecovery(`${isLoading}|${isRefreshing}|${readiness?.score ?? ''}`);
+  const readingCheck = useReadingCheck(
+    readiness?.healthData?.hrv ?? null,
+    readiness?.healthData?.restingHeartRate ?? null,
+    `${isLoading}|${isRefreshing}`,
+  );
   const [forecast,        setForecast]        = useState<ReadinessForecast | null>(null);
   const [yesterdayScore,  setYesterdayScore]  = useState<number | null>(null);
   const shareCardRef = useRef<View>(null);
@@ -452,7 +459,8 @@ export default function HomeScreen() {
   useGoodDayRatingPrompt(
     hasUsableScore && !isLoading ? score : 0,
     calibration.daysSinceJoined,
-    calibration.isLoading || reportVisible || briefingVisible || selectedCard !== null || illness.capTraining,
+    calibration.isLoading || reportVisible || briefingVisible || selectedCard !== null || illness.capTraining
+      || (!!readingCheck.state && !readingCheck.state.answered),   // a question is already on screen
   );
   const displayScore   = hasInsufficientData ? 0 : score;
   const scoreColor    = hasUsableScore ? getScoreColor(score) : colors.text.tertiary;
@@ -635,6 +643,25 @@ export default function HomeScreen() {
               await illness.start('nudge');
             }}
             onDismiss={illness.dismissNudge}
+          />
+        )}
+
+        {/* Ask before judging: a reading well outside the user's own usual
+            range gets a question, not a verdict. The illness cards come first. */}
+        {readingCheck.state && !illness.status && !illness.nudge && (
+          <ReadingCheckCard
+            state={readingCheck.state}
+            onAnswer={async option => {
+              const ev = await readingCheck.answer(option);
+              if (ev) setLifeEvents(prev => [ev, ...prev]);
+              if (option.offerIllness) await illness.start('tag');
+            }}
+            onDismiss={readingCheck.dismiss}
+            onAskCoach={() => {
+              const c = readingCheck.state!.check;
+              const what = c.metric === 'hrv' ? 'HRV' : 'resting heart rate';
+              router.push({ pathname: '/coach-chat', params: { q: `Why is my ${what} unusually ${c.direction} today?` } });
+            }}
           />
         )}
 

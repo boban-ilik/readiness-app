@@ -117,6 +117,7 @@ export async function askCoach(
         strava:    extras.strava ?? [],
         illness:   extras.illness ?? null,
         water:     extras.water ?? null,
+        readingCheck: extras.readingCheck ?? null,
       }),
     });
 

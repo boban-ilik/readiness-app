@@ -20,6 +20,7 @@ import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import { gate, readJsonBody } from '../_shared/entitlement.ts';
 import { sanitiseIllness, illnessLines, ILLNESS_RULE, type IllnessInput } from '../_shared/illness.ts';
 import { sanitiseWater, waterLines, WATER_RULE, type WaterInput } from '../_shared/water.ts';
+import { sanitiseReadingCheck, readingCheckLines, READING_CHECK_RULE, type ReadingCheckInput } from '../_shared/readingCheck.ts';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin':  '*',
@@ -103,6 +104,8 @@ interface DailyBriefingInput {
   illness?:           IllnessInput | null;
   /** Today's water from Apple Health and the user's target (1.0.4). */
   water?:             WaterInput | null;
+  /** Today's HRV or resting heart rate when it is unusual for this user (1.0.5). */
+  readingCheck?:      ReadingCheckInput | null;
 }
 
 interface DailyBriefing {
@@ -155,7 +158,9 @@ If you recommend a sleep duration, use the 7 hour guideline the app scores again
 
 ${ILLNESS_RULE}
 
-${WATER_RULE}`;
+${WATER_RULE}
+
+${READING_CHECK_RULE} In this briefing you cannot ask back, so mention the unusual reading neutrally in the overview and make one FOLLOW_UPS item a first-person question about it (for example "Why is my HRV so high today?").`;
 
 function buildPrompt(input: DailyBriefingInput): string {
   const { score, scoreLabel, components, healthData: h, rhrBaseline, hrvBaseline, patterns, workload } = input;
@@ -266,6 +271,11 @@ function buildPrompt(input: DailyBriefingInput): string {
     lines.push(...waterLines(input.water));
   }
 
+  if (input.readingCheck) {
+    lines.push('');
+    lines.push(...readingCheckLines(input.readingCheck));
+  }
+
   // ── Yesterday's briefing feedback ───────────────────────────────────────────
   if (input.yesterdayFeedback?.rating === 'unhelpful') {
     lines.push('');
@@ -353,6 +363,7 @@ serve(async (req: Request) => {
     const input: DailyBriefingInput = parsed;
     input.illness = sanitiseIllness(input.illness);
     input.water = sanitiseWater(input.water);
+    input.readingCheck = sanitiseReadingCheck(input.readingCheck);
 
     if (typeof input.score !== 'number' || !input.components || !input.healthData) {
       return new Response(JSON.stringify({ error: 'Invalid input' }), {
