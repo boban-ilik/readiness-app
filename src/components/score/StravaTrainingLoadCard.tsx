@@ -266,7 +266,7 @@ const sportStyles = StyleSheet.create({
 function StatItem({ label, value }: { label: string; value: string }) {
   return (
     <View style={statStyles.item}>
-      <Text style={statStyles.value}>{value}</Text>
+      <Text style={statStyles.value} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{value}</Text>
       {/* One line, shrinking if needed: "Sessions" broke into "Session / s" with the larger 1.0.4 text */}
       <Text style={statStyles.label} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{label}</Text>
     </View>
@@ -462,6 +462,12 @@ const styles = StyleSheet.create({
     flexDirection:  'row',
     alignItems:     'center',
     justifyContent: 'space-between',
+    // With the larger 1.0.4 text the title, the status chip and "via Strava"
+    // no longer fit on one line: the title ran into the chip and the Strava
+    // tag hung over the card edge. The chips drop to their own line instead.
+    flexWrap:       'wrap',
+    columnGap:      spacing[2],
+    rowGap:         spacing[2],
     marginBottom:   spacing[3],
   },
   title: {
