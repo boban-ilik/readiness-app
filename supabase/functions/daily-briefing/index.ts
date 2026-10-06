@@ -21,6 +21,7 @@ import { gate, readJsonBody } from '../_shared/entitlement.ts';
 import { sanitiseIllness, illnessLines, ILLNESS_RULE, type IllnessInput } from '../_shared/illness.ts';
 import { sanitiseWater, waterLines, WATER_RULE, type WaterInput } from '../_shared/water.ts';
 import { sanitiseReadingCheck, readingCheckLines, READING_CHECK_RULE, type ReadingCheckInput } from '../_shared/readingCheck.ts';
+import { trainingCallLine, baselineNote, TRAINING_RULE } from '../_shared/coaching.ts';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin':  '*',
@@ -152,13 +153,15 @@ FOLLOW_UPS:
 
 Every DO_TODAY item must be something the user can actually do today and must follow from the data above. Do not restate the overview.
 
-FOLLOW_UPS are tap-to-ask questions shown under the briefing. Make each one specific to today's numbers and different from the others, for example "Why is my HRV down today?", "Can I still do intervals?", "What should I change tonight?". Never generic ("Tell me more").
+FOLLOW_UPS are tap-to-ask questions shown under the briefing. Make each one specific to today's numbers and different from the others, for example "Why is my HRV down today?", "Can I still do intervals?", "What should I change tonight?". Never generic ("Tell me more"). Each one is the user speaking, using I and my ("Why was my sleep short?"), never a question put to the user ("Is 6.2 hours typical for you?").
 
 If you recommend a sleep duration, use the 7 hour guideline the app scores against. Do not invent a different figure.
 
 ${ILLNESS_RULE}
 
 ${WATER_RULE}
+
+${TRAINING_RULE}
 
 ${READING_CHECK_RULE} In this briefing you cannot ask back, so mention the unusual reading neutrally in the overview and make one FOLLOW_UPS item a first-person question about it (for example "Why is my HRV so high today?").`;
 
@@ -169,16 +172,18 @@ function buildPrompt(input: DailyBriefingInput): string {
     `Overall readiness: ${score}/100 (${scoreLabel})`,
     `Components — Recovery: ${components.recovery}/100 | Sleep: ${components.sleep}/100 | Stress: ${components.stress}/100`,
     '',
+    trainingCallLine(score, input.illness?.state === 'recovering'),
+    '',
     'Biometrics:',
   ];
 
   if (h.hrv !== null) {
     const d = Math.round(h.hrv - hrvBaseline);
-    lines.push(`  Heart rate variability: ${h.hrv} ms  (personal baseline: ${hrvBaseline} ms, delta: ${d >= 0 ? '+' : ''}${d} ms)`);
+    lines.push(`  Heart rate variability: ${h.hrv} ms  (${baselineNote('hrv', hrvBaseline)}; delta: ${d >= 0 ? '+' : ''}${d} ms)`);
   }
   if (h.restingHeartRate !== null) {
     const d = Math.round(h.restingHeartRate - rhrBaseline);
-    lines.push(`  Resting heart rate: ${h.restingHeartRate} bpm  (personal baseline: ${rhrBaseline} bpm, delta: ${d >= 0 ? '+' : ''}${d} bpm)`);
+    lines.push(`  Resting heart rate: ${h.restingHeartRate} bpm  (${baselineNote('rhr', rhrBaseline)}; delta: ${d >= 0 ? '+' : ''}${d} bpm)`);
   }
   if (h.sleepDuration !== null) {
     const hrs = (h.sleepDuration / 60).toFixed(1);

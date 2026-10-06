@@ -115,7 +115,10 @@ export default function TrendChartModal({ visible, onClose, past, forecast }: Pr
               {forecast.length > 0 && (
                 <>
                   <View style={styles.legendItem}>
-                    <View style={[styles.swatchDashed, { borderColor: PROJECTION }]} />
+                    {/* An SVG line: a dashed border on a zero-height View drew nothing on device */}
+                    <Svg width={18} height={4}>
+                      <Line x1={0} y1={2} x2={18} y2={2} stroke={PROJECTION} strokeWidth={2.5} strokeDasharray="5 4" />
+                    </Svg>
                     <Text style={styles.legendText}>Projected</Text>
                   </View>
                   <View style={styles.legendItem}>
@@ -185,7 +188,6 @@ const styles = StyleSheet.create({
   legendItem:  { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
   legendText:  { fontSize: fontSize.xs, color: colors.text.secondary },
   swatch:      { width: 18, height: 3, borderRadius: 2 },
-  swatchDashed:{ width: 18, height: 0, borderTopWidth: 2, borderStyle: 'dashed' },
   swatchBand:  { width: 18, height: 10, borderRadius: 2, opacity: 0.3 },
   sectionLabel: {
     fontSize:          fontSize.xs,

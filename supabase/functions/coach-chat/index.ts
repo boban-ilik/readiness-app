@@ -30,6 +30,7 @@ import { gate, readJsonBody } from '../_shared/entitlement.ts';
 import { sanitiseIllness, illnessLines, ILLNESS_RULE, type IllnessInput } from '../_shared/illness.ts';
 import { sanitiseWater, waterLines, WATER_RULE, type WaterInput } from '../_shared/water.ts';
 import { sanitiseReadingCheck, readingCheckLines, READING_CHECK_RULE, type ReadingCheckInput } from '../_shared/readingCheck.ts';
+import { trainingCallLine, baselineNote, TRAINING_RULE } from '../_shared/coaching.ts';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin':  '*',
@@ -179,6 +180,7 @@ Rules:
 - Use the 30-day history for questions about trends ("all week", "lately", "since my race"); quote dates and values from it rather than guessing
 - ${ILLNESS_RULE}
 - ${WATER_RULE}
+- ${TRAINING_RULE}
 - ${READING_CHECK_RULE}
 
 Memory:
@@ -235,17 +237,18 @@ function buildContext(input: CoachChatInput): string {
   lines.push(
     `Current readiness: ${score}/100 (${scoreLabel})`,
     `Components: Recovery ${components.recovery} | Sleep: ${components.sleep} | Stress: ${components.stress}`,
+    trainingCallLine(score, input.illness?.state === 'recovering'),
     '',
     'Biometrics:',
   );
 
   if (h.hrv !== null) {
     const d = Math.round(h.hrv - hrvBaseline);
-    lines.push(`  HRV: ${h.hrv}ms (baseline: ${hrvBaseline}ms, delta: ${d >= 0 ? '+' : ''}${d}ms)`);
+    lines.push(`  HRV: ${h.hrv}ms (${baselineNote('hrv', hrvBaseline)}; delta: ${d >= 0 ? '+' : ''}${d}ms)`);
   }
   if (h.restingHeartRate !== null) {
     const d = Math.round(h.restingHeartRate - rhrBaseline);
-    lines.push(`  RHR: ${h.restingHeartRate}bpm (baseline: ${rhrBaseline}bpm, delta: ${d >= 0 ? '+' : ''}${d}bpm)`);
+    lines.push(`  RHR: ${h.restingHeartRate}bpm (${baselineNote('rhr', rhrBaseline)}; delta: ${d >= 0 ? '+' : ''}${d}bpm)`);
   }
   if (h.sleepDuration !== null) lines.push(`  Sleep: ${(h.sleepDuration / 60).toFixed(1)}h`);
   if (h.deepSleep !== null)     lines.push(`  Deep sleep: ${h.deepSleep}min`);

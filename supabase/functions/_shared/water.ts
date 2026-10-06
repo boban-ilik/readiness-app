@@ -26,10 +26,15 @@ export function sanitiseWater(v: unknown): WaterInput | null {
 }
 
 export function waterLines(w: WaterInput): string[] {
+  if (w.todayLitres === 0) {
+    return [
+      `Water today: nothing logged yet (local time about ${w.localHour}:00; their own target is ${w.targetLitres.toFixed(1)} l). This only means nothing has been logged in Apple Health, not that the user has had nothing to drink.`,
+    ];
+  }
   return [
-    `Water today: ${w.todayLitres.toFixed(1)} l so far, against the user's own target of ${w.targetLitres.toFixed(1)} l (local time about ${w.localHour}:00). Logged in Apple Health, so it may be incomplete if they don't log every drink.`,
+    `Water today: ${w.todayLitres.toFixed(1)} l logged so far, against the user's own target of ${w.targetLitres.toFixed(1)} l (local time about ${w.localHour}:00). Logged in Apple Health, so it may be incomplete if they don't log every drink.`,
   ];
 }
 
 export const WATER_RULE =
-  'If a water total is given, mention hydration only when it matters: a long or hard session, a hot day, a raised resting heart rate, or intake well behind the target late in the day. A low total early in the day is normal. Never say water explains the score, and never give a medical fluid prescription.';
+  'If a water total is given, mention hydration only when it matters: a long or hard session, a hot day, a raised resting heart rate, or intake well behind the target late in the day. A low total early in the day is normal. The total is only what was logged: never call the user dehydrated or under-hydrated because of it, never make water the headline, and at most suggest drinking and logging it. Never say water explains the score, and never give a medical fluid prescription.';
