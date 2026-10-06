@@ -59,3 +59,20 @@ describe('baseline wording', () => {
     expect(baselinePhrase('rhr', 52)).toBe('your 52 bpm baseline');
   });
 });
+
+describe('baseline source flag', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { baselinePhrase, setBaselineSource } = require('../readiness');
+  afterEach(() => { setBaselineSource('rhr', undefined); setBaselineSource('hrv', undefined); });
+
+  it('says "your" for a real baseline that happens to equal the stand-in', () => {
+    setBaselineSource('rhr', true);
+    expect(baselinePhrase('rhr', 60)).toBe('your 60 bpm baseline');
+  });
+  it('still says typical when the baseline is known to be the stand-in, or unknown', () => {
+    setBaselineSource('rhr', false);
+    expect(baselinePhrase('rhr', 60)).toBe('a typical 60 bpm');
+    setBaselineSource('rhr', undefined);
+    expect(baselinePhrase('rhr', 60)).toBe('a typical 60 bpm');
+  });
+});

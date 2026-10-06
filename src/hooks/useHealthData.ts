@@ -9,7 +9,7 @@ import {
   fetchRHRByDay,
   isHealthKitAvailable,
 } from '@services/healthkit';
-import { calculateReadiness, explainReadiness, type ReadinessResult } from '@utils/readiness';
+import { calculateReadiness, explainReadiness, setBaselineSource, type ReadinessResult } from '@utils/readiness';
 import { computePhaseBaselines, type PhaseBaselineResult } from '@utils/cycleBaselines';
 import { computeCycleState, latestEntry, loadCycleSnapshot } from '@services/cycleTracking';
 import { setScoreSnapshot } from '@services/scoreSession';
@@ -102,31 +102,40 @@ async function removeManualHRV(): Promise<void> {
 const BASELINE_CACHE_KEY = '@readiness/rhr_baseline';
 const BASELINE_TTL_MS    = 24 * 60 * 60 * 1000; // 24 h
 
+// Same minimum computeRHRBaseline / computeHRVBaseline use before they stop
+// returning the stand-in value.
+const BASELINE_MIN_DAYS = 7;
+
 interface BaselineCache {
   value:      number;
   computedAt: number; // unix ms
+  /** From 7+ days of the user's own data. Absent in caches written before 1.0.5. */
+  personal?:  boolean;
 }
 
-async function loadCachedBaseline(): Promise<number | null> {
+async function loadCachedBaseline(): Promise<BaselineCache | null> {
   try {
     const raw = await AsyncStorage.getItem(BASELINE_CACHE_KEY);
     if (!raw) return null;
     const cache: BaselineCache = JSON.parse(raw);
     if (Date.now() - cache.computedAt > BASELINE_TTL_MS) return null; // stale
-    return cache.value;
+    return cache;
   } catch {
     return null;
   }
 }
 
-async function saveBaselineCache(value: number): Promise<void> {
-  const cache: BaselineCache = { value, computedAt: Date.now() };
+async function saveBaselineCache(value: number, personal: boolean): Promise<void> {
+  const cache: BaselineCache = { value, computedAt: Date.now(), personal };
   await AsyncStorage.setItem(BASELINE_CACHE_KEY, JSON.stringify(cache));
 }
 
 export async function getPersonalRHRBaseline(): Promise<number> {
   const cached = await loadCachedBaseline();
-  if (cached !== null) return cached;
+  if (cached !== null) {
+    setBaselineSource('rhr', cached.personal);
+    return cached.value;
+  }
 
   // Days inside a Sick episode stay out, so an illness can't drag "usual" with it
   const episodes = await loadIllnessEpisodes();
@@ -136,7 +145,9 @@ export async function getPersonalRHRBaseline(): Promise<number> {
   const baseline = computeRHRBaseline(history);
   console.log('[Readiness] RHR baseline computed:', baseline, 'bpm from', history.length, 'days');
 
-  await saveBaselineCache(baseline);
+  const personal = history.length >= BASELINE_MIN_DAYS;
+  setBaselineSource('rhr', personal);
+  await saveBaselineCache(baseline, personal);
   return baseline;
 }
 
@@ -145,26 +156,29 @@ export async function getPersonalRHRBaseline(): Promise<number> {
 
 const HRV_BASELINE_CACHE_KEY = '@readiness/hrv_baseline';
 
-async function loadCachedHRVBaseline(): Promise<number | null> {
+async function loadCachedHRVBaseline(): Promise<BaselineCache | null> {
   try {
     const raw = await AsyncStorage.getItem(HRV_BASELINE_CACHE_KEY);
     if (!raw) return null;
     const cache: BaselineCache = JSON.parse(raw);
     if (Date.now() - cache.computedAt > BASELINE_TTL_MS) return null; // stale
-    return cache.value;
+    return cache;
   } catch {
     return null;
   }
 }
 
-async function saveHRVBaselineCache(value: number): Promise<void> {
-  const cache: BaselineCache = { value, computedAt: Date.now() };
+async function saveHRVBaselineCache(value: number, personal: boolean): Promise<void> {
+  const cache: BaselineCache = { value, computedAt: Date.now(), personal };
   await AsyncStorage.setItem(HRV_BASELINE_CACHE_KEY, JSON.stringify(cache));
 }
 
 export async function getPersonalHRVBaseline(): Promise<number> {
   const cached = await loadCachedHRVBaseline();
-  if (cached !== null) return cached;
+  if (cached !== null) {
+    setBaselineSource('hrv', cached.personal);
+    return cached.value;
+  }
 
   // Typed-in HRV counts too: wearables that never write HRV to Apple Health
   // (Garmin, Polar, Whoop, Oura) would otherwise be judged against the
@@ -179,7 +193,9 @@ export async function getPersonalHRVBaseline(): Promise<number> {
   const baseline = computeHRVBaseline(history);
   console.log('[Readiness] HRV baseline computed:', baseline, 'ms from', history.length, 'days');
 
-  await saveHRVBaselineCache(baseline);
+  const personal = history.length >= BASELINE_MIN_DAYS;
+  setBaselineSource('hrv', personal);
+  await saveHRVBaselineCache(baseline, personal);
   return baseline;
 }
 
@@ -318,6 +334,10 @@ export function useHealthData(): UseHealthDataReturn {
           setHasPermission(granted);
 
           if (granted) {
+            // Unknown until each baseline loads: if one times out and the
+            // stand-in is used, it must not be worded as the user's own.
+            setBaselineSource('rhr', undefined);
+            setBaselineSource('hrv', undefined);
             [healthData, baseline, hrvBase] = await Promise.all([
               withTimeout(fetchTodaysHealthData(),    12_000, null),
               withTimeout(getPersonalRHRBaseline(),    8_000, 60),

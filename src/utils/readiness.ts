@@ -317,8 +317,19 @@ export function explainReadiness(
   return { recovery, sleep, stress, weights: { ...w }, raw, score: Math.round(clamp(raw, 0, 100)) };
 }
 
+// Whether the last computed baseline came from 7+ days of the user's own
+// data. Set by the baseline loader. Without it the only test is "equals the
+// stand-in value", which wrongly says "typical" to someone whose real resting
+// heart rate baseline is exactly 60.
+const knownPersonal: { hrv?: boolean; rhr?: boolean } = {};
+
+export function setBaselineSource(kind: 'hrv' | 'rhr', personal: boolean | undefined): void {
+  knownPersonal[kind] = personal;
+}
+
 /** True while a baseline is still the stand-in used before 7 days of data exist. */
 export function isStandInBaseline(kind: 'hrv' | 'rhr', value: number): boolean {
+  if (knownPersonal[kind] === true) return false;
   return value === (kind === 'hrv' ? DEFAULTS.HRV_BASELINE : DEFAULTS.RHR_BASELINE);
 }
 

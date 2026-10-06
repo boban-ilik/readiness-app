@@ -6,7 +6,7 @@
  * one that produced the number. No em dashes in any string (house rule).
  */
 
-import { DEFAULTS, baselinePhrase, type ScoreExplanation } from './readiness';
+import { DEFAULTS, baselinePhrase, isStandInBaseline, type ScoreExplanation } from './readiness';
 import type { PhaseBaselineResult } from './cycleBaselines';
 import type { CyclePhase } from './cyclePhase';
 
@@ -164,7 +164,7 @@ export function buildScoreMath(input: MathInput): MathSection[] {
     `Heart rate variability: ${n1(input.hrvBaselineAllMonth)} ms. Resting heart rate: ${n1(input.rhrBaselineAllMonth)} bpm.`,
     'Each is the median of your last 30 days. The lowest 20% of variability nights (illness, alcohol, hard blocks) and the highest 20% of resting heart rate days are left out.',
   ];
-  if (input.hrvBaselineAllMonth === DEFAULTS.HRV_BASELINE || input.rhrBaselineAllMonth === DEFAULTS.RHR_BASELINE) {
+  if (isStandInBaseline('hrv', input.hrvBaselineAllMonth) || isStandInBaseline('rhr', input.rhrBaselineAllMonth)) {
     blLines.push(`Until there are 7 days of data (from your watch, or heart rate variability you enter yourself), typical values stand in (${DEFAULTS.HRV_BASELINE} ms and ${DEFAULTS.RHR_BASELINE} bpm). If a number above matches one of those, that is probably why.`);
   }
   sections.push({ key: 'baselines', title: 'Your baselines', lines: blLines });
