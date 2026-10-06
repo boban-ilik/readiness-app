@@ -38,7 +38,9 @@ export default function ReadingCheckCard({ state, onAnswer, onDismiss, onAskCoac
       {answered ? (
         <>
           <View style={styles.answerRow}>
-            <Text style={styles.answerChip}>{answered.label}</Text>
+            <View style={styles.answerChip}>
+              <Text style={styles.answerChipText}>{answered.label}</Text>
+            </View>
           </View>
           <Text style={styles.reading}>{answered.reading}</Text>
           <TouchableOpacity onPress={onAskCoach} activeOpacity={0.7} accessibilityRole="button">
@@ -70,9 +72,10 @@ export default function ReadingCheckCard({ state, onAnswer, onDismiss, onAskCoac
 }
 
 const styles = StyleSheet.create({
+  // No side margin: Today's scroll view already insets its content, and a
+  // second inset made this card narrower than its neighbours.
   card: {
-    marginHorizontal: spacing[4],
-    marginBottom:     spacing[3],
+    marginBottom:     spacing[5],
     borderRadius:     radius.lg,
     borderLeftWidth:  3,
     borderLeftColor:  colors.info,
@@ -128,15 +131,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom:  spacing[2],
   },
+  // Background on a View, not on the Text: the rounded Text rendered as an
+  // empty gap on device.
   answerChip: {
     paddingVertical:   spacing[1],
     paddingHorizontal: spacing[3],
     borderRadius:      radius.full,
     backgroundColor:   colors.info,
-    color:             colors.text.primary,
-    fontSize:          fontSize.sm,
-    fontWeight:        fontWeight.semiBold,
-    overflow:          'hidden',
+  },
+  answerChipText: {
+    color:      colors.text.primary,
+    fontSize:   fontSize.sm,
+    fontWeight: fontWeight.semiBold,
   },
   reading: {
     fontSize:     fontSize.sm,

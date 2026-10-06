@@ -106,9 +106,9 @@ export function IllnessNudgeCard({ elevation, onStart, onDismiss }: {
 }
 
 const styles = StyleSheet.create({
+  // No side margin: Today's scroll view already insets its content
   card: {
-    marginHorizontal: spacing[4],
-    marginBottom:     spacing[3],
+    marginBottom:     spacing[5],
     borderRadius:     radius.lg,
     borderLeftWidth:  3,
     backgroundColor:  colors.bg.tertiary,
