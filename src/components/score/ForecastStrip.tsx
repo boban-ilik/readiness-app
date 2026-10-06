@@ -7,9 +7,8 @@
  * the actionable key-factor coaching line, and a compact range note.
  */
 
-import { View, Text, StyleSheet, ScrollView, LayoutChangeEvent } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { useState } from 'react';
 import { colors, fontSize, fontWeight, spacing, radius, getScoreColor } from '@constants/theme';
 import type { ReadinessForecast, DayForecast } from '@services/readinessForecast';
 
@@ -135,15 +134,11 @@ function ForecastCard({
   day,
   index,
   previousScore,
-  cardHeight,
-  onMeasure,
   illnessCap,
 }: {
   day: DayForecast;
   index: number;
   previousScore: number;
-  cardHeight?: number;
-  onMeasure: (event: LayoutChangeEvent) => void;
   illnessCap: boolean;
 }) {
   const scoreColor = getScoreColor(day.score);
@@ -151,8 +146,13 @@ function ForecastCard({
   const opacity    = day.confidence === 'low' ? 0.75 : 1;
 
   return (
-    <Animated.View entering={FadeInDown.delay(index * 100).duration(400).springify()}>
-      <View style={[styles.card, cardHeight ? { height: cardHeight } : null, { opacity }]} onLayout={onMeasure}>
+    // Equal heights come from the row itself: it stretches every wrapper to the
+    // tallest card and the card grows to fill its wrapper. The old approach
+    // measured the tallest card into state that could only grow and fed it
+    // back as a fixed height, so one oversized measurement stuck for good and
+    // the cards ballooned to several screens tall.
+    <Animated.View style={styles.cardWrap} entering={FadeInDown.delay(index * 100).duration(400).springify()}>
+      <View style={[styles.card, { opacity }]}>
 
         {/* Score-coloured top accent */}
         <View style={[styles.accent, { backgroundColor: scoreColor }]} />
@@ -196,7 +196,6 @@ function ForecastCard({
 // ─── Strip ────────────────────────────────────────────────────────────────────
 
 export default function ForecastStrip({ forecast, illnessCap = false }: Props) {
-  const [cardHeight, setCardHeight] = useState(0);
   // Take both ends of one sort. Sorting twice returned the same element when
   // every day scored alike — a stable sort preserves the original order — which
   // produced "Thursday looks strongest ... keep Thursday more conservative".
@@ -210,11 +209,6 @@ export default function ForecastStrip({ forecast, illnessCap = false }: Props) {
   const MEANINGFUL_SPREAD = 5;
   const hasStandout =
     bestDay !== easiestDay && bestDay.score - easiestDay.score >= MEANINGFUL_SPREAD;
-
-  function handleMeasure(event: LayoutChangeEvent) {
-    const nextHeight = Math.ceil(event.nativeEvent.layout.height);
-    setCardHeight(prev => (nextHeight > prev ? nextHeight : prev));
-  }
 
   return (
     <View style={styles.wrapper}>
@@ -272,8 +266,6 @@ export default function ForecastStrip({ forecast, illnessCap = false }: Props) {
             day={day}
             index={i}
             previousScore={i === 0 ? forecast[0].score : forecast[i - 1].score}
-            cardHeight={cardHeight || undefined}
-            onMeasure={handleMeasure}
             illnessCap={illnessCap}
           />
         ))}
@@ -326,8 +318,13 @@ const styles = StyleSheet.create({
   strip: {
     gap:          spacing[3],
     paddingRight: spacing[2],
+    alignItems:   'stretch',
+  },
+  cardWrap: {
+    alignSelf: 'stretch',
   },
   card: {
+    flexGrow:        1,
     width:           192,
     backgroundColor: colors.bg.tertiary,
     borderRadius:    radius.lg,
@@ -391,7 +388,7 @@ const styles = StyleSheet.create({
 
   // Key factor gets a subtle inset treatment so it reads as "the reason"
   factorBox: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: colors.bg.elevated,
     borderRadius:    radius.sm,
     paddingHorizontal: spacing[2],
