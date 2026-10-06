@@ -40,6 +40,8 @@ export interface ComponentTrend {
 export interface TrendData {
   /** Scores ordered oldest → newest (up to 7 items). */
   scores:      number[];
+  /** Local date (YYYY-MM-DD) of each score; days without a saved score are absent. */
+  dates:       string[];
   /** Overall readiness trend. */
   direction:   TrendDirection;
   /** mean(recent 3) − mean(prior 4), rounded to 1 decimal. */
@@ -156,6 +158,7 @@ async function fetchTrend(): Promise<TrendData> {
   }));
 
   const scores  = data.map(r => r.score as number);
+  const dates   = data.map(r => r.date as string);
   const prior   = scores.slice(0, Math.max(1, scores.length - 3));
   const recent  = scores.slice(-3);
   const delta   = Math.round((mean(recent) - mean(prior)) * 10) / 10;
@@ -169,7 +172,7 @@ async function fetchTrend(): Promise<TrendData> {
   const weakLink = deriveWeakLink(components);
   const insight  = buildInsight(direction, delta, weakLink);
 
-  return { scores, direction, delta, components, insight, weakLink };
+  return { scores, dates, direction, delta, components, insight, weakLink };
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────

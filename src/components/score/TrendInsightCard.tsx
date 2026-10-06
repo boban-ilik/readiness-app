@@ -12,9 +12,13 @@
  *  └──────────────────────────────────────────┘
  */
 
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { useTrendData, type TrendDirection } from '@hooks/useTrendData';
+import TrendChartModal from '@components/score/TrendChartModal';
+import { stripBarHeight } from '@utils/trendChart';
+import type { ReadinessForecast } from '@services/readinessForecast';
 import {
   colors,
   fontSize,
@@ -23,6 +27,14 @@ import {
   radius,
   getScoreColor,
 } from '@constants/theme';
+
+/** "Today", "1d", "2d"... counted in local calendar days. */
+function daysAgoLabel(date: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  const now = new Date();
+  const days = Math.round((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(y, m - 1, d)) / 86_400_000);
+  return days <= 0 ? 'Today' : `${days}d`;
+}
 
 // ─── Sparkline ────────────────────────────────────────────────────────────────
 
@@ -35,19 +47,21 @@ interface SparklineProps {
 function Sparkline({ scores, width, height }: SparklineProps) {
   if (scores.length === 0) return null;
 
-  const max      = Math.max(...scores, 1);
-  const min      = Math.min(...scores);
-  const range    = max - min || 1;
+  // One equal column per day, the same columns the labels below use, so each
+  // bar sits above its own label. The strip used to be a fixed 260 wide while
+  // the labels spread across the card, which left "Today" with no bar.
   const barCount = scores.length;
-  const gap      = 3;
-  const barW     = (width - gap * (barCount - 1)) / barCount;
-  const minBarH  = 4; // always show at least a sliver
+  const colW     = width / barCount;
+  const inset    = 3;
+  const barW     = Math.max(2, colW - inset * 2);
 
   return (
     <Svg width={width} height={height}>
       {scores.map((s, i) => {
-        const barH  = Math.max(minBarH, ((s - min) / range) * (height - minBarH) + minBarH);
-        const x     = i * (barW + gap);
+        // Fixed 30 to 100 scale: scaling from the week's lowest score drew a
+        // 59 as a sliver, as if it were near zero.
+        const barH  = stripBarHeight(s, height);
+        const x     = i * colW + inset;
         const y     = height - barH;
         const color = getScoreColor(s);
         // Highlight the most recent bar
@@ -134,8 +148,10 @@ function ComponentPills({
 
 // ─── Main card ────────────────────────────────────────────────────────────────
 
-export default function TrendInsightCard() {
+export default function TrendInsightCard({ forecast = null }: { forecast?: ReadinessForecast | null }) {
   const { trend, isLoading, error } = useTrendData();
+  const [stripWidth, setStripWidth] = useState(0);
+  const [chartOpen, setChartOpen]   = useState(false);
 
   // ── Loading skeleton ──────────────────────────────────────────────────────
   if (isLoading) {
@@ -167,7 +183,13 @@ export default function TrendInsightCard() {
 
   // ── Full card ─────────────────────────────────────────────────────────────
   return (
-    <View style={styles.card}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => setChartOpen(true)}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel="Open the readiness trend chart"
+    >
       {/* Header row */}
       <View style={styles.header}>
         <Text style={styles.title}>RECOVERY TREND · 7 DAYS</Text>
@@ -175,23 +197,26 @@ export default function TrendInsightCard() {
       </View>
 
       {/* Sparkline */}
-      <View style={styles.chartContainer}>
-        <Sparkline scores={trend.scores} width={260} height={44} />
+      <View
+        style={styles.chartContainer}
+        onLayout={e => setStripWidth(Math.floor(e.nativeEvent.layout.width))}
+      >
+        {stripWidth > 0 && <Sparkline scores={trend.scores} width={stripWidth} height={44} />}
       </View>
 
       {/* Day labels */}
       <View style={styles.dayLabels}>
-        {['7d', '6d', '5d', '4d', '3d', '2d', 'Today'].slice(
-          7 - trend.scores.length,
-        ).map((label, i) => (
+        {/* Labelled from each score's real date: the old fixed list assumed
+            no missed days and that the newest score was today's. */}
+        {trend.dates.map((date, i) => (
           <Text
-            key={i}
+            key={date}
             style={[
               styles.dayLabel,
-              i === trend.scores.length - 1 && styles.dayLabelToday,
+              daysAgoLabel(date) === 'Today' && styles.dayLabelToday,
             ]}
           >
-            {label}
+            {daysAgoLabel(date)}
           </Text>
         ))}
       </View>
@@ -201,7 +226,18 @@ export default function TrendInsightCard() {
 
       {/* Insight line */}
       <Text style={styles.insight}>{trend.insight}</Text>
-    </View>
+
+      <Text style={styles.chartHint}>
+        {forecast ? 'See the chart and the next 3 days ›' : 'See the chart ›'}
+      </Text>
+
+      <TrendChartModal
+        visible={chartOpen}
+        onClose={() => setChartOpen(false)}
+        past={trend.scores.map((score, i) => ({ date: trend.dates[i], score }))}
+        forecast={(forecast ?? []).map(d => ({ score: d.score, range: d.range }))}
+      />
+    </TouchableOpacity>
   );
 }
 
@@ -288,6 +324,11 @@ const styles = StyleSheet.create({
     color:      colors.text.secondary,
     lineHeight: 18,
     marginTop:  spacing[1],   // 4
+  },
+  chartHint: {
+    fontSize:   fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color:      colors.amber[400],
   },
 
   // Loading / empty

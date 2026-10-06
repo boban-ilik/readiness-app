@@ -841,7 +841,7 @@ export default function HomeScreen() {
         {isPro && hasUsableScore && (
           <View style={styles.trainingSection}>
             <Text style={styles.sectionTitle}>WEEKLY TREND</Text>
-            <TrendInsightCard />
+            <TrendInsightCard forecast={hasUsableScore ? forecast : null} />
           </View>
         )}
 
