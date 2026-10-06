@@ -13,12 +13,16 @@ import type { ReadingCheckState } from '@services/readingCheck';
 
 interface Props {
   state:      ReadingCheckState;
+  /** Today's answer while the user is picking a different one */
+  changing:   CheckOption | null;
   onAnswer:   (option: CheckOption) => void;
+  onChange:   () => void;
+  /** Closes the card, or keeps today's answer when one is being changed */
   onDismiss:  () => void;
   onAskCoach: () => void;
 }
 
-export default function ReadingCheckCard({ state, onAnswer, onDismiss, onAskCoach }: Props) {
+export default function ReadingCheckCard({ state, changing, onAnswer, onChange, onDismiss, onAskCoach }: Props) {
   const { check, answered } = state;
   const options = CHECK_OPTIONS[`${check.metric}_${check.direction}`];
 
@@ -27,7 +31,7 @@ export default function ReadingCheckCard({ state, onAnswer, onDismiss, onAskCoac
       <View style={styles.header}>
         <Text style={styles.sectionLabel}>UNUSUAL FOR YOU</Text>
         {!answered && (
-          <TouchableOpacity onPress={onDismiss} hitSlop={10} accessibilityRole="button" accessibilityLabel="Dismiss">
+          <TouchableOpacity onPress={onDismiss} hitSlop={10} accessibilityRole="button" accessibilityLabel={changing ? 'Keep my answer' : 'Dismiss'}>
             <Text style={styles.dismiss}>✕</Text>
           </TouchableOpacity>
         )}
@@ -41,6 +45,9 @@ export default function ReadingCheckCard({ state, onAnswer, onDismiss, onAskCoac
             <View style={styles.answerChip}>
               <Text style={styles.answerChipText}>{answered.label}</Text>
             </View>
+            <TouchableOpacity onPress={onChange} hitSlop={10} accessibilityRole="button" accessibilityLabel="Change my answer">
+              <Text style={styles.change}>Change</Text>
+            </TouchableOpacity>
           </View>
           <Text style={styles.reading}>{answered.reading}</Text>
           <TouchableOpacity onPress={onAskCoach} activeOpacity={0.7} accessibilityRole="button">
@@ -53,7 +60,7 @@ export default function ReadingCheckCard({ state, onAnswer, onDismiss, onAskCoac
             {options.map(o => (
               <TouchableOpacity
                 key={o.key}
-                style={styles.chip}
+                style={[styles.chip, changing?.key === o.key && styles.chipCurrent]}
                 onPress={() => onAnswer(o)}
                 activeOpacity={0.75}
                 accessibilityRole="button"
@@ -129,7 +136,16 @@ const styles = StyleSheet.create({
   },
   answerRow: {
     flexDirection: 'row',
+    alignItems:    'center',
+    gap:           spacing[3],
     marginBottom:  spacing[2],
+  },
+  change: {
+    fontSize: fontSize.sm,
+    color:    colors.text.tertiary,
+  },
+  chipCurrent: {
+    backgroundColor: colors.info,
   },
   // Background on a View, not on the Text: the rounded Text rendered as an
   // empty gap on device.

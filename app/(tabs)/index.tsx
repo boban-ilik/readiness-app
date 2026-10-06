@@ -651,12 +651,19 @@ export default function HomeScreen() {
         {readingCheck.state && !illness.status && !illness.nudge && (
           <ReadingCheckCard
             state={readingCheck.state}
+            changing={readingCheck.changing}
             onAnswer={async option => {
-              const ev = await readingCheck.answer(option);
-              if (ev) setLifeEvents(prev => [ev, ...prev]);
+              const res = await readingCheck.answer(option);
+              if (res) {
+                setLifeEvents(prev => [
+                  ...(res.added ? [res.added] : []),
+                  ...prev.filter(e => e.id !== res.removedEventId),
+                ]);
+              }
               if (option.offerIllness) await illness.start('tag');
             }}
-            onDismiss={readingCheck.dismiss}
+            onChange={readingCheck.change}
+            onDismiss={readingCheck.changing ? readingCheck.cancelChange : readingCheck.dismiss}
             onAskCoach={() => {
               const c = readingCheck.state!.check;
               const what = c.metric === 'hrv' ? 'HRV' : 'resting heart rate';

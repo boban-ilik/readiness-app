@@ -10,8 +10,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchHRVByDay, fetchRHRByDay } from '@services/healthkit';
 import { loadManualHRVByDay } from '@hooks/useHealthData';
 import { loadIllnessEpisodes } from '@services/illnessEpisode';
-import { tagEvent, type LifeEvent } from '@services/lifeEvents';
-import { addCoachMemory } from '@services/coachMemory';
+import { tagEvent, removeEvent, type LifeEvent } from '@services/lifeEvents';
+import { addCoachMemory, removeCoachMemory } from '@services/coachMemory';
 import { track } from '@services/analytics';
 import { excludeIllnessDays } from '@utils/illnessRecovery';
 import { localDateStr } from '@utils/index';
@@ -22,7 +22,11 @@ import {
 
 export const READING_CHECK_KEY = '@readiness/reading_check_v1';
 
-interface Answered { date: string; metric: Metric; direction: Direction; answer: string }
+interface Answered {
+  date: string; metric: Metric; direction: Direction; answer: string;
+  /** The day tag this answer created, so changing the answer can take it back */
+  eventId?: string;
+}
 
 function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([p.catch(() => fallback), new Promise<T>(r => setTimeout(() => r(fallback), ms))]);
@@ -100,18 +104,42 @@ export async function loadReadingCheck(hrv: number | null, rhr: number | null): 
   return e.recent ? null : { check: e.check, answered: null };
 }
 
-async function remember(check: ReadingCheck, answer: string): Promise<void> {
+/** Store today's answer for this kind of reading, replacing an earlier one from today. Returns what it replaced. */
+async function remember(check: ReadingCheck, answer: string, eventId?: string): Promise<Answered | null> {
+  const today   = localDateStr();
   const answers = await loadAnswers();
-  const next = [{ date: localDateStr(), metric: check.metric, direction: check.direction, answer }, ...answers].slice(0, 20);
+  const isSame  = (a: Answered) => a.date === today && a.metric === check.metric && a.direction === check.direction;
+  const previous = answers.find(isSame) ?? null;
+  const next = [{ date: today, metric: check.metric, direction: check.direction, answer, eventId }, ...answers.filter(a => !isSame(a))].slice(0, 20);
   await AsyncStorage.setItem(READING_CHECK_KEY, JSON.stringify(next)).catch(() => {});
+  return previous;
 }
 
-/** Save the user's reason: as a day tag, and as a coach memory when it is a lasting change. */
-export async function answerReadingCheck(check: ReadingCheck, option: CheckOption): Promise<LifeEvent | null> {
-  await remember(check, option.key);
+export interface AnswerResult {
+  /** The day tag created for this answer */
+  added:          LifeEvent | null;
+  /** The earlier answer's day tag, removed because the user changed their answer */
+  removedEventId: string | null;
+  /** The earlier answer, when this one replaced it */
+  replaced:       CheckOption | null;
+}
+
+/**
+ * Save the user's reason: as a day tag, and as a coach memory when it is a
+ * lasting change. Answering again the same day replaces the first answer and
+ * takes back the tag and the memory it left, so a mis-tap leaves nothing behind.
+ */
+export async function answerReadingCheck(check: ReadingCheck, option: CheckOption): Promise<AnswerResult> {
+  const added    = await tagEvent(option.tag, option.note).catch(() => null);
+  const previous = await remember(check, option.key, added?.id);
   track('reading_check_answered');
+
+  const replaced = previous ? optionFor(check, previous.answer) : null;
+  if (previous?.eventId) await removeEvent(previous.eventId).catch(() => {});
+  if (replaced?.remember && replaced.remember !== option.remember) await removeCoachMemory(replaced.remember).catch(() => {});
   if (option.remember) addCoachMemory([option.remember]).catch(() => {});
-  return tagEvent(option.tag, option.note).catch(() => null);
+
+  return { added, removedEventId: previous?.eventId ?? null, replaced };
 }
 
 export async function dismissReadingCheck(check: ReadingCheck): Promise<void> {
