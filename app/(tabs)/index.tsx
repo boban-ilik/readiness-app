@@ -48,7 +48,8 @@ import { PROFILE_SEX_KEY } from '@services/userProfile';
 import { formatDisplayDate } from '@utils/index';
 import { computeActivityScore } from '@utils/breakdown';
 import { STRESS_ELEVATION_LOW, STRESS_ELEVATION_HIGH, isStandInBaseline } from '@utils/readiness';
-import { fetchTodayActivity, type TodayActivity } from '@services/healthkit';
+import { fetchTodayActivity, diagnoseNoData, type TodayActivity } from '@services/healthkit';
+import type { NoDataReason } from '@utils/noData';
 import { analyzePatterns } from '@services/patternAnalysis';
 import { analyzeWorkload } from '@services/workloadAnalysis';
 import { computeForecast, applyIllnessRecovery, type ReadinessForecast } from '@services/readinessForecast';
@@ -69,14 +70,36 @@ function getGreeting(): string {
   return 'Good evening';
 }
 
-function InsufficientDataCard({ onRefresh, onEnterHRV }: { onRefresh: () => void; onEnterHRV: () => void }) {
+// What to tell the user depends on why Health returned nothing. Until the
+// check finishes (reason null) the card keeps the original sync advice.
+const NO_DATA_COPY: Record<NoDataReason | 'checking', { eyebrow: string; body: string }> = {
+  checking: {
+    eyebrow: 'WAITING FOR YOUR FIRST SYNC',
+    body:    'Wear your watch overnight and sync sleep or heart-rate data. Your readiness score and training recommendation will appear as soon as we have a usable signal.',
+  },
+  missed_night: {
+    eyebrow: 'NO DATA FROM LAST NIGHT',
+    body:    "Readiness has your earlier nights but nothing from last night yet. Open your watch's app so it syncs to Apple Health, then check again.",
+  },
+  no_wearable: {
+    eyebrow: 'NO WATCH DATA IN APPLE HEALTH',
+    body:    'Readiness can read Apple Health, but there is no heart-rate or sleep data from a watch in the last 30 days. Wear an Apple Watch overnight, or if you use another watch or ring, turn on Apple Health sharing in its app.',
+  },
+  no_health_access: {
+    eyebrow: "READINESS CAN'T SEE APPLE HEALTH",
+    body:    'Readiness found no Apple Health data at all, which usually means access is turned off. Open Settings > Health > Data Access & Devices > Readiness and turn on all categories, then check again.',
+  },
+};
+
+function InsufficientDataCard({ reason, onRefresh, onEnterHRV }: {
+  reason: NoDataReason | null; onRefresh: () => void; onEnterHRV: () => void;
+}) {
+  const copy = NO_DATA_COPY[reason ?? 'checking'];
   return (
     <View style={styles.insufficientCard}>
-      <Text style={styles.insufficientEyebrow}>WAITING FOR YOUR FIRST SYNC</Text>
+      <Text style={styles.insufficientEyebrow}>{copy.eyebrow}</Text>
       <Text style={styles.noDataTitle}>Not enough data for a score</Text>
-      <Text style={styles.noDataBody}>
-        Wear your watch overnight and sync sleep or heart-rate data. Your readiness score and training recommendation will appear as soon as we have a usable signal.
-      </Text>
+      <Text style={styles.noDataBody}>{copy.body}</Text>
       <View style={styles.insufficientActions}>
         <TouchableOpacity style={styles.refreshDataButton} onPress={onRefresh} activeOpacity={0.8}>
           <Text style={styles.refreshDataButtonText}>Check again</Text>
@@ -467,8 +490,16 @@ export default function HomeScreen() {
   const scoreLabel    = !hasUsableScore ? 'Not enough data' : getScoreLabel(score);
   const activityScore = computeActivityScore(readiness?.healthData ?? null);
 
+  // Why there's no score: decides the card's advice, and is sent with the
+  // daily event (the reason only, never health values).
+  const [noDataWhy, setNoDataWhy] = useState<NoDataReason | null>(null);
   useEffect(() => {
-    if (!isLoading && !isRefreshing && hasInsufficientData) trackDaily('insufficient_data');
+    if (isLoading || isRefreshing || !hasInsufficientData) return;
+    let live = true;
+    diagnoseNoData()
+      .then(reason => { if (live) setNoDataWhy(reason); trackDaily('insufficient_data', { reason }); })
+      .catch(() => trackDaily('insufficient_data'));
+    return () => { live = false; };
   }, [isLoading, isRefreshing, hasInsufficientData]);
 
   // Fire all notification checks once data is settled.
@@ -757,7 +788,7 @@ export default function HomeScreen() {
 
         {/* Honest empty state — never show a fabricated numeric score. */}
         {!isLoading && !error && (hasInsufficientData || score === 0) && (
-          <InsufficientDataCard onRefresh={refresh} onEnterHRV={handleEnterManualHRV} />
+          <InsufficientDataCard reason={noDataWhy} onRefresh={refresh} onEnterHRV={handleEnterManualHRV} />
         )}
 
         {/* Calibration week banner — shown for first 7 days after onboarding */}

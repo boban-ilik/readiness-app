@@ -13,6 +13,7 @@
 import { Platform } from 'react-native';
 import { summariseTodayHRV, dailyOvernightHRV, OVERNIGHT_START_HOUR, type HRVSample } from '@utils/hrvSamples';
 import { summariseSleepSamples, splitSleepSessions, sleepByDay, type SleepSummary } from '@utils/sleepSamples';
+import { noDataReason, type NoDataReason } from '@utils/noData';
 import type { HealthData } from '@/types/index';
 
 // react-native-health is only available on iOS native builds.
@@ -522,6 +523,22 @@ function fetchYesterdayExerciseMinutes(): Promise<number | null> {
         resolve(Math.round(total));
       },
     );
+  });
+}
+
+/**
+ * What Apple Health returns over the last 30 days, for the no-score card:
+ * counts of days only, never values.
+ */
+export async function diagnoseNoData(): Promise<NoDataReason> {
+  const [hrv, rhr, sleep, today] = await Promise.all([
+    fetchHRVSamples(30), fetchRHRByDay(30), fetchSleepByDay(30), fetchTodayActivity(),
+  ]);
+  return noDataReason({
+    hrvSamples: hrv.length,
+    rhrDays:    Object.keys(rhr).length,
+    sleepDays:  Object.keys(sleep).length,
+    stepsToday: today.steps,
   });
 }
 
