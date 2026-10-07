@@ -87,7 +87,7 @@ const NO_DATA_COPY: Record<NoDataReason | 'checking', { eyebrow: string; body: s
   },
   no_health_access: {
     eyebrow: "READINESS CAN'T SEE APPLE HEALTH",
-    body:    'Readiness found no Apple Health data at all, which usually means access is turned off. Open Settings > Health > Data Access & Devices > Readiness and turn on all categories, then check again.',
+    body:    'Readiness found no Apple Health data at all, which usually means access is turned off. Open Settings > Health > Data Access & Devices > Readiness and set each item to Full Access, then check again.',
   },
 };
 
@@ -631,6 +631,12 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
+        {/* Honest empty state — never show a fabricated numeric score.
+            Directly under the ring, so the reason is the first thing read. */}
+        {!isLoading && !error && (hasInsufficientData || score === 0) && (
+          <InsufficientDataCard reason={noDataWhy} onRefresh={refresh} onEnterHRV={handleEnterManualHRV} />
+        )}
+
         {/* The open score model: every number the score used, free for all. */}
         {hasUsableScore && (
           <TouchableOpacity
@@ -784,11 +790,6 @@ export default function HomeScreen() {
           <View style={styles.errorBanner}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
-        )}
-
-        {/* Honest empty state — never show a fabricated numeric score. */}
-        {!isLoading && !error && (hasInsufficientData || score === 0) && (
-          <InsufficientDataCard reason={noDataWhy} onRefresh={refresh} onEnterHRV={handleEnterManualHRV} />
         )}
 
         {/* Calibration week banner — shown for first 7 days after onboarding */}
