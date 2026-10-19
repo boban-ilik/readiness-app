@@ -45,6 +45,15 @@ export function formatSleep(minutes: number): string {
   return m ? `${h} h ${m} m` : `${h} h`;
 }
 
+/** "yesterday", "3 days ago", "4 weeks ago": so a date a month back isn't read as last week. */
+export function howLongAgo(date: string, today: string): string {
+  const days = Math.round((Date.parse(today + 'T12:00:00') - Date.parse(date + 'T12:00:00')) / 86_400_000);
+  if (days <= 1) return 'yesterday';
+  if (days < 7)  return `${days} days ago`;
+  const weeks = Math.floor(days / 7);
+  return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
+}
+
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 
 function describe(day: FirstLookDay, hrv: UsualRange | null, rhr: UsualRange | null): string[] {

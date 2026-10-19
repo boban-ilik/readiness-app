@@ -14,7 +14,7 @@ import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacit
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, radius, getScoreColor } from '@constants/theme';
 import { useHistoryData } from '@hooks/useHistoryData';
-import { buildFirstLook, formatSleep, type NotableDay } from '@utils/firstLook';
+import { buildFirstLook, formatSleep, howLongAgo, type NotableDay } from '@utils/firstLook';
 import { localDateStr } from '@utils/index';
 
 interface Props {
@@ -39,7 +39,7 @@ function Morning({ label, day }: { label: string; day: NotableDay }) {
   return (
     <View style={styles.morning}>
       <View style={styles.row}>
-        <Text style={styles.rowLabel}>{label} · {formatDay(day.date)}</Text>
+        <Text style={styles.rowLabel}>{label} · {formatDay(day.date)} · {howLongAgo(day.date, localDateStr())}</Text>
         <Text style={[styles.rowValue, { color: getScoreColor(day.score) }]}>{day.score}</Text>
       </View>
       {day.notes.length > 0 && <Text style={styles.morningNotes}>{sentence(day.notes)}</Text>}

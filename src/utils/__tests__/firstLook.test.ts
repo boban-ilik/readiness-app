@@ -1,4 +1,4 @@
-import { buildFirstLook, formatSleep, type FirstLookDay } from '../firstLook';
+import { buildFirstLook, formatSleep, howLongAgo, type FirstLookDay } from '../firstLook';
 
 const day = (n: number, over: Partial<FirstLookDay> = {}): FirstLookDay => ({
   date: `2026-10-${String(n).padStart(2, '0')}`,
@@ -51,6 +51,13 @@ describe('first look', () => {
     expect(buildFirstLook(history, '2026-10-13', 61)!.today).toEqual({ score: 61, position: 'inside' });
     expect(buildFirstLook(history, '2026-10-13', 30)!.today!.position).toBe('below');
     expect(buildFirstLook(history, '2026-10-13', null)!.today).toBeNull();
+  });
+
+  it('says how long ago a morning was', () => {
+    expect(howLongAgo('2026-10-18', '2026-10-19')).toBe('yesterday');
+    expect(howLongAgo('2026-10-15', '2026-10-19')).toBe('4 days ago');
+    expect(howLongAgo('2026-10-11', '2026-10-19')).toBe('1 week ago');
+    expect(howLongAgo('2026-09-20', '2026-10-19')).toBe('4 weeks ago');
   });
 
   it('formats sleep', () => {
