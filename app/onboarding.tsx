@@ -64,8 +64,9 @@ const NOTIF_MINUTE_KEY   = '@readiness/notif_digest_minute';
 const DEFAULT_DIGEST_HOUR = 8;
 
 const TOTAL_STEPS = 5;  // steps 0–4 show progress dots; step 5 = auto setup
+const STEP_NAMES = ['welcome', 'how_it_works', 'device', 'training_profile', 'permissions', 'setup'];
 
-type DeviceType       = 'garmin' | 'apple_watch' | 'both';
+type DeviceType       = 'garmin' | 'apple_watch' | 'both' | 'other' | 'none';
 type TrainingFrequency = 'light' | 'moderate' | 'high';
 type TrainingGoal      = 'performance' | 'recovery' | 'weight_loss' | 'general_health';
 type BiologicalSex     = 'male' | 'female' | 'prefer_not_to_say';
@@ -228,10 +229,19 @@ function StepHowItWorks({ onNext, onBack }: { onNext: () => void; onBack: () => 
 // ─── Step 2: Device selection ─────────────────────────────────────────────────
 
 const DEVICES: { key: DeviceType; label: string; icon: string }[] = [
-  { key: 'garmin',      label: 'Garmin',       icon: '⌚' },
-  { key: 'apple_watch', label: 'Apple Watch',  icon: '🍎' },
-  { key: 'both',        label: 'Both',         icon: '🔁' },
+  { key: 'garmin',      label: 'Garmin',              icon: '⌚' },
+  { key: 'apple_watch', label: 'Apple Watch',         icon: '🍎' },
+  { key: 'both',        label: 'Both',                icon: '🔁' },
+  { key: 'other',       label: 'Other watch or ring', icon: '💍' },
+  { key: 'none',        label: 'No watch',            icon: '📱' },
 ];
+
+// Said before Health access is asked, so nobody without a watch finds out
+// from an empty score on day one.
+const DEVICE_NOTE: Partial<Record<DeviceType, string>> = {
+  other: 'Readiness works with any watch or ring whose app shares heart rate, HRV and sleep with Apple Health. Turn that sharing on in its app.',
+  none:  'Most of the score comes from overnight heart data, which needs a watch. Without one your score will be limited: you can type in an HRV reading each morning, and sleep counts if an app writes it to Apple Health.',
+};
 
 function StepDevice({
   device,
@@ -239,19 +249,27 @@ function StepDevice({
   onNext,
   onBack,
 }: {
-  device:    DeviceType;
+  device:    DeviceType | null;
   setDevice: (d: DeviceType) => void;
   onNext:    () => void;
   onBack:    () => void;
 }) {
+  const note = device ? DEVICE_NOTE[device] : undefined;
+  // Scrolls like the training profile step: five options and a note don't
+  // fit a small phone or larger text.
   return (
-    <View style={styles.stepContent}>
+    <ScrollView
+      style={styles.scrollStep}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={styles.stepTitle}>What do you train with?</Text>
       <Text style={styles.stepSubtitle}>
         Readiness syncs all data through Apple Health, no direct device connection needed.
       </Text>
 
-      {/* 2×1 grid: first two side-by-side, third centered below */}
+      {/* First two side by side, the rest full width below. Nothing is
+          preselected: a default answer made every skipped tap a Garmin. */}
       <View style={styles.deviceGrid}>
         {DEVICES.slice(0, 2).map(d => (
           <TouchableOpacity
@@ -267,26 +285,35 @@ function StepDevice({
           </TouchableOpacity>
         ))}
       </View>
-      <TouchableOpacity
-        style={[styles.deviceCardFull, device === 'both' && styles.deviceCardActive]}
-        onPress={() => setDevice('both')}
-        activeOpacity={0.75}
-      >
-        <Text style={styles.deviceEmoji}>{DEVICES[2].icon}</Text>
-        <Text style={[styles.deviceLabel, device === 'both' && styles.deviceLabelActive]}>
-          {DEVICES[2].label}
-        </Text>
-      </TouchableOpacity>
+      {DEVICES.slice(2).map(d => (
+        <TouchableOpacity
+          key={d.key}
+          style={[styles.deviceCardFull, device === d.key && styles.deviceCardActive]}
+          onPress={() => setDevice(d.key)}
+          activeOpacity={0.75}
+        >
+          <Text style={styles.deviceEmoji}>{d.icon}</Text>
+          <Text style={[styles.deviceLabel, device === d.key && styles.deviceLabelActive]}>
+            {d.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+      {note && <Text style={styles.deviceNote}>{note}</Text>}
 
       <View style={styles.navRow}>
         <TouchableOpacity style={styles.backBtn} onPress={onBack}>
           <Text style={styles.backBtnText}>← Back</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.primaryBtnSmall} onPress={onNext} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={[styles.primaryBtnSmall, !device && styles.btnDisabled]}
+          onPress={onNext}
+          disabled={!device}
+          activeOpacity={0.85}
+        >
           <Text style={styles.primaryBtnText}>Continue →</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -610,7 +637,7 @@ function StepSetup({
   onComplete,
 }: {
   permissionGranted: boolean;
-  selectedDevice:    DeviceType;
+  selectedDevice:    DeviceType | null;
   userName:          string;
   trainingFreq:      TrainingFrequency;
   goal:              TrainingGoal;
@@ -650,7 +677,7 @@ function StepSetup({
       // Persist all completion flags + profile data
       const pairs: [string, string][] = [
         [ONBOARDING_KEY,    'true'],
-        [DEVICE_KEY,        selectedDevice],
+        [DEVICE_KEY,        selectedDevice ?? ''],
         [NAME_KEY,          userName.trim()],
         [FREQ_KEY,          trainingFreq],
         [JOINED_AT_KEY,     new Date().toISOString()],
@@ -726,12 +753,15 @@ export default function OnboardingScreen() {
   const router  = useRouter();
   const [step,              setStep]   = useState(0);
   const [name,              setName]   = useState('');
-  const [device,            setDevice] = useState<DeviceType>('garmin');
+  const [device,            setDevice] = useState<DeviceType | null>(null);
   const [trainingFreq,      setFreq]   = useState<TrainingFrequency>('moderate');
   const [goal,              setGoal]   = useState<TrainingGoal>('general_health');
   const [sex,               setSex]    = useState<BiologicalSex | null>(null);
   const [digestOn,          setDigestOn] = useState(true);
   const [permissionGranted, setPermissionGranted] = useState(false);
+
+  // One event per screen shown, so drop-off between steps is visible.
+  useEffect(() => { track('onboarding_step', { step, name: STEP_NAMES[step] ?? 'unknown' }); }, [step]);
 
   function next() { setStep(s => s + 1); }
   function back() { setStep(s => Math.max(0, s - 1)); }
@@ -1077,6 +1107,11 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+  },
+  deviceNote: {
+    color:      colors.text.secondary,
+    fontSize:   fontSize.sm,
+    lineHeight: 20,
   },
   deviceLabelActive: {
     color: colors.amber[400],
