@@ -27,6 +27,8 @@ import { ProGate } from '@components/common/ProGate';
 import CorrelationsCard from '@components/score/CorrelationsCard';
 import { exportHistoryCSV } from '@utils/export';
 import WeeklyReportModal from '@components/score/WeeklyReportModal';
+import FirstLookModal from '@components/score/FirstLookModal';
+import { track } from '@services/analytics';
 import {
   colors,
   fontSize,
@@ -794,6 +796,7 @@ export default function HistoryScreen() {
   const [rangeMode,           setRangeMode]           = useState<RangeMode>('7d');
   const [metricMode,          setMetricMode]          = useState<MetricMode>('score');
   const [weeklyReportVisible, setWeeklyReportVisible] = useState(false);
+  const [firstLookOpen,       setFirstLookOpen]       = useState(false);
   const days = rangeMode === 'cal' || rangeMode === '28d' ? 28 : 7;
 
   const { history, isLoading, error } = useHistoryData(days);
@@ -844,6 +847,22 @@ export default function HistoryScreen() {
     );
   }
 
+  // The day-0 first look, reopenable here for free and Pro alike: every
+  // number in it comes from the user's own Health data on the device.
+  const firstLookLink = (
+    <TouchableOpacity
+      onPress={() => { track('first_look_shown', { from: 'history' }); setFirstLookOpen(true); }}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      style={styles.firstLookLink}
+    >
+      <Text style={styles.firstLookLinkText}>Your 30-day picture ›</Text>
+    </TouchableOpacity>
+  );
+  const firstLookModal = firstLookOpen && (
+    <FirstLookModal onClose={() => setFirstLookOpen(false)} todayScore={todayScore} trialEndsAt={null} reopened />
+  );
+
   // ── Pro layout ───────────────────────────────────────────────────────────────
   if (isPro) {
     return (
@@ -867,6 +886,7 @@ export default function HistoryScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          {firstLookLink}
 
           {/* Chart card — trend or calendar */}
           <View style={styles.chartCard}>
@@ -923,6 +943,7 @@ export default function HistoryScreen() {
             visible={weeklyReportVisible}
             onClose={() => setWeeklyReportVisible(false)}
           />
+          {firstLookModal}
 
           {/* Patterns / correlations */}
           <View style={styles.correlationsBlock}>
@@ -960,6 +981,7 @@ export default function HistoryScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>History</Text>
         </View>
+        {firstLookLink}
 
         <TodayCard today={today} />
 
@@ -1001,6 +1023,7 @@ export default function HistoryScreen() {
 
         <View style={styles.bottomPad} />
       </ScrollView>
+      {firstLookModal}
     </SafeAreaView>
   );
 }
@@ -1484,6 +1507,16 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semiBold,
     letterSpacing: 2,
     marginBottom: spacing[1],
+  },
+  firstLookLink: {
+    alignSelf:    'flex-start',
+    marginTop:    -spacing[3],
+    marginBottom: spacing[4],
+  },
+  firstLookLinkText: {
+    color:      colors.amber[400],
+    fontSize:   fontSize.sm,
+    fontWeight: fontWeight.medium,
   },
   scoreBasis: {
     color: colors.text.tertiary,

@@ -97,6 +97,8 @@ interface SubscriptionContextType {
   isLifetime: boolean;
   /** Whole days of trial remaining (0 when expired or not applicable) */
   trialDaysLeft: number;
+  /** When the calibration-week trial ends (ms), or null when it isn't running */
+  trialEndsAt: number | null;
   /** Raw tier string — useful for analytics / display */
   tier: SubscriptionTier;
   /** True while reading/verifying subscription state */
@@ -396,6 +398,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         isTrialActive: isTrialActive && !isPro,
         isLifetime,
         trialDaysLeft,
+        trialEndsAt: isTrialActive && !isPro ? trialEnd : null,
         tier: isPro || isTrialActive ? 'pro' : 'free',
         isLoading,
         identityReady,

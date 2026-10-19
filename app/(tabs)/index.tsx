@@ -39,6 +39,8 @@ import { useStravaActivities } from '@hooks/useStravaActivities';
 import { useSubscription } from '@contexts/SubscriptionContext';
 import { useNotifications } from '@hooks/useNotifications';
 import { useCalibrationStatus } from '@hooks/useCalibrationStatus';
+import FirstLookModal from '@components/score/FirstLookModal';
+import { hasWatchHistory, hasSeenFirstLook, markFirstLookSeen } from '@services/firstLook';
 import { useRatingPrompt, useGoodDayRatingPrompt } from '@hooks/useRatingPrompt';
 import { useCycleTracking } from '@hooks/useCycleTracking';
 import { useOvertrainingWarning } from '@hooks/useOvertrainingWarning';
@@ -236,10 +238,31 @@ export default function HomeScreen() {
   const router = useRouter();
   const scoreSnapshot = useScoreSnapshot();
   const { readiness, isLoading, isRefreshing, error, refresh, rhrBaseline, hrvBaseline, setManualHRV } = useHealthData();
-  const { isPro, isTrialActive, presentPaywall } = useSubscription();
+  const { isPro, isTrialActive, trialEndsAt, presentPaywall } = useSubscription();
   const calibration = useCalibrationStatus();
 
   useEffect(() => { trackDaily('app_open'); }, []);
+
+  // First look: a new user who already has a week of watch data in Health
+  // sees what their last 30 days say, once, on day 0 or 1, and never sees the
+  // "calibrating" banner, because there is nothing left to calibrate.
+  const [watchHistory,  setWatchHistory]  = useState<boolean | null>(null);
+  const [firstLookOpen, setFirstLookOpen] = useState(false);
+  useEffect(() => {
+    if (calibration.isLoading || !calibration.isCalibrating) return;
+    let cancelled = false;
+    (async () => {
+      const has = await hasWatchHistory();
+      if (cancelled) return;
+      setWatchHistory(has);
+      const since = calibration.daysSinceJoined;
+      if (!has || since === null || since > 1 || await hasSeenFirstLook() || cancelled) return;
+      markFirstLookSeen();
+      track('first_look_shown', { from: 'today' });
+      setFirstLookOpen(true);
+    })();
+    return () => { cancelled = true; };
+  }, [calibration.isLoading, calibration.isCalibrating, calibration.daysSinceJoined]);
 
   // Day-7 choreography: the calibration report owns the moment; the rating
   // prompt waits until it has been seen so the two sheets never collide.
@@ -793,7 +816,7 @@ export default function HomeScreen() {
         )}
 
         {/* Calibration week banner — shown for first 7 days after onboarding */}
-        <CalibrationBanner status={calibration} />
+        {watchHistory === false && <CalibrationBanner status={calibration} />}
 
         {/* Breakdown */}
         {hasUsableScore && (
@@ -947,6 +970,14 @@ export default function HomeScreen() {
         isTrialActive={isTrialActive}
         onKeepPro={() => { track('calibration_keep_pro'); closeReport(false); presentPaywall(); }}
       />
+
+      {firstLookOpen && (
+        <FirstLookModal
+          onClose={() => setFirstLookOpen(false)}
+          todayScore={hasUsableScore ? score : null}
+          trialEndsAt={trialEndsAt}
+        />
+      )}
 
       <DailyBriefingModal
         visible={briefingVisible}

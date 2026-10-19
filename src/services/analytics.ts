@@ -17,6 +17,7 @@ import { localDateStr } from '@utils/index';
 export type AnalyticsEvent =
   | 'app_open'
   | 'onboarding_complete'
+  | 'first_look_shown'        // { from: 'today' | 'history' }
   | 'onboarding_step'         // { step, name }: one per onboarding screen shown
   | 'score_shown'
   | 'insufficient_data'

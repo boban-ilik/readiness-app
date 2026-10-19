@@ -99,7 +99,7 @@ function buildMockHistory(days: number): DayHistory[] {
 /**
  * @param days  How many calendar days to load.  7 = default, 28 = Pro extended.
  */
-export function useHistoryData(days: 7 | 28 = 7): {
+export function useHistoryData(days: 7 | 28 | 30 = 7): {
   history:   DayHistory[];
   isLoading: boolean;
   error:     string | null;
