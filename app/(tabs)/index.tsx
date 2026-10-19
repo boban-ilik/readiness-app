@@ -40,6 +40,9 @@ import { useSubscription } from '@contexts/SubscriptionContext';
 import { useNotifications } from '@hooks/useNotifications';
 import { useCalibrationStatus } from '@hooks/useCalibrationStatus';
 import FirstLookModal from '@components/score/FirstLookModal';
+import TrialEndingCard from '@components/score/TrialEndingCard';
+import { hasDismissedTrialEnding, dismissTrialEnding } from '@services/trialEnding';
+import { trialEndingWhen, trialPillText } from '@utils/trialEnding';
 import { hasWatchHistory, hasSeenFirstLook, markFirstLookSeen } from '@services/firstLook';
 import { useRatingPrompt, useGoodDayRatingPrompt } from '@hooks/useRatingPrompt';
 import { useCycleTracking } from '@hooks/useCycleTracking';
@@ -238,7 +241,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const scoreSnapshot = useScoreSnapshot();
   const { readiness, isLoading, isRefreshing, error, refresh, rhrBaseline, hrvBaseline, setManualHRV } = useHealthData();
-  const { isPro, isTrialActive, trialEndsAt, presentPaywall } = useSubscription();
+  const { isPro, isTrialActive, trialDaysLeft, trialEndsAt, presentPaywall } = useSubscription();
   const calibration = useCalibrationStatus();
 
   useEffect(() => { trackDaily('app_open'); }, []);
@@ -246,6 +249,22 @@ export default function HomeScreen() {
   // First look: a new user who already has a week of watch data in Health
   // sees what their last 30 days say, once, on day 0 or 1, and never sees the
   // "calibrating" banner, because there is nothing left to calibrate.
+  // The day before the free Pro week ends, and on the day: what stays free
+  // and what is Pro, so nothing just vanishes on day 7.
+  const trialEnding = trialEndingWhen(trialEndsAt);
+  const [trialEndingOpen, setTrialEndingOpen] = useState(false);
+  useEffect(() => {
+    if (!trialEnding) return;
+    let cancelled = false;
+    hasDismissedTrialEnding().then(done => {
+      if (cancelled || done) return;
+      track('trial_ending_shown', { when: trialEnding });
+      setTrialEndingOpen(true);
+    });
+    return () => { cancelled = true; };
+  }, [trialEnding]);
+  const closeTrialEnding = () => { dismissTrialEnding(); setTrialEndingOpen(false); };
+
   const [watchHistory,  setWatchHistory]  = useState<boolean | null>(null);
   const [firstLookOpen, setFirstLookOpen] = useState(false);
   useEffect(() => {
@@ -599,6 +618,12 @@ export default function HomeScreen() {
                 <Text style={styles.freeBadgeText}>FREE</Text>
               </View>
             )}
+            {/* The free Pro week, visible where it matters instead of only in Profile */}
+            {isTrialActive && (
+              <View style={[styles.freeBadge, styles.trialBadge]}>
+                <Text style={[styles.freeBadgeText, styles.trialBadgeText]}>{trialPillText(trialDaysLeft)}</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -689,6 +714,14 @@ export default function HomeScreen() {
               HRV {readiness.healthData.hrv} ms, entered by you today · <Text style={styles.mathLinkText}>Update</Text>
             </Text>
           </TouchableOpacity>
+        )}
+
+        {trialEndingOpen && trialEnding && (
+          <TrialEndingCard
+            when={trialEnding}
+            onKeepPro={() => { track('trial_ending_keep_pro'); closeTrialEnding(); presentPaywall(); }}
+            onDismiss={closeTrialEnding}
+          />
         )}
 
         {/* Back from illness: why training is held at Easy Day, or the
@@ -1072,6 +1105,13 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semiBold,
     letterSpacing: 1.5,
+  },
+  trialBadge: {
+    borderColor: colors.amber[400],
+  },
+  trialBadgeText: {
+    color:         colors.amber[400],
+    letterSpacing: 0.5,
   },
   offScreen: {
     position:  'absolute',

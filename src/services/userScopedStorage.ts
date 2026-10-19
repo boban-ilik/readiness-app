@@ -79,6 +79,7 @@ const USER_SCOPED_KEYS = [
   // One-time calibration-week report flag
   '@readiness/calibration_report_seen',
   '@readiness/first_look_seen',
+  '@readiness/trial_ending_seen',
 
   // Weekly free-briefing allowance — per account, so switching accounts
   // cannot smuggle extra briefings
