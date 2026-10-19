@@ -223,8 +223,9 @@ export function OvertrainingWarningCard({ warning }: Props) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  // No side margin: Today's scroll view already insets its content, and a
+  // second inset made this card narrower than its neighbours.
   card: {
-    marginHorizontal: spacing[4],
     marginBottom:     spacing[3],
     borderRadius:     radius.lg,
     borderLeftWidth:  3,
@@ -237,10 +238,14 @@ const styles = StyleSheet.create({
   },
 
   // Header
+  // Wraps the badge onto its own line when the label and badge don't fit
+  // side by side, instead of letting them touch.
   header: {
     flexDirection:  'row',
+    flexWrap:       'wrap',
     alignItems:     'center',
     justifyContent: 'space-between',
+    gap:            spacing[2],
     marginBottom:   spacing[2],
   },
   headerLeft: {
