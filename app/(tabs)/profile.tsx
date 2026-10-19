@@ -21,7 +21,8 @@ import { useCycleTracking }          from '@hooks/useCycleTracking';
 import { useStravaActivities }       from '@hooks/useStravaActivities';
 import { ProGate }                   from '@components/common/ProGate';
 import { Ionicons }                  from '@expo/vector-icons';
-import { NAME_KEY, FREQ_KEY, JOINED_AT_KEY } from '../onboarding';
+import { NAME_KEY, FREQ_KEY, JOINED_AT_KEY, ONBOARDING_KEY } from '../onboarding';
+import { FIRST_LOOK_SEEN_KEY } from '@services/firstLook';
 import { pushProfile }               from '@services/profileSync';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
@@ -990,6 +991,27 @@ export default function ProfileScreen() {
     ]);
   };
 
+  // Hidden, for testing on TestFlight builds (where __DEV__ is off): replays
+  // the onboarding screens. Finishing them sets a new joined date, so Today
+  // behaves like day 0 again and the first look shows once more. The answers
+  // replace the profile; Health data, scores and the subscription are untouched.
+  const handleTitleLongPress = () => {
+    Alert.alert(
+      'Replay onboarding?',
+      "For testing. You'll go through the setup screens again, and Today will treat you as a new user (first look, first-week banner). What you enter replaces your name, watch and training profile; Health data, scores and your subscription stay as they are.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Replay',
+          onPress: async () => {
+            await AsyncStorage.multiRemove([ONBOARDING_KEY, FIRST_LOOK_SEEN_KEY]).catch(() => {});
+            router.replace('/onboarding');
+          },
+        },
+      ],
+    );
+  };
+
   // ─────────────────────────────────────────────────────────────────────────────
 
   return (
@@ -998,7 +1020,7 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Profile</Text>
+        <Text style={styles.title} onLongPress={handleTitleLongPress} suppressHighlighting>Profile</Text>
 
         {/* ── Hero card ───────────────────────────────────────────────────── */}
         <View style={styles.heroCard}>

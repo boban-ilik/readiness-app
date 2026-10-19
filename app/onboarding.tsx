@@ -48,7 +48,7 @@ import {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ONBOARDING_KEY       = '@readiness/onboarding_complete';
+export const ONBOARDING_KEY = '@readiness/onboarding_complete';
 const DEVICE_KEY           = '@readiness/device_type';
 export const NAME_KEY      = '@readiness/user_name';
 export const FREQ_KEY      = '@readiness/training_frequency';
