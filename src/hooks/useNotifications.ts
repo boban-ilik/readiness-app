@@ -39,6 +39,12 @@ import Constants from 'expo-constants';
 import { localDateStr } from '@utils/index';
 import { track } from '@services/analytics';
 import type { PatternInsight } from '@services/patternAnalysis';
+import { FORECAST_LOG_KEY, type ForecastLog } from '@services/forecastLog';
+import { digestTeaser } from '@utils/digestTeaser';
+
+// Written by onboarding (app/onboarding.tsx JOINED_AT_KEY); not imported from
+// there to keep screens out of this hook's imports.
+const JOINED_AT_STORAGE_KEY = '@readiness/joined_at';
 
 // ─── Expo Go guard ────────────────────────────────────────────────────────────
 // expo-notifications requires native code compiled into a custom dev build.
@@ -524,6 +530,27 @@ async function syncDigestNotification(
 
   const { title, body } = buildDigestCopy(lastScore);
 
+  // First week: tomorrow's notification names the forecast made today. A
+  // repeating notification can't carry a one-day message, so the week is
+  // scheduled as single notifications instead, tomorrow's being the teaser.
+  // Every app open reschedules them; from day 7 it is the repeating one again.
+  const teaser = await loadDigestTeaser();
+  if (teaser) {
+    const now = new Date();
+    for (let d = 0; d <= WEEK_ONE_SCHEDULE_DAYS; d++) {
+      const at = new Date(now);
+      at.setDate(now.getDate() + d);
+      at.setHours(p.digestHour, p.digestMinute, 0, 0);
+      if (at <= now) continue;
+      const c = d === 1 ? teaser : { title, body };
+      await Notifications.scheduleNotificationAsync({
+        content: { ...c, data: { type: 'digest' } },
+        trigger: { date: at },
+      });
+    }
+    return;
+  }
+
   await Notifications.scheduleNotificationAsync({
     content: { title, body, data: { type: 'digest' } },
     trigger: {
@@ -532,6 +559,21 @@ async function syncDigestNotification(
       repeats: true,
     },
   });
+}
+
+/** Single notifications cover two weeks, so a user who stops opening the app still gets the digest that long. */
+const WEEK_ONE_SCHEDULE_DAYS = 14;
+
+async function loadDigestTeaser(): Promise<{ title: string; body: string } | null> {
+  try {
+    const [joinedAt, rawLog] = await Promise.all([
+      AsyncStorage.getItem(JOINED_AT_STORAGE_KEY),
+      AsyncStorage.getItem(FORECAST_LOG_KEY),
+    ]);
+    return digestTeaser(joinedAt, rawLog ? (JSON.parse(rawLog) as ForecastLog) : null);
+  } catch {
+    return null;
+  }
 }
 
 /** Schedule a one-shot low-score notification firing in 2 seconds. */

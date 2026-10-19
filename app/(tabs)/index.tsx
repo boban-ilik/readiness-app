@@ -506,8 +506,9 @@ export default function HomeScreen() {
         const next = computeForecast(scoreForForecast, patterns, workload);
         setForecast(next);
         // Collected for everyone (the strip itself is Pro) so a future
-        // track record already has history when it ships.
-        recordForecast(next);
+        // track record already has history when it ships. Then reschedule the
+        // morning notification: in the first week tomorrow's names this forecast.
+        recordForecast(next).then(() => rescheduleDigestWithScore(scoreForForecast));
       } catch (e) {
         console.warn('[HomeScreen] contextual data load error:', e);
       }
