@@ -26,6 +26,7 @@ import { fetchRecentEvents } from '@services/lifeEvents';
 import { supabase } from '@services/supabase';
 import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
 import { track } from '@services/analytics';
+import { markFeatureOpened } from '@services/openedFeatures';
 
 function parseInline(text: string): React.ReactNode[] {
   const tokens = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
@@ -178,6 +179,7 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
 
   useEffect(() => {
     track('coach_opened');
+    markFeatureOpened('coach');
     loadChatHistory().then(setHistory).catch(() => {});
     loadUserProfile().then(setProfile).catch(() => {});
     AsyncStorage.getItem(FREE_REMAINING_KEY)

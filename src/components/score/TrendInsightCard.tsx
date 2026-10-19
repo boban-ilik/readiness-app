@@ -17,6 +17,7 @@ import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'rea
 import Svg, { Rect } from 'react-native-svg';
 import { useTrendData, type TrendDirection } from '@hooks/useTrendData';
 import TrendChartModal from '@components/score/TrendChartModal';
+import { markFeatureOpened } from '@services/openedFeatures';
 import { stripBarHeight } from '@utils/trendChart';
 import type { ReadinessForecast } from '@services/readinessForecast';
 import {
@@ -185,7 +186,7 @@ export default function TrendInsightCard({ forecast = null }: { forecast?: Readi
   return (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => setChartOpen(true)}
+      onPress={() => { setChartOpen(true); markFeatureOpened('trend'); }}
       activeOpacity={0.85}
       accessibilityRole="button"
       accessibilityLabel="Open the readiness trend chart"

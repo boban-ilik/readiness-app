@@ -41,6 +41,7 @@ import { useNotifications } from '@hooks/useNotifications';
 import { useCalibrationStatus } from '@hooks/useCalibrationStatus';
 import FirstLookModal from '@components/score/FirstLookModal';
 import TrialEndingCard from '@components/score/TrialEndingCard';
+import NewTodayLine from '@components/score/NewTodayLine';
 import { hasDismissedTrialEnding, dismissTrialEnding } from '@services/trialEnding';
 import { trialEndingWhen, trialPillText } from '@utils/trialEnding';
 import { hasWatchHistory, hasSeenFirstLook, markFirstLookSeen } from '@services/firstLook';
@@ -714,6 +715,20 @@ export default function HomeScreen() {
               HRV {readiness.healthData.hrv} ms, entered by you today · <Text style={styles.mathLinkText}>Update</Text>
             </Text>
           </TouchableOpacity>
+        )}
+
+        {/* Days 1 to 6: one new thing from the user's own data each morning.
+            Day 0 has the first look instead. */}
+        {hasUsableScore && calibration.daysSinceJoined !== null
+          && calibration.daysSinceJoined >= 1 && calibration.daysSinceJoined <= 6 && (
+          <NewTodayLine
+            todayScore={score}
+            unusual={readingCheck.state && !readingCheck.state.answered && !illness.status && !illness.nudge
+              ? { metric: readingCheck.state.check.metric, direction: readingCheck.state.check.direction }
+              : null}
+            trendShown={isPro}
+            onAskCoach={() => router.push({ pathname: '/coach-chat', params: { q: `What does a score of ${Math.round(score)} mean for my training today?` } })}
+          />
         )}
 
         {trialEndingOpen && trialEnding && (

@@ -80,6 +80,7 @@ const USER_SCOPED_KEYS = [
   '@readiness/calibration_report_seen',
   '@readiness/first_look_seen',
   '@readiness/trial_ending_seen',
+  '@readiness/opened_features',
 
   // Weekly free-briefing allowance — per account, so switching accounts
   // cannot smuggle extra briefings

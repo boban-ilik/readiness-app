@@ -17,6 +17,7 @@ import { localDateStr } from '@utils/index';
 export type AnalyticsEvent =
   | 'app_open'
   | 'onboarding_complete'
+  | 'new_today_shown'         // { kind }
   | 'trial_ending_shown'      // { when: 'today' | 'tomorrow' }
   | 'trial_ending_keep_pro'
   | 'first_look_shown'        // { from: 'today' | 'history' }
