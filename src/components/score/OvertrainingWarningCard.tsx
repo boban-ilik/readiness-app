@@ -62,6 +62,12 @@ const PALETTE: Record<Exclude<OvertRiskLevel, 'none'>, RiskPalette> = {
   },
 };
 
+const RECOVERY_TITLE: Record<Exclude<OvertRiskLevel, 'none'>, string> = {
+  low:      'Watch Closely',
+  moderate: 'Under Pressure',
+  high:     'Recovery Strained',
+};
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 interface SignalRowProps {
@@ -137,9 +143,15 @@ export function OvertrainingWarningCard({ warning }: Props) {
 
   const palette = PALETTE[warning.riskLevel];
 
+  // "Overtraining" only when training is part of the cause. Sleep debt or a
+  // falling HRV on a week with no sessions is recovery under pressure, not
+  // overtraining, and saying so would be a verdict the data doesn't support.
+  const fromTraining = warning.signals.some(s => s.label.includes('Training load'));
+  const title = fromTraining ? palette.title : RECOVERY_TITLE[warning.riskLevel];
+
   // Compact summary text
   const summaryText = warning.riskLevel === 'high'
-    ? `${warning.signals.length} overtraining signal${warning.signals.length > 1 ? 's' : ''} detected. Your body is asking for a break.`
+    ? `${warning.signals.length} ${fromTraining ? 'overtraining' : 'recovery'} signal${warning.signals.length > 1 ? 's' : ''} detected. Your body is asking for a break.`
     : warning.riskLevel === 'moderate'
     ? `${warning.signals.length} signal${warning.signals.length > 1 ? 's' : ''} suggest${warning.signals.length === 1 ? 's' : ''} your recovery is under pressure. Time to dial it back.`
     : 'An early fatigue signal is building. Keep today light and monitor your trend.';
@@ -151,11 +163,11 @@ export function OvertrainingWarningCard({ warning }: Props) {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerIcon}>{palette.icon}</Text>
-          <Text style={styles.sectionLabel}>OVERTRAINING ALERT</Text>
+          <Text style={styles.sectionLabel}>{fromTraining ? 'OVERTRAINING ALERT' : 'RECOVERY ALERT'}</Text>
         </View>
         <View style={[styles.riskBadge, { backgroundColor: palette.badgeBg, borderColor: palette.border }]}>
           <Text style={[styles.riskBadgeText, { color: palette.badge }]}>
-            {palette.title}
+            {title}
           </Text>
         </View>
       </View>
