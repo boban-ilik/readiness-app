@@ -42,6 +42,12 @@ function ZoneBadge({ zone, color }: { zone: number; color: string }) {
   );
 }
 
+/** First sentence only, for the one-line reason; the full text is behind the tap. */
+function firstSentence(text: string): string {
+  const i = text.indexOf('. ');
+  return i === -1 ? text : text.slice(0, i + 1);
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function TrainingLoadCard({
@@ -50,7 +56,7 @@ export default function TrainingLoadCard({
   illnessCap = false,
 }: TrainingLoadCardProps) {
   const rec = getTrainingRecommendation(score, components, { illnessCap });
-  const [effortExpanded, setEffortExpanded] = useState(false);
+  const [showWhy, setShowWhy] = useState(false);
 
   const durationText =
     rec.durationMin === 0
@@ -77,59 +83,38 @@ export default function TrainingLoadCard({
       {/* ── Divider ── */}
       <View style={styles.divider} />
 
-      {/* ── Metric pills: duration + tappable effort ── */}
-      <View style={styles.metricsRow}>
-
-        {/* Duration pill */}
-        <View style={styles.pill}>
-          <Text style={styles.pillIcon}>⏱</Text>
-          <Text style={styles.pillText}>{durationText}</Text>
-        </View>
-
-        {/* Effort pill — tappable, expands explanation */}
-        {!isRest && (
-          <TouchableOpacity
-            style={[styles.pill, styles.effortPill, effortExpanded && styles.effortPillActive]}
-            onPress={() => setEffortExpanded(v => !v)}
-            activeOpacity={0.75}
-          >
-            <Text style={styles.pillIcon}>💥</Text>
-            <Text style={[styles.pillText, effortExpanded && styles.effortPillTextActive]}>
-              Effort {rec.rpe}/10
-            </Text>
-            <Text style={[styles.effortChevron, effortExpanded && styles.effortChevronOpen]}>
-              ›
-            </Text>
-          </TouchableOpacity>
-        )}
+      {/* ── Short lines to act on; the explanation is behind the Why line ── */}
+      <View style={styles.lines}>
+        <Text style={styles.line}>⏱  {isRest ? 'Rest today' : `${durationText} · effort ${rec.rpe}/10`}</Text>
+        <Text style={styles.line}>🏃  {rec.doThis}</Text>
+        <TouchableOpacity
+          onPress={() => setShowWhy(v => !v)}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: showWhy }}
+        >
+          <Text style={styles.whyLine}>
+            <Text style={[styles.whyLabel, { color: rec.zoneColor }]}>Why: </Text>
+            {firstSentence(rec.rationale)} <Text style={{ color: rec.zoneColor }}>{showWhy ? '▲' : '›'}</Text>
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {/* ── Effort explanation (expanded) ── */}
-      {effortExpanded && !isRest && (
-        <View style={styles.effortBox}>
-          <Text style={styles.effortBoxTitle}>
-            What does {rec.rpe}/10 feel like?
-          </Text>
-          <Text style={styles.effortBoxBody}>{rec.effortDescription}</Text>
-          <Text style={styles.effortBoxScale}>
-            Scale: 1 = completely at rest · 10 = all-out sprint
-          </Text>
-        </View>
+      {showWhy && (
+        <>
+          <Text style={styles.sectionBody}>{rec.rationale}</Text>
+          {!isRest && (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>WHAT {rec.rpe}/10 FEELS LIKE</Text>
+              <Text style={styles.sectionBody}>{rec.effortDescription}</Text>
+            </View>
+          )}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>{isRest ? 'TODAY' : 'IDEAS'}</Text>
+            <Text style={styles.sectionBody}>{rec.suggestedActivities}</Text>
+          </View>
+        </>
       )}
-
-      {/* ── What to do ── */}
-      {!isRest && (
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>🏃 WHAT TO DO</Text>
-          <Text style={styles.sectionBody}>{rec.suggestedActivities}</Text>
-        </View>
-      )}
-
-      {/* ── Why today? ── */}
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>WHY TODAY?</Text>
-        <Text style={styles.sectionBody}>{rec.rationale}</Text>
-      </View>
 
       {/* ── Footer ── */}
       <View style={styles.footer}>
@@ -148,6 +133,18 @@ export default function TrainingLoadCard({
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  lines: { gap: spacing[2] },
+  line: {
+    fontSize:   fontSize.base,
+    lineHeight: 22,
+    color:      colors.text.primary,
+  },
+  whyLine: {
+    fontSize:   fontSize.sm,
+    lineHeight: 20,
+    color:      colors.text.secondary,
+  },
+  whyLabel: { fontWeight: fontWeight.semiBold },
   card: {
     backgroundColor: colors.bg.tertiary,
     borderRadius: radius.xl,
@@ -202,78 +199,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border.subtle,
   },
 
-  // Metric pills row
-  metricsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[2],
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[1.5],
-    backgroundColor: colors.bg.elevated,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[1.5],
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  pillIcon: {
-    fontSize: 15,
-  },
-  pillText: {
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-  },
 
-  // Effort pill — tappable variant
-  effortPill: {
-    borderColor: colors.border.default,
-  },
-  effortPillActive: {
-    backgroundColor: colors.amber[900] + '44',
-    borderColor: colors.amber[500],
-  },
-  effortPillTextActive: {
-    color: colors.amber[400],
-  },
-  effortChevron: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.base,
-    marginLeft: spacing[0.5],
-    transform: [{ rotate: '0deg' }],
-  },
-  effortChevronOpen: {
-    transform: [{ rotate: '90deg' }],
-    color: colors.amber[400],
-  },
-
-  // Effort explanation box
-  effortBox: {
-    backgroundColor: colors.bg.elevated,
-    borderRadius: radius.md,
-    padding: spacing[4],
-    gap: spacing[2],
-    borderLeftWidth: 3,
-    borderLeftColor: colors.amber[500],
-  },
-  effortBoxTitle: {
-    color: colors.text.primary,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semiBold,
-  },
-  effortBoxBody: {
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
-    lineHeight: fontSize.sm * 1.6,
-  },
-  effortBoxScale: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
-    fontStyle: 'italic',
-  },
 
   // Section (activities + rationale)
   section: {

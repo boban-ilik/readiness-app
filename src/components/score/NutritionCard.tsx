@@ -66,6 +66,7 @@ export default function NutritionCard({
   const router = useRouter();
   const [weightKg, setWeightKg] = useState<number | undefined>(undefined);
   const [waterTarget, setWaterTarget] = useState<string | undefined>(undefined);
+  const [showWhy,     setShowWhy]     = useState(false);
 
   // Weight is edited on the Profile tab while this screen stays mounted behind
   // it, so re-read on focus rather than once on mount — otherwise the targets
@@ -98,71 +99,85 @@ export default function NutritionCard({
         </View>
         <View style={styles.headlineBlock}>
           <Text style={styles.headline}>{rec.headline}</Text>
-          <Text style={[styles.context, { color: rec.color }]}>{rec.context}</Text>
         </View>
       </View>
 
       <View style={styles.divider} />
 
-      {/* ── Hydration pill ── */}
-      <View style={styles.hydrationPill}>
-        <Text style={styles.hydrationIcon}>💧</Text>
-        <Text style={styles.hydrationText}>{rec.hydration}</Text>
+      {/* ── What to do today: a few short lines; the detail is behind Why? ── */}
+      <View style={styles.actions}>
+        {rec.actions.map(a => (
+          <View key={a} style={styles.actionRow}>
+            <Text style={[styles.actionMark, { color: rec.color }]}>✓</Text>
+            <Text style={styles.actionText}>{a}</Text>
+          </View>
+        ))}
       </View>
-
-      {/* ── Protein pill (only when a bodyweight is on file) ── */}
-      {rec.protein && (
-        <View style={styles.hydrationPill}>
-          <Text style={styles.hydrationIcon}>🍗</Text>
-          <Text style={styles.hydrationText}>{rec.protein}</Text>
-        </View>
-      )}
 
       {/* ── Weight affordance ── */}
+      {!weightKg && (
+        <TouchableOpacity
+          style={styles.weightRow}
+          onPress={() => router.push('/(tabs)/profile')}
+          accessibilityRole="button"
+          accessibilityLabel="Add your bodyweight in profile"
+        >
+          <Text style={styles.weightText}>Add your weight for a protein target</Text>
+          <Text style={styles.weightChevron}>Add ›</Text>
+        </TouchableOpacity>
+      )}
+
       <TouchableOpacity
-        style={styles.weightRow}
-        onPress={() => router.push('/(tabs)/profile')}
+        onPress={() => setShowWhy(v => !v)}
+        activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel={
-          weightKg
-            ? `Bodyweight ${weightKg} kilograms. Update in profile.`
-            : 'Add your bodyweight in profile'
-        }
+        accessibilityState={{ expanded: showWhy }}
       >
-        <Text style={styles.weightText}>
-          {weightKg
-            ? (waterTarget ? `Protein scaled to ${weightKg} kg, water from your Hydration target` : `Hydration and protein scaled to ${weightKg} kg`)
-            : 'Add your weight for personal hydration and protein targets'}
-        </Text>
-        <Text style={styles.weightChevron}>{weightKg ? 'Update ›' : 'Add ›'}</Text>
+        <Text style={[styles.whyToggle, { color: rec.color }]}>{showWhy ? 'Hide ▲' : 'Why? ›'}</Text>
       </TouchableOpacity>
 
-      {/* ── Prioritise ── */}
-      <View style={styles.section}>
-        <SectionLabel text="✅  PRIORITISE TODAY" />
-        {rec.prioritise.map((item, i) => (
-          <BulletRow key={i} text={item} />
-        ))}
-      </View>
+      {showWhy && (
+        <>
+          <Text style={styles.timingText}>{rec.context}</Text>
 
-      {/* ── Moderate ── */}
-      <View style={styles.section}>
-        <SectionLabel text="⚠️  MODERATE" />
-        {rec.moderate.map((item, i) => (
-          <BulletRow key={i} text={item} />
-        ))}
-      </View>
+          <View style={styles.section}>
+            <SectionLabel text="FAVOUR" />
+            {rec.prioritise.map((item, i) => (
+              <BulletRow key={i} text={item} />
+            ))}
+          </View>
 
-      {/* ── Timing tip ── */}
-      <View style={styles.section}>
-        <SectionLabel text="⏰  MEAL TIMING" />
-        <Text style={styles.timingText}>{rec.timing}</Text>
-      </View>
+          <View style={styles.section}>
+            <SectionLabel text="GO EASY ON" />
+            {rec.moderate.map((item, i) => (
+              <BulletRow key={i} text={item} />
+            ))}
+          </View>
 
-      {/* ── Rationale ── */}
-      <View style={[styles.rationaleBox, { borderLeftColor: rec.color }]}>
-        <Text style={styles.rationaleText}>{rec.rationale}</Text>
-      </View>
+          <View style={styles.section}>
+            <SectionLabel text="TIMING" />
+            <Text style={styles.timingText}>{rec.timing}</Text>
+          </View>
+
+          <View style={[styles.rationaleBox, { borderLeftColor: rec.color }]}>
+            <Text style={styles.rationaleText}>{rec.rationale}</Text>
+          </View>
+
+          {weightKg && (
+            <TouchableOpacity
+              style={styles.weightRow}
+              onPress={() => router.push('/(tabs)/profile')}
+              accessibilityRole="button"
+              accessibilityLabel={`Bodyweight ${weightKg} kilograms. Update in profile.`}
+            >
+              <Text style={styles.weightText}>
+                {waterTarget ? `Protein scaled to ${weightKg} kg, water from your Hydration target` : `Water and protein scaled to ${weightKg} kg`}
+              </Text>
+              <Text style={styles.weightChevron}>Update ›</Text>
+            </TouchableOpacity>
+          )}
+        </>
+      )}
 
       {/* ── Footer ── */}
       <View style={styles.footer}>
@@ -178,6 +193,27 @@ export default function NutritionCard({
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  actions: { gap: spacing[2] },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems:    'flex-start',
+    gap:           spacing[2],
+  },
+  actionMark: {
+    fontSize:   fontSize.base,
+    fontWeight: fontWeight.bold,
+    lineHeight: 22,
+  },
+  actionText: {
+    flex:       1,
+    fontSize:   fontSize.base,
+    lineHeight: 22,
+    color:      colors.text.primary,
+  },
+  whyToggle: {
+    fontSize:   fontSize.sm,
+    fontWeight: fontWeight.semiBold,
+  },
   card: {
     backgroundColor: colors.bg.tertiary,
     borderRadius: radius.xl,
@@ -215,10 +251,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
   },
-  context: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
-  },
 
   // Divider
   divider: {
@@ -245,27 +277,6 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semiBold,
   },
 
-  hydrationPill: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing[2],
-    backgroundColor: colors.bg.elevated,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  hydrationIcon: {
-    fontSize: 16,
-    lineHeight: 20,
-  },
-  hydrationText: {
-    flex: 1,
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
-    lineHeight: fontSize.sm * 1.5,
-  },
 
   // Section
   section: {

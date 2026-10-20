@@ -3,7 +3,7 @@
  *
  * Generates a data-driven nutrition plan based on:
  *   - Today's overall readiness score
- *   - HRV vs personal baseline (recovery / inflammation signal)
+ *   - HRV vs personal baseline
  *   - Sleep duration and quality
  *   - Recovery & stress sub-scores
  *
@@ -22,13 +22,15 @@ export interface NutritionRecommendation {
   context:      string;
   /** Accent colour matching readiness tier */
   color:        string;
-  /** Hydration target */
+  /** Today's water amount, e.g. "3 l" or "2.5–3 L" */
   hydration:    string;
+  /** 3–4 short lines to act on, shown on the card. The rest sits behind "Why?" */
+  actions:      string[];
   /** Daily protein range, scaled to bodyweight. Null when no weight is on file. */
   protein:      string | null;
-  /** 2–4 key foods to prioritise today */
+  /** Foods to favour today (plain food suggestions, no health claims) */
   prioritise:   string[];
-  /** 1–2 things to moderate today */
+  /** Things to go easy on today */
   moderate:     string[];
   /** Meal timing tip */
   timing:       string;
@@ -98,11 +100,6 @@ export function getNutritionRecommendation(
     ? Math.round(hrv - hrvBaseline)
     : null;
 
-  // Inflammation flag: HRV ≥ 15% below baseline OR recovery score < 45
-  const hasInflammation =
-    (hrvDelta !== null && hrv !== null && hrv < hrvBaseline * 0.85) ||
-    components.recovery < 45;
-
   // Sleep debt flag: < 6.5 h total OR deep sleep < 45 min
   const hasSleepDebt =
     (sleepH !== null && sleepH < 6.5) ||
@@ -115,152 +112,107 @@ export function getNutritionRecommendation(
   // Tier A  (score ≥ 75) — Performance day
   // Tier B  (score 50–74) — Maintenance / steady
   // Tier C  (score < 50)  — Recovery priority
+  //
+  // Wording rule: plain, checkable advice. No mechanisms ("anti-inflammatory",
+  // "gut integrity", "cortisol is lower at lunch") that the app can't source,
+  // and the rationale states only the user's own numbers.
+
+  const hrvLine = hrv !== null && hrvDelta !== null
+    ? `HRV ${hrv} ms, ${hrvDelta >= 0 ? '+' : ''}${hrvDelta} vs ${baselinePhrase('hrv', hrvBaseline)}.`
+    : '';
+  const sleepLine = sleepH !== null ? `${sleepH.toFixed(1)} h of sleep last night.` : '';
 
   if (clampedScore >= 75) {
     // ── Tier A — Performance fuelling ─────────────────────────────────────────
     const targets   = weightTargets(weightKg, 'A');
-    const waterA = waterTarget ?? (targets ? `${targets.litres} L` : null);
-    const hydration = waterA
-      ? `Target ${waterA} today. Add electrolytes if training > 60 min.`
-      : 'Target 2.5–3 L today. Add electrolytes if training > 60 min.';
-
-    const prioritise = [
-      'Complex carbs: oats, sweet potato, brown rice (fuel for hard work)',
-      'Lean protein: chicken, eggs, Greek yoghurt (muscle repair & satiety)',
-      'Leafy greens & colourful veg (micronutrients for peak output)',
-      'Berries or citrus: antioxidants to counter exercise-induced oxidative stress',
-    ];
-
-    const moderate = [
-      'Avoid heavy fats in the 2 h before your main session (slows gastric emptying)',
-    ];
-
-    const timing = hrv !== null && hrvDelta !== null && hrvDelta > 5
-      ? 'HRV is above your baseline. Carb timing is flexible. A bigger carb meal 2–3 h pre-workout and a protein + carb snack within 30 min post works well.'
-      : 'Eat a balanced breakfast within 60 min of waking. Front-load carbs around your training window.';
-
-    const rationale = [
-      `Readiness ${score} puts you in the performance tier.`,
-      hrv !== null
-        ? `HRV ${hrv} ms (${hrvDelta !== null && hrvDelta >= 0 ? '+' : ''}${hrvDelta ?? '—'} vs ${baselinePhrase('hrv', hrvBaseline)}) confirms low systemic stress.`
-        : '',
-      sleepH !== null
-        ? `You got ${sleepH.toFixed(1)} h sleep, ${sleepH >= 7 ? 'solid recovery base.' : 'slightly short, so lean into protein and anti-oxidants.'}`
-        : '',
-    ].filter(Boolean).join(' ');
+    const hydration = waterTarget ?? (targets ? `${targets.litres} L` : '2.5–3 L');
+    const protein   = proteinLine(targets);
 
     return {
-      headline:  'Performance fuel',
-      context:   'Your body is well-recovered. Eat to perform.',
+      headline:  'Fuel for performance',
+      context:   'You are well recovered. Eat to train.',
       color:     '#4ADE80',
       hydration,
-      protein:   proteinLine(targets),
-      prioritise,
-      moderate,
-      timing,
-      rationale,
+      actions: [
+        `Water: ${hydration}`,
+        protein ? `Protein: ${protein}` : 'Protein at every meal',
+        'Carbs before and after training',
+        'Electrolytes if training over 60 min',
+      ],
+      protein,
+      prioritise: [
+        'Carbs: oats, sweet potato, rice',
+        'Lean protein: chicken, eggs, Greek yoghurt',
+        'Vegetables and fruit',
+      ],
+      moderate: ['Heavy, fatty meals in the 2 h before training'],
+      timing:   'A carb-based meal 2 to 3 h before training, and protein with carbs after.',
+      rationale: [`Readiness ${score}, in the performance range.`, hrvLine, sleepLine].filter(Boolean).join(' '),
     };
   }
 
   if (clampedScore >= 50) {
     // ── Tier B — Maintenance / steady ─────────────────────────────────────────
     const targets   = weightTargets(weightKg, 'B');
-    const waterB = waterTarget ?? (targets ? `${targets.litres} L` : null);
-    const hydration = waterB
-      ? (hasSleepDebt
-          ? `Aim for ${waterB}. Water before coffee. Dehydration amplifies fatigue from poor sleep.`
-          : `Aim for ${waterB}. Steady sips throughout the day.`)
-      : (hasSleepDebt
-          ? 'Aim for 2.5 L. Prioritise water before coffee. Dehydration amplifies fatigue from poor sleep.'
-          : 'Aim for 2–2.5 L. Steady sips throughout the day.');
-
-    const prioritise: string[] = [
-      'Lean protein at every meal, keeps you fuller and steadier through the day',
-      'Omega-3 rich foods: salmon, walnuts, flaxseed (a common part of a recovery-focused diet)',
-      'Magnesium-rich foods: pumpkin seeds, dark chocolate, spinach (sleep quality)',
-    ];
-    if (hasSleepDebt) {
-      prioritise.push('Tart cherry juice or kiwi in the evening, which some people find helps them settle');
-    }
-    if (hasInflammation) {
-      prioritise.push('Turmeric + black pepper, ginger, or tart cherries (anti-inflammatory)');
-    }
-
-    const moderate = [
-      'Limit caffeine after 2 pm, especially if sleep was short last night',
-      hasInflammation ? 'Reduce refined sugar and ultra-processed foods today' : 'Keep alcohol minimal tonight, since drinking raises overnight heart rate and blunts recovery',
-    ].filter(Boolean) as string[];
-
-    const timing = highStress
-      ? 'Stress hormones suppress appetite. Set a reminder to eat balanced meals even if you\'re not hungry. Skipping meals compounds cortisol.'
-      : 'Three balanced meals with one optional snack. No need to time carbs tightly today.';
-
-    const rationale = [
-      `Readiness ${score}: steady day, not a peak.`,
-      hrv !== null
-        ? `HRV ${hrv} ms (${hrvDelta !== null && hrvDelta >= 0 ? '+' : ''}${hrvDelta ?? '—'} vs baseline): ${hasInflammation ? 'below baseline, prioritise anti-inflammatory foods.' : 'close to baseline.'}`
-        : '',
-      hasSleepDebt ? `Sleep was short (${sleepH?.toFixed(1)} h). Magnesium and omega-3s help bridge the gap.` : '',
-    ].filter(Boolean).join(' ');
+    const hydration = waterTarget ?? (targets ? `${targets.litres} L` : hasSleepDebt ? '2.5 L' : '2–2.5 L');
+    const protein   = proteinLine(targets);
 
     return {
-      headline:  'Steady & balanced',
-      context:   'Support recovery without over-fuelling.',
+      headline:  'Steady and balanced',
+      context:   'A normal day. Eat well, no special fuelling.',
       color:     '#FBBF24',
       hydration,
-      protein:   proteinLine(targets),
-      prioritise,
-      moderate,
-      timing,
-      rationale,
+      actions: [
+        `Water: ${hydration}`,
+        protein ? `Protein: ${protein}` : 'Protein at every meal',
+        hasSleepDebt ? 'No caffeine after 2 pm' : 'Three balanced meals',
+        'Keep alcohol minimal tonight',
+      ],
+      protein,
+      prioritise: [
+        'Lean protein at every meal',
+        'Oily fish, walnuts or flaxseed',
+        'Vegetables, nuts and seeds',
+      ],
+      moderate: [
+        'Caffeine after 2 pm',
+        'Alcohol tonight',
+      ],
+      timing: highStress
+        ? 'On a busy or stressful day, plan your meals so you do not skip them.'
+        : 'Three balanced meals and a snack if you need one. No need to time carbs today.',
+      rationale: [`Readiness ${score}, a steady day.`, hrvLine, sleepLine].filter(Boolean).join(' '),
     };
   }
 
   // ── Tier C — Recovery priority (score < 50) ─────────────────────────────────
   const targetsC  = weightTargets(weightKg, 'C');
-  const waterC = waterTarget ?? (targetsC ? `${targetsC.litres} L` : null);
-  const hydration = waterC
-    ? `Prioritise hydration. Aim for ${waterC}. Add a pinch of sea salt to water if you feel sluggish.`
-    : 'Prioritise hydration. Aim for 2.5–3 L. Add a pinch of sea salt to water if you feel sluggish.';
-
-  const prioritise: string[] = [
-    'Omega-3s: fatty fish (salmon, sardines), walnuts (commonly recommended for recovery)',
-    'Bone broth or collagen-rich foods (gut integrity under high-stress days)',
-    'Dark leafy greens: spinach, kale (magnesium, folate, antioxidants)',
-    'Quality protein at every meal to preserve muscle during low-activity recovery',
-  ];
-
-  if (hasSleepDebt) {
-    prioritise.push('Tart cherry or kiwi in the evening, which some people find helps them settle');
-  }
-
-  const moderate = [
-    'Skip alcohol tonight: even moderate drinking raises your overnight heart rate and leaves you less recovered',
-    'Cut back on refined sugar and ultra-processed snacks, easy to overdo on a low day',
-    'Keep caffeine to 1–2 cups before noon only',
-  ];
-
-  const timing = 'Eat your largest meal at lunch when cortisol is naturally lower. Keep dinner lighter and finish eating 2–3 h before bed to protect deep sleep.';
-
-  const rationale = [
-    `Readiness ${score}: your body is asking for a recovery day.`,
-    hrv !== null
-      ? `HRV ${hrv} ms is ${Math.round(Math.abs((hrvDelta ?? 0)))} ms ${(hrvDelta ?? 0) < 0 ? 'below' : 'above'} ${baselinePhrase('hrv', hrvBaseline)}: ${hasInflammation ? 'inflammation or systemic stress is elevated.' : 'recovery is in progress.'}`
-      : 'No HRV data, eating for recovery is the safe default.',
-    sleepH !== null
-      ? `${sleepH.toFixed(1)} h sleep last night, nutrition can help compensate for poor recovery.`
-      : '',
-  ].filter(Boolean).join(' ');
+  const hydration = waterTarget ?? (targetsC ? `${targetsC.litres} L` : '2.5–3 L');
+  const protein   = proteinLine(targetsC);
 
   return {
-    headline:  'Recovery nutrition',
-    context:   'Your HRV and sleep signal your body needs support today.',
+    headline:  'Eat for recovery',
+    context:   'A low day. Simple meals, enough protein, no alcohol.',
     color:     '#F87171',
     hydration,
-    protein:   proteinLine(targetsC),
-    prioritise,
-    moderate,
-    timing,
-    rationale,
+    actions: [
+      `Water: ${hydration}`,
+      protein ? `Protein: ${protein}` : 'Protein at every meal',
+      'Skip alcohol tonight',
+      'Finish dinner 2–3 h before bed',
+    ],
+    protein,
+    prioritise: [
+      'Protein at every meal',
+      'Oily fish or walnuts',
+      'Leafy greens and vegetables',
+    ],
+    moderate: [
+      'Alcohol tonight',
+      'Sugary and ultra-processed snacks',
+      'Caffeine after noon',
+    ],
+    timing:    'Keep dinner lighter and finish eating 2 to 3 h before bed.',
+    rationale: [`Readiness ${score}, a recovery day.`, hrvLine, sleepLine].filter(Boolean).join(' '),
   };
 }

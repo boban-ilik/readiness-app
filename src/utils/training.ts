@@ -35,6 +35,7 @@ export interface TrainingRecommendation {
   rpe:                string;   // Borg RPE 1–10 range, e.g. "6–7"
   effortDescription:  string;   // Plain-English feel: what does this effort feel like?
   suggestedActivities: string;  // Concrete examples of what to do
+  doThis:             string;   // The same in a few words, for the card's short line
   rationale:          string;   // Why this recommendation, based on today's data
 }
 
@@ -62,6 +63,7 @@ interface Tier {
   rpe:                string;
   effortDescription:  string;
   suggestedActivities: string;
+  doThis:             string;
 }
 
 const TIERS: Tier[] = [
@@ -69,6 +71,7 @@ const TIERS: Tier[] = [
     minScore:  86,
     intensity: 'peak',
     headline:  'Push Hard Today',
+    doThis:    'Intervals, tempo or a hard gym session',
     zone:      5,
     zoneName:  'Zone 4–5: Threshold / VO₂',
     durationMin: 60,
@@ -85,6 +88,7 @@ const TIERS: Tier[] = [
     minScore:  71,
     intensity: 'quality',
     headline:  'Strong Workout Day',
+    doThis:    'Tempo run, steady bike or row, or hard strength',
     zone:      4,
     zoneName:  'Zone 3–4: Tempo / Threshold',
     durationMin: 60,
@@ -101,6 +105,7 @@ const TIERS: Tier[] = [
     minScore:  56,
     intensity: 'moderate',
     headline:  'Steady Training Day',
+    doThis:    'Comfortable run or ride, swim or gym',
     zone:      3,
     zoneName:  'Zone 2–3: Aerobic / Tempo',
     durationMin: 50,
@@ -117,6 +122,7 @@ const TIERS: Tier[] = [
     minScore:  41,
     intensity: 'easy',
     headline:  'Easy Day',
+    doThis:    'Easy jog, brisk walk, easy ride or yoga',
     zone:      2,
     zoneName:  'Zone 2: Aerobic Base',
     durationMin: 40,
@@ -133,6 +139,7 @@ const TIERS: Tier[] = [
     minScore:  26,
     intensity: 'recovery',
     headline:  'Light Movement Only',
+    doThis:    'Walk, stretch or an easy swim',
     zone:      1,
     zoneName:  'Zone 1: Active Recovery',
     durationMin: 20,
@@ -149,6 +156,7 @@ const TIERS: Tier[] = [
     minScore:  0,
     intensity: 'rest',
     headline:  'Rest Today',
+    doThis:    'Sleep, eat well, a slow walk at most',
     zone:      0,
     zoneName:  'Rest',
     durationMin: 0,
@@ -251,6 +259,7 @@ export function getTrainingRecommendation(
     rpe:                 tier.rpe,
     effortDescription:   tier.effortDescription,
     suggestedActivities: tier.suggestedActivities,
+    doThis:              tier.doThis,
     rationale:           capped ? ILLNESS_CAP_RATIONALE : buildRationale(score, components, tier.intensity),
   };
 }

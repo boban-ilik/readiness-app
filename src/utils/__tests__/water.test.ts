@@ -43,9 +43,10 @@ describe('one water target on Today', () => {
   const comps = { recovery: 80, sleep: 80, stress: 80 };
   it('uses the Hydration target instead of the bodyweight estimate', () => {
     const withTarget = getNutritionRecommendation(81, comps, null, 55, 80, '3 l');
-    expect(withTarget.hydration).toMatch(/^Target 3 l today/);
+    expect(withTarget.hydration).toBe('3 l');
+    expect(withTarget.actions[0]).toBe('Water: 3 l');
     const without = getNutritionRecommendation(81, comps, null, 55, 80);
-    expect(without.hydration).toMatch(/^Target \d+(\.\d)? L today/);
+    expect(without.hydration).toMatch(/^\d+(\.\d)? L$/);
   });
 });
 
