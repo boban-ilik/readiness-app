@@ -732,6 +732,62 @@ export default function HomeScreen() {
           />
         )}
 
+        {/* Breakdown, directly under the score: what made today's number,
+            before any of the cards that react to it. */}
+        {hasUsableScore && (
+          <View style={styles.breakdown}>
+            <Text style={styles.sectionTitle}>BREAKDOWN</Text>
+
+            <Animated.View entering={FadeInDown.delay(0).duration(400).springify()}>
+              <ScoreBreakdownCard
+                label="Recovery"
+                score={readiness?.components.recovery ?? 0}
+                weight="45%"
+                icon="💓"
+                detail={buildRecoveryDetail(readiness?.healthData ?? null, rhrBaseline)}
+                isLocked={!isPro}
+                onPress={() => isPro ? setSelectedCard('recovery') : router.push('/paywall')}
+              />
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(80).duration(400).springify()}>
+              <ScoreBreakdownCard
+                label="Sleep"
+                score={readiness?.components.sleep ?? 0}
+                weight="40%"
+                icon="🌙"
+                detail={buildSleepDetail(readiness?.healthData ?? null)}
+                isLocked={!isPro}
+                onPress={() => isPro ? setSelectedCard('sleep') : router.push('/paywall')}
+              />
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(160).duration(400).springify()}>
+              <ScoreBreakdownCard
+                label="Stress"
+                score={readiness?.components.stress ?? 0}
+                weight="15%"
+                icon="🧠"
+                detail={buildStressDetail(readiness?.healthData ?? null, rhrBaseline, hrvBaseline)}
+                isLocked={!isPro}
+                onPress={() => isPro ? setSelectedCard('stress') : router.push('/paywall')}
+              />
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(240).duration(400).springify()}>
+              <ScoreBreakdownCard
+                label="Activity"
+                score={activityScore}
+                weight="Context"
+                icon="🏃"
+                detail={buildActivityDetail(readiness?.healthData ?? null, todayActivity)}
+                isLocked={!isPro}
+                onPress={() => isPro ? setSelectedCard('activity') : presentPaywall()}
+              />
+            </Animated.View>
+          </View>
+        )}
+
         {trialEndingOpen && trialEnding && (
           <TrialEndingCard
             when={trialEnding}
@@ -866,61 +922,6 @@ export default function HomeScreen() {
 
         {/* Calibration week banner — shown for first 7 days after onboarding */}
         {watchHistory === false && <CalibrationBanner status={calibration} />}
-
-        {/* Breakdown */}
-        {hasUsableScore && (
-          <View style={styles.breakdown}>
-            <Text style={styles.sectionTitle}>BREAKDOWN</Text>
-
-            <Animated.View entering={FadeInDown.delay(0).duration(400).springify()}>
-              <ScoreBreakdownCard
-                label="Recovery"
-                score={readiness?.components.recovery ?? 0}
-                weight="45%"
-                icon="💓"
-                detail={buildRecoveryDetail(readiness?.healthData ?? null, rhrBaseline)}
-                isLocked={!isPro}
-                onPress={() => isPro ? setSelectedCard('recovery') : router.push('/paywall')}
-              />
-            </Animated.View>
-
-            <Animated.View entering={FadeInDown.delay(80).duration(400).springify()}>
-              <ScoreBreakdownCard
-                label="Sleep"
-                score={readiness?.components.sleep ?? 0}
-                weight="40%"
-                icon="🌙"
-                detail={buildSleepDetail(readiness?.healthData ?? null)}
-                isLocked={!isPro}
-                onPress={() => isPro ? setSelectedCard('sleep') : router.push('/paywall')}
-              />
-            </Animated.View>
-
-            <Animated.View entering={FadeInDown.delay(160).duration(400).springify()}>
-              <ScoreBreakdownCard
-                label="Stress"
-                score={readiness?.components.stress ?? 0}
-                weight="15%"
-                icon="🧠"
-                detail={buildStressDetail(readiness?.healthData ?? null, rhrBaseline, hrvBaseline)}
-                isLocked={!isPro}
-                onPress={() => isPro ? setSelectedCard('stress') : router.push('/paywall')}
-              />
-            </Animated.View>
-
-            <Animated.View entering={FadeInDown.delay(240).duration(400).springify()}>
-              <ScoreBreakdownCard
-                label="Activity"
-                score={activityScore}
-                weight="Context"
-                icon="🏃"
-                detail={buildActivityDetail(readiness?.healthData ?? null, todayActivity)}
-                isLocked={!isPro}
-                onPress={() => isPro ? setSelectedCard('activity') : presentPaywall()}
-              />
-            </Animated.View>
-          </View>
-        )}
 
         {/* One consolidated upgrade message replaces separate feature gates. */}
         {!isPro && hasUsableScore && <ProSummaryCard onPress={presentPaywall} />}
