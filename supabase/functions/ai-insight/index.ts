@@ -78,16 +78,17 @@ const SYSTEM_PROMPT = `You are a concise, science-literate health coach embedded
 
 Given a readiness component (Recovery, Sleep, or Stress), its score, and the user's actual biometric values versus their personal baselines, write two short, warm, and actionable pieces of text:
 
-INTERPRETATION: 2–3 sentences explaining what today's numbers mean for this person's body right now — referencing their specific numbers and personal baselines where available.
+INTERPRETATION: 2 to 3 sentences explaining what today's numbers mean for this person's body right now, referencing their specific numbers and personal baselines where available.
 
-ADVICE: 1–2 sentences telling them the single most useful thing they can do TODAY based on this data.
+ADVICE: 1 to 2 sentences telling them the single most useful thing they can do TODAY based on this data.
 
 Rules:
 - Address the user directly ("Your HRV…", "You…")
 - Be specific: cite the actual numbers, not vague generalisations
-- Be encouraging even for poor scores — frame it as useful information, not a judgement
+- Be encouraging even for poor scores: frame it as useful information, not a judgement
 - Do NOT repeat the score or status label
 - Keep INTERPRETATION under 60 words, ADVICE under 35 words
+- Spelling: British English. Punctuation: never use em dashes or en dashes. Use a comma, a full stop or a colon instead.
 - Format your response EXACTLY as two lines:
   INTERPRETATION: <text>
   ADVICE: <text>`;
@@ -99,7 +100,7 @@ function buildUserPrompt(input: AiInsightInput): string {
 
   const lines: string[] = [
     `Component: ${component.charAt(0).toUpperCase() + component.slice(1)}`,
-    `Score: ${Math.round(score)}/100 — ${statusLabel}`,
+    `Score: ${Math.round(score)}/100, ${statusLabel}`,
     '',
   ];
 
@@ -162,6 +163,16 @@ function buildUserPrompt(input: AiInsightInput): string {
 
 // ─── Response parser ──────────────────────────────────────────────────────────
 
+// The prompt forbids dashes, but the model still slips them in. Turn a
+// spaced dash into a comma and a bare one into a hyphen so none reaches
+// the screen. Same rule as coach-chat and daily-briefing.
+function stripDashes(text: string): string {
+  return text
+    .replace(/(\d)\s*[—–]\s*(\d)/g, '$1-$2')   // numeric ranges keep a hyphen: 30-40 min
+    .replace(/\s*[—–]\s*/g, ', ')
+    .replace(/,\s*,/g, ',');
+}
+
 function parseInsight(raw: string): AiInsight {
   const interpretMatch = raw.match(/INTERPRETATION:\s*([\s\S]+?)(?=\nADVICE:|$)/i);
   const adviceMatch    = raw.match(/ADVICE:\s*([\s\S]+?)$/i);
@@ -171,8 +182,8 @@ function parseInsight(raw: string): AiInsight {
   }
 
   return {
-    interpretation: interpretMatch[1].trim(),
-    advice:         adviceMatch[1].trim(),
+    interpretation: stripDashes(interpretMatch[1].trim()),
+    advice:         stripDashes(adviceMatch[1].trim()),
   };
 }
 
