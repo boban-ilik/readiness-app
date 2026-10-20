@@ -308,6 +308,9 @@ export function useHealthData(): UseHealthDataReturn {
 
     try {
       let healthData: HealthData | null = null;
+      // Mock readings (Expo Go, web, or the iOS 26 kill switch) are for the
+      // screen only: never saved as a history row or shown on the widget.
+      let isDemoData = false;
       let baseline = 60;
 
       let hrvBase = 55;
@@ -323,6 +326,7 @@ export function useHealthData(): UseHealthDataReturn {
         console.warn('[Readiness] iOS 26 mock-mode enabled via env — using mock data');
         setHasPermission(true);
         healthData = MOCK_HEALTH_DATA;
+        isDemoData = true;
         baseline   = MOCK_RHR_BASELINE;
         hrvBase    = MOCK_HRV_BASELINE;
       } else if (Platform.OS === 'ios' && isHealthKitAvailable()) {
@@ -354,6 +358,7 @@ export function useHealthData(): UseHealthDataReturn {
         // Expo Go / web — use mock data
         setHasPermission(true);
         healthData = MOCK_HEALTH_DATA;
+        isDemoData = true;
         baseline   = MOCK_RHR_BASELINE;
         hrvBase    = MOCK_HRV_BASELINE;
       }
@@ -408,7 +413,7 @@ export function useHealthData(): UseHealthDataReturn {
             // A score computed with no overnight signal at all is the
             // population default, not a measurement. The home screen no
             // longer shows it, so it must not become a history row either.
-            if (data.user && !result.dataQuality.isInsufficient) {
+            if (data.user && !result.dataQuality.isInsufficient && !isDemoData) {
               upsertTodayScore(result, data.user.id).catch(err =>
                 console.warn('[Readiness] Supabase sync failed (non-fatal):', err.message),
               );
@@ -425,7 +430,7 @@ export function useHealthData(): UseHealthDataReturn {
         // reflects the latest result without a network round-trip.
         // The illness cap is read first so the widget never shows an uncapped
         // training call for the seconds before the Today hook catches up.
-        isIllnessCapStored()
+        if (!isDemoData) isIllnessCapStored()
           .catch(() => false)
           .then(cap => {
             setWidgetIllnessCap(cap);

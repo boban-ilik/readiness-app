@@ -9,6 +9,7 @@ import { enableScreens } from 'react-native-screens';
 import { AuthProvider, useAuth } from '@contexts/AuthContext';
 import { SubscriptionProvider } from '@contexts/SubscriptionContext';
 import { colors } from '@constants/theme';
+import { getAuthRedirect } from '@utils/authRouting';
 
 enableScreens(false);
 
@@ -64,73 +65,33 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       .catch(() => setOnboardingDone(false));
   }, [user?.id]);
 
+  // One decision per change of user, segment or onboarding state. Callback
+  // screens (email confirmation, Strava) are left alone until they finish,
+  // and a just-completed onboarding is confirmed against storage before the
+  // user could be bounced back into it.
   useEffect(() => {
     if (isLoading || onboardingDone === null) return;
-    if (hasNavigated.current) return;
-    hasNavigated.current = true;
+    let cancelled = false;
 
-    if (!user) {
-      router.replace('/(auth)/login');
-    } else if (!onboardingDone) {
-      router.replace('/onboarding');
-    } else {
-      router.replace('/(tabs)');
-    }
-  }, [isLoading, onboardingDone, user, router]);
-
-  useEffect(() => {
-    if (isLoading || onboardingDone === null) return;
-    if (!segments.length) return;
-
-    const inAuth = segments[0] === '(auth)';
-    const inOnboarding = segments[0] === 'onboarding';
-    const inIndex = segments[0] === '';
-
-    if (inIndex) {
-      if (!user) router.replace('/(auth)/login');
-      else if (!onboardingDone) router.replace('/onboarding');
-      else router.replace('/(tabs)');
-      return;
+    async function redirect() {
+      let completed = onboardingDone === true;
+      if (user && !completed && segments[0] !== 'onboarding') {
+        try {
+          completed = (await AsyncStorage.getItem(ONBOARDING_KEY)) === 'true';
+        } catch {
+          // Keep the last known state when storage is unavailable.
+        }
+      }
+      if (cancelled) return;
+      if (completed && !onboardingDone) setOnboardingDone(true);
+      const destination = getAuthRedirect(segments, !!user, completed);
+      if (destination) router.replace(destination);
+      hasNavigated.current = true;
     }
 
-    if (!user && !inAuth) {
-      router.replace('/(auth)/login');
-      return;
-    }
-
-    if (user && inAuth) {
-      router.replace(onboardingDone ? '/(tabs)' : '/onboarding');
-      return;
-    }
-
-    if (user && !onboardingDone && !inOnboarding) {
-      // `onboardingDone` is read once on mount. The onboarding screen writes
-      // the flag straight to AsyncStorage and then navigates to /(tabs), so
-      // this state is stale for exactly one render — long enough to bounce the
-      // user back into the onboarding they just finished. Confirm against
-      // storage before redirecting.
-      let cancelled = false;
-      AsyncStorage.getItem(ONBOARDING_KEY)
-        .then(v => {
-          if (cancelled) return;
-          if (v === 'true') setOnboardingDone(true);
-          else router.replace('/onboarding');
-        })
-        .catch(() => {
-          if (!cancelled) router.replace('/onboarding');
-        });
-      return () => { cancelled = true; };
-    }
+    void redirect();
+    return () => { cancelled = true; };
   }, [user, isLoading, onboardingDone, segments, router]);
-
-  useEffect(() => {
-    if (!segments.length || segments[0] === 'onboarding' || onboardingDone === true) return;
-    AsyncStorage.getItem(ONBOARDING_KEY)
-      .then(v => {
-        if (v === 'true') setOnboardingDone(true);
-      })
-      .catch(() => {});
-  }, [segments, onboardingDone]);
 
   // Coach check-in taps. The listener covers taps while the app runs; the
   // last-response read covers a cold start. Both can report the same cold

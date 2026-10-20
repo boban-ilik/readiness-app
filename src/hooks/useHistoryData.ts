@@ -116,6 +116,10 @@ export function useHistoryData(days: 7 | 28 | 30 = 7): {
     let cancelled = false;
 
     async function load() {
+      // Switching 7 to 28 days re-runs this; without a reset the old
+      // error or a stale "loaded" state showed over the new range.
+      setIsLoading(true);
+      setError(null);
       try {
         // ── Mock path (Expo Go / web) ──────────────────────────────────────
         if (Platform.OS !== 'ios' || !isHealthKitAvailable()) {
