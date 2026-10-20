@@ -8,7 +8,7 @@ import AsyncStorage                  from '@react-native-async-storage/async-sto
 import Constants                     from 'expo-constants';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback }               from 'react';
-import { loadCoachMemory, removeCoachMemory, clearCoachMemory, type MemoryItem } from '@services/coachMemory';
+import { loadCoachMemory, addCoachMemory, removeCoachMemory, clearCoachMemory, MAX_MEMORY_ITEMS, type MemoryItem } from '@services/coachMemory';
 import { loadWaterPrefs, saveWaterUnit, saveWaterTarget } from '@services/water';
 import { track } from '@services/analytics';
 import { TARGET_STEP_LITRES, TARGET_MIN_LITRES, TARGET_MAX_LITRES, clampTarget, litresToFlOz, type WaterUnit } from '@utils/water';
@@ -218,6 +218,28 @@ function CoachMemorySection() {
     return () => { live = false; };
   }, []));
 
+  // Typed in by the user, for facts they want kept without waiting for the
+  // coach to pick them up from a chat. Same list, same cap, same removal.
+  const promptAdd = () => {
+    Alert.prompt(
+      'Tell your coach',
+      `Something worth remembering for weeks: a goal, a race date, an injury. The list keeps your latest ${MAX_MEMORY_ITEMS}.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Save',
+          onPress: async (text?: string) => {
+            if (!text?.trim()) return;
+            const added = await addCoachMemory([text]);
+            if (added > 0) track('coach_memory_saved', { count: added, source: 'manual' });
+            setItems(await loadCoachMemory());
+          },
+        },
+      ],
+      'plain-text',
+    );
+  };
+
   const confirmClear = () => {
     Alert.alert('Clear coach memory', 'Your coach will forget everything on this list. Your chats and scores are not affected.', [
       { text: 'Cancel', style: 'cancel' },
@@ -232,7 +254,7 @@ function CoachMemorySection() {
         {items.length === 0 ? (
           <RowBase
             label="Nothing yet"
-            sublabel="Mention a goal, a race date or an injury in a chat and your coach will keep it in mind."
+            sublabel="Mention a goal, a race date or an injury in a chat and your coach will keep it in mind, or add one yourself below."
             right={null}
             topBorder={false}
           />
@@ -256,6 +278,12 @@ function CoachMemorySection() {
             />
           ))
         )}
+        <RowBase
+          label="Add something"
+          topBorder
+          onPress={promptAdd}
+          right={<Ionicons name="add-circle-outline" size={22} color={colors.amber[400]} />}
+        />
         {items.length > 0 && (
           <RowBase
             label="Clear all"
