@@ -6,6 +6,7 @@
  */
 
 import type { ForecastLog } from '@services/forecastLog';
+import { localDateStr } from './index';
 
 export interface TrackRecord {
   /** Days with both a 1-day forecast and a recorded score */
@@ -27,7 +28,7 @@ export function forecastTrackRecord(
 ): TrackRecord | null {
   const since = new Date(today + 'T12:00:00');
   since.setDate(since.getDate() - lastDays);
-  const cutoff = since.toISOString().slice(0, 10);
+  const cutoff = localDateStr(since);
 
   let compared = 0, inRange = 0, errorSum = 0;
   for (const [date, byLead] of Object.entries(log)) {
