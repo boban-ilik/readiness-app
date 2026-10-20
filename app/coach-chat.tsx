@@ -14,7 +14,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { askCoach, CoachError, type ChatMessage } from '@services/coachChat';
 import { buildCoachExtras } from '@services/coachContext';
-import { addCoachMemory } from '@services/coachMemory';
+import { addCoachMemory, loadCoachMemory } from '@services/coachMemory';
 import { useSubscription } from '@contexts/SubscriptionContext';
 import { getCoachSession, setCoachSession, type CoachSessionContext } from '@services/coachSession';
 import { loadChatHistory, saveChatHistory, clearChatHistory, selectContext, todayLocal } from '@services/chatMemory';
@@ -113,6 +113,7 @@ function isoWeekKey(d = new Date()): string {
 
 export default function CoachChatScreen({ embedded = false }: { embedded?: boolean } = {}) {
   const router = useRouter();
+  const [memoryCount, setMemoryCount] = useState(0);
   const insets = useSafeAreaInsets();
   // As a pushed route the screen owns the bottom edge and pads the composer
   // above the home indicator. Inside the tab the tab bar already covers that
@@ -180,6 +181,7 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
   useEffect(() => {
     track('coach_opened');
     markFeatureOpened('coach');
+    loadCoachMemory().then(m => setMemoryCount(m.length)).catch(() => {});
     loadChatHistory().then(setHistory).catch(() => {});
     loadUserProfile().then(setProfile).catch(() => {});
     AsyncStorage.getItem(FREE_REMAINING_KEY)
@@ -243,7 +245,10 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
       );
 
       const added = reply.remember.length > 0 ? await addCoachMemory(reply.remember) : 0;
-      if (added > 0) track('coach_memory_saved', { count: added });
+      if (added > 0) {
+        track('coach_memory_saved', { count: added });
+        setMemoryCount(c => c + added);
+      }
 
       const assistantMessage: ChatMessage = {
         role: 'assistant', content: reply.answer, date: todayLocal(),
@@ -348,6 +353,15 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* Memory lives in Profile; without this line nothing here says it exists. */}
+          <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} activeOpacity={0.7} accessibilityRole="button">
+            <Text style={styles.memoryNote}>
+              {memoryCount === 0
+                ? 'Your coach remembers nothing yet. Tell it a goal or a race date ›'
+                : `Your coach remembers ${memoryCount} ${memoryCount === 1 ? 'thing' : 'things'} about you ›`}
+            </Text>
+          </TouchableOpacity>
+
           {history.length === 0 && (
             <View style={styles.welcomeCard}>
               <Text style={styles.welcomeLabel}>COACH</Text>
@@ -620,6 +634,12 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     textAlign: 'center',
     marginBottom: spacing[2],
+  },
+  memoryNote: {
+    color: colors.amber[400],
+    fontSize: fontSize.xs,
+    textAlign: 'center',
+    marginBottom: spacing[3],
   },
   errorText: {
     color: colors.error,

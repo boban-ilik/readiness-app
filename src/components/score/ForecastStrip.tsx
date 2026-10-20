@@ -11,6 +11,8 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { colors, fontSize, fontWeight, spacing, radius, getScoreColor } from '@constants/theme';
 import type { ReadinessForecast, DayForecast } from '@services/readinessForecast';
+import { useForecastTrackRecord, TRACK_RECORD_DAYS } from '@hooks/useForecastTrackRecord';
+import { trackRecordLine } from '@utils/forecastTrackRecord';
 
 interface Props {
   forecast: ReadinessForecast;
@@ -196,6 +198,9 @@ function ForecastCard({
 // ─── Strip ────────────────────────────────────────────────────────────────────
 
 export default function ForecastStrip({ forecast, illnessCap = false }: Props) {
+  // What the day-ahead forecast got right lately: a forecast nobody can check
+  // is a guess with a number on it.
+  const record = useForecastTrackRecord();
   // Take both ends of one sort. Sorting twice returned the same element when
   // every day scored alike — a stable sort preserves the original order — which
   // produced "Thursday looks strongest ... keep Thursday more conservative".
@@ -254,6 +259,7 @@ export default function ForecastStrip({ forecast, illnessCap = false }: Props) {
       </View>
       <Text style={styles.sectionNote}>
         Directional estimate based on recent patterns and load
+        {record ? `. ${trackRecordLine(record, TRACK_RECORD_DAYS)}` : ''}
       </Text>
       <ScrollView
         horizontal

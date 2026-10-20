@@ -6,7 +6,7 @@
  *
  * Layout:
  *  ┌──────────────────────────────────────────┐
- *  │  RECOVERY TREND · 7 DAYS        ↑ +8.2  │
+ *  │  READINESS TREND · 7 DAYS        ↑ +8.2  │
  *  │  ▂▃▄▄▅▆▇  (sparkline bars)             │
  *  │  Recovery trending up — good window…    │
  *  └──────────────────────────────────────────┘
@@ -159,7 +159,7 @@ export default function TrendInsightCard({ forecast = null }: { forecast?: Readi
     return (
       <View style={styles.card}>
         <View style={styles.header}>
-          <Text style={styles.title}>RECOVERY TREND · 7 DAYS</Text>
+          <Text style={styles.title}>READINESS TREND · 7 DAYS</Text>
         </View>
         <View style={styles.skeletonChart} />
         <View style={styles.skeletonLine} />
@@ -173,7 +173,7 @@ export default function TrendInsightCard({ forecast = null }: { forecast?: Readi
     return (
       <View style={styles.card}>
         <View style={styles.header}>
-          <Text style={styles.title}>RECOVERY TREND · 7 DAYS</Text>
+          <Text style={styles.title}>READINESS TREND · 7 DAYS</Text>
         </View>
         <Text style={styles.emptyText}>
           Trend analysis unlocks after a few days of data. Keep checking in daily.
@@ -193,7 +193,7 @@ export default function TrendInsightCard({ forecast = null }: { forecast?: Readi
     >
       {/* Header row */}
       <View style={styles.header}>
-        <Text style={styles.title}>RECOVERY TREND · 7 DAYS</Text>
+        <Text style={styles.title}>READINESS TREND · 7 DAYS</Text>
         <TrendBadge direction={trend.direction} delta={trend.delta} />
       </View>
 
