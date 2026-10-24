@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, TouchableOpacity, Share } from 'react-native';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, type ComponentRef } from 'react';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { captureRef } from 'react-native-view-shot';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -358,7 +358,7 @@ export default function HomeScreen() {
   );
   const [forecast,        setForecast]        = useState<ReadinessForecast | null>(null);
   const [yesterdayScore,  setYesterdayScore]  = useState<number | null>(null);
-  const shareCardRef = useRef<View>(null);
+  const shareCardRef = useRef<ComponentRef<typeof View>>(null);
 
   // ── Manual HRV handlers ────────────────────────────────────────────────────
   const handleEnterManualHRV = useCallback(() => {

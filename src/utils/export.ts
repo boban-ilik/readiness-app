@@ -17,7 +17,7 @@
  * expo-file-system IS safe to import statically — it ships inside Expo Go.
  */
 
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import Constants       from 'expo-constants';
 import type { DayHistory } from '@hooks/useHistoryData';
 import { localDateStr } from '@utils/index';

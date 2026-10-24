@@ -1,11 +1,13 @@
+import type { ColorValue } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, fontSize } from '@constants/theme';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
-function TabIcon({ name, color }: { name: IoniconsName; color: string }) {
-  return <Ionicons name={name} size={22} color={color} />;
+function TabIcon({ name, color }: { name: IoniconsName; color: ColorValue }) {
+  // RN 0.88 widened ColorValue; the tab bar only ever passes a string.
+  return <Ionicons name={name} size={22} color={typeof color === 'string' ? color : undefined} />;
 }
 
 export default function TabsLayout() {

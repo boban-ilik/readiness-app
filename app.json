@@ -41,8 +41,12 @@
       },
       "entitlements": {
         "com.apple.developer.healthkit": true,
-        "com.apple.developer.healthkit.background-delivery": true
-      }
+        "com.apple.developer.healthkit.background-delivery": true,
+        "com.apple.security.application-groups": [
+          "group.com.bobanilikj.readiness"
+        ]
+      },
+      "appleTeamId": "M8QJGU33AU"
     },
     "android": {
       "adaptiveIcon": {
@@ -76,7 +80,8 @@
           "photosPermission": "Readiness uses your photo library to set a profile picture.",
           "cameraPermission": "Readiness uses your camera to take a profile photo."
         }
-      ]
+      ],
+      "@bacons/apple-targets"
     ],
     "experiments": {
       "typedRoutes": true

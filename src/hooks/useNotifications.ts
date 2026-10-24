@@ -102,9 +102,10 @@ if (!IS_EXPO_GO) {
   // Show notifications even when the app is in the foreground
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: false,
-      shouldSetBadge:  false,
+      shouldShowBanner: true,
+      shouldShowList:   true,
+      shouldPlaySound:  false,
+      shouldSetBadge:   false,
     }),
   });
 }
@@ -456,7 +457,7 @@ async function scheduleCoachCheckinIfDue(patterns: PatternInsight[], isPro: bool
         body:  match.body,
         data:  { type: 'coach', q: match.q },
       },
-      trigger: { seconds: 5, repeats: false },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 5, repeats: false },
     });
     await AsyncStorage.setItem(K.COACH_CHECKIN_LAST, today);
     track('coach_checkin_sent', { pattern: match.type });
@@ -545,7 +546,7 @@ async function syncDigestNotification(
       const c = d === 1 ? teaser : { title, body };
       await Notifications.scheduleNotificationAsync({
         content: { ...c, data: { type: 'digest' } },
-        trigger: { date: at },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at },
       });
     }
     return;
@@ -554,9 +555,9 @@ async function syncDigestNotification(
   await Notifications.scheduleNotificationAsync({
     content: { title, body, data: { type: 'digest' } },
     trigger: {
-      hour:    p.digestHour,
-      minute:  p.digestMinute,
-      repeats: true,
+      type:   Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour:   p.digestHour,
+      minute: p.digestMinute,
     },
   });
 }
@@ -585,7 +586,7 @@ async function scheduleImmediateAlert(score: number, _threshold: number): Promis
       body:  variant.body,
       data:  { type: 'threshold', score },
     },
-    trigger: { seconds: 2, repeats: false },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 2, repeats: false },
   });
 }
 
@@ -725,7 +726,7 @@ export function useNotifications(): UseNotificationsReturn {
         body:  variant.body,
         data:  { type: 'hrv_drop', hrv, baseline, dropPct },
       },
-      trigger: { seconds: 3, repeats: false },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 3, repeats: false },
     });
   }, [prefs.hrvDropEnabled, permissionStatus]);
 
@@ -753,7 +754,7 @@ export function useNotifications(): UseNotificationsReturn {
         body:  variant.body,
         data:  { type: 'rhr_spike', rhr, baseline, elevatedBpm },
       },
-      trigger: { seconds: 4, repeats: false },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 4, repeats: false },
     });
   }, [prefs.rhrSpikeEnabled, permissionStatus]);
 
@@ -781,7 +782,7 @@ export function useNotifications(): UseNotificationsReturn {
         body:  variant.body,
         data:  { type: 'trend_decline', history: history.slice(-3) },
       },
-      trigger: { seconds: 5, repeats: false },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 5, repeats: false },
     });
   }, [prefs.trendDeclineEnabled, permissionStatus]);
 

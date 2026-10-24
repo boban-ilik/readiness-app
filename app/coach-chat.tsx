@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
@@ -123,7 +123,7 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
   const { readiness, isLoading: isHealthLoading, error: healthError, rhrBaseline, hrvBaseline } = useHealthData();
   const [session, setSession] = useState<CoachSessionContext | null>(() => getCoachSession());
   const [isContextLoading, setIsContextLoading] = useState(() => !getCoachSession());
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);

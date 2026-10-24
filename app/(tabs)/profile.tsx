@@ -43,11 +43,11 @@ function getIP(): ImagePickerModule | null {
 
 // ─── expo-file-system — deferred require ──────────────────────────────────────
 // Same deferred pattern: required at tap-time to avoid module-evaluation races.
-type FileSystemModule = typeof import('expo-file-system');
+type FileSystemModule = typeof import('expo-file-system/legacy');
 function getFS(): FileSystemModule | null {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require('expo-file-system') as FileSystemModule;
+    return require('expo-file-system/legacy') as FileSystemModule;
   } catch {
     return null;
   }

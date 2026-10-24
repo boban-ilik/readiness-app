@@ -9,7 +9,7 @@
  * Step 5 · Setup (auto)     — compute baseline, then navigate to tabs
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ComponentRef } from 'react';
 import {
   View,
   Text,
@@ -100,7 +100,7 @@ function StepWelcome({
 }) {
   const DEMO_SCORE = 74;
   const scoreColor = getScoreColor(DEMO_SCORE);
-  const inputRef   = useRef<TextInput>(null);
+  const inputRef   = useRef<ComponentRef<typeof TextInput>>(null);
 
   return (
     <KeyboardAvoidingView

@@ -376,7 +376,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       }
     }
     // Fallback: Apple subscriptions page
-    const { Linking } = require('react-native') as { Linking: import('react-native').LinkingStatic };
+    const { Linking } = require('react-native') as { Linking: typeof import('react-native').Linking };
     Linking.openURL('https://apps.apple.com/account/subscriptions').catch(() => {});
   }, [rcReady, refreshEntitlements]);
 

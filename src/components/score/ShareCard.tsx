@@ -30,7 +30,7 @@
  *   └─────────────────────────────────────────┘
  */
 
-import React, { forwardRef } from 'react';
+import React, { forwardRef, type ComponentRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import type { ReadinessResult } from '@utils/readiness';
 import { getScoreColor, getScoreLabel } from '@constants/theme';
@@ -135,7 +135,7 @@ const ringStyles = StyleSheet.create({
 
 // ─── Main card ────────────────────────────────────────────────────────────────
 
-const ShareCard = forwardRef<View, ShareCardProps>(({ readiness }, ref) => {
+const ShareCard = forwardRef<ComponentRef<typeof View>, ShareCardProps>(({ readiness }, ref) => {
   const score      = Math.round(readiness.score);
   const recovery   = Math.round(readiness.components.recovery);
   const sleep      = Math.round(readiness.components.sleep);
