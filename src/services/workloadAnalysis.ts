@@ -16,7 +16,8 @@
  */
 
 import { Platform } from 'react-native';
-import { fetchYesterdayWorkouts, type RawWorkout } from '@services/healthkit';
+import type { RawWorkout } from '@services/healthkit';
+import { getYesterdayWorkouts as fetchYesterdayWorkouts } from '@services/healthSource';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

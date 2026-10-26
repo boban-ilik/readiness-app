@@ -19,6 +19,7 @@ import { useSubscription }           from '@contexts/SubscriptionContext';
 import { useNotifications }          from '@hooks/useNotifications';
 import { useCycleTracking }          from '@hooks/useCycleTracking';
 import { useStravaActivities }       from '@hooks/useStravaActivities';
+import { useGarminConnection }       from '@hooks/useGarminConnection';
 import { ProGate }                   from '@components/common/ProGate';
 import { Ionicons }                  from '@expo/vector-icons';
 import { NAME_KEY, FREQ_KEY, JOINED_AT_KEY, ONBOARDING_KEY } from '../onboarding';
@@ -646,6 +647,7 @@ export default function ProfileScreen() {
 
   // ── Strava connection ────────────────────────────────────────────────────────
   const strava = useStravaActivities(7);
+  const garmin = useGarminConnection();
 
   // ── Mirror profile edits to Supabase ────────────────────────────────────────
   // Each field saves to AsyncStorage independently, so rather than pushing from
@@ -1175,6 +1177,42 @@ export default function ProfileScreen() {
               label="Strava"
               sublabel="Import workouts, Suffer Score, and training load"
               onPress={strava.connect}
+              right={
+                <View style={styles.stravaConnectPill}>
+                  <Ionicons name="link-outline" size={13} color={colors.amber[400]} />
+                  <Text style={styles.stravaConnectText}>Connect</Text>
+                </View>
+              }
+            />
+          )}
+          {garmin.isConnected ? (
+            <RowBase
+              label="Garmin Connect"
+              sublabel="Connected. HRV, resting heart rate, sleep and stress come from Garmin."
+              right={
+                <TouchableOpacity
+                  onPress={() => Alert.alert(
+                    'Disconnect Garmin',
+                    'Garmin stops sending data and every Garmin record Readiness holds is deleted. You can reconnect any time.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Disconnect', style: 'destructive', onPress: () => garmin.disconnect().catch(e => Alert.alert('Disconnect failed', e.message)) },
+                    ],
+                  )}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <View style={styles.stravaConnectedPill}>
+                    <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+                    <Text style={styles.stravaConnectedText}>Connected</Text>
+                  </View>
+                </TouchableOpacity>
+              }
+            />
+          ) : (
+            <RowBase
+              label="Garmin Connect"
+              sublabel="Read HRV, sleep and resting heart rate straight from Garmin"
+              onPress={() => router.push('/garmin-connect')}
               right={
                 <View style={styles.stravaConnectPill}>
                   <Ionicons name="link-outline" size={13} color={colors.amber[400]} />

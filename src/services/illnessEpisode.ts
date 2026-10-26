@@ -7,7 +7,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fetchRHRByDay, fetchHRVByDay } from '@services/healthkit';
+import { getRHRByDay as fetchRHRByDay, getHRVByDay as fetchHRVByDay } from '@services/healthSource';
 import { computeRHRBaseline, computeHRVBaseline, localDateStr } from '@utils/index';
 import {
   excludeIllnessDays, evaluateRecovery, type IllnessEpisode, type RecoveryStatus,

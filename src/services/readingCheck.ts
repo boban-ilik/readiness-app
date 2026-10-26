@@ -7,7 +7,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fetchHRVByDay, fetchRHRByDay } from '@services/healthkit';
+import { getHRVByDay as fetchHRVByDay, getRHRByDay as fetchRHRByDay } from '@services/healthSource';
 import { loadManualHRVByDay } from '@hooks/useHealthData';
 import { loadIllnessEpisodes } from '@services/illnessEpisode';
 import { tagEvent, removeEvent, type LifeEvent } from '@services/lifeEvents';

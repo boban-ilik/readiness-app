@@ -3,10 +3,8 @@ import { useFocusEffect } from 'expo-router';
 import { Platform } from 'react-native';
 import {
   isHealthKitAvailable,
-  fetchRHRByDay,
-  fetchHRVByDay,
-  fetchSleepByDay,
 } from '@services/healthkit';
+import { getRHRByDay, getHRVByDay, getSleepByDay } from '@services/healthSource';
 import { getPersonalRHRBaseline, getPersonalHRVBaseline } from '@hooks/useHealthData';
 import { calculateReadiness } from '@utils/readiness';
 import { supabase } from '@services/supabase';
@@ -132,9 +130,9 @@ export function useHistoryData(days: 7 | 28 | 30 = 7): {
 
         // ── Real HealthKit path ────────────────────────────────────────────
         const [rhrByDay, sleepByDay, hrvByDay, baseline, hrvBaseline] = await Promise.all([
-          fetchRHRByDay(days),
-          fetchSleepByDay(days),
-          fetchHRVByDay(days),
+          getRHRByDay(days),
+          getSleepByDay(days),
+          getHRVByDay(days),
           getPersonalRHRBaseline(),
           getPersonalHRVBaseline(),
         ]);

@@ -4,7 +4,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   requestHealthKitPermissions,
   fetchTodaysHealthData,
-  fetchRHRHistory,
   fetchHRVByDay,
   fetchRHRByDay,
   isHealthKitAvailable,
@@ -21,6 +20,9 @@ import { pushScoreToWidget, setWidgetIllnessCap } from '@services/widgetBridge';
 import { localDateStr } from '@utils/index';
 import { excludeIllnessDays } from '@utils/illnessRecovery';
 import { loadIllnessEpisodes, isIllnessCapStored } from '@services/illnessEpisode';
+import { getRHRByDay, getHRVByDay } from '@services/healthSource';
+import { isGarminConnected, fetchGarminDays } from '@services/garmin';
+import { overlayGarminToday } from '@utils/garminSource';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -139,9 +141,7 @@ export async function getPersonalRHRBaseline(): Promise<number> {
 
   // Days inside a Sick episode stay out, so an illness can't drag "usual" with it
   const episodes = await loadIllnessEpisodes();
-  const history  = episodes.length
-    ? Object.values(excludeIllnessDays(await fetchRHRByDay(30), episodes, localDateStr()))
-    : await fetchRHRHistory(30);
+  const history  = Object.values(excludeIllnessDays(await getRHRByDay(30), episodes, localDateStr()));
   const baseline = computeRHRBaseline(history);
   console.log('[Readiness] RHR baseline computed:', baseline, 'bpm from', history.length, 'days');
 
@@ -184,12 +184,15 @@ export async function getPersonalHRVBaseline(): Promise<number> {
   // (Garmin, Polar, Whoop, Oura) would otherwise be judged against the
   // population stand-in forever. As in today's score, a typed-in value wins
   // for its day. Days inside a Sick episode stay out.
-  const [fromHealth, manual, episodes] = await Promise.all([
-    fetchHRVByDay(30),
-    loadManualHRVByDay(30),
+  // With Garmin connected the HRV history is Garmin's alone (RMSSD): typed-in
+  // and Apple values are a different measure and would skew the baseline.
+  const garmin = await isGarminConnected();
+  const [fromSource, manual, episodes] = await Promise.all([
+    getHRVByDay(30),
+    garmin ? Promise.resolve({} as Record<string, number>) : loadManualHRVByDay(30),
     loadIllnessEpisodes(),
   ]);
-  const history = Object.values(excludeIllnessDays({ ...fromHealth, ...manual }, episodes, localDateStr()));
+  const history = Object.values(excludeIllnessDays({ ...fromSource, ...manual }, episodes, localDateStr()));
   const baseline = computeHRVBaseline(history);
   console.log('[Readiness] HRV baseline computed:', baseline, 'ms from', history.length, 'days');
 
@@ -374,6 +377,16 @@ export function useHealthData(): UseHealthDataReturn {
 
       setRhrBaseline(scoringRhrBase);
       setHrvBaseline(scoringHrvBase);
+
+      // ── Garmin overlay ──────────────────────────────────────────────────
+      // Garmin wins for what it has: HRV (otherwise typed in by hand for
+      // Garmin users), resting heart rate, sleep and stress. Steps and the
+      // rest stay with Apple Health. Also builds today's data from Garmin
+      // alone when Apple Health gave nothing.
+      if (!isDemoData && await isGarminConnected()) {
+        const garminDays = await withTimeout(fetchGarminDays(2).catch(() => null), 8_000, null);
+        if (garminDays) healthData = overlayGarminToday(healthData, garminDays, localDateStr());
+      }
 
       if (healthData) {
         // ── Manual HRV overlay ──────────────────────────────────────────────

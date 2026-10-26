@@ -15,6 +15,7 @@ import {
 } from '@services/water';
 import { TAP_LITRES, formatWater, waterProgress, type WaterUnit } from '@utils/water';
 import { track } from '@services/analytics';
+import { isGarminConnected, fetchGarminWaterToday } from '@services/garmin';
 
 const UNDO_MS = 5_000;
 
@@ -35,7 +36,14 @@ export default function WaterRow({ reloadKey }: { reloadKey: unknown }) {
     const prefs = await loadWaterPrefs();
     setUnit(prefs.unit);
     setTarget(prefs.targetLitres);
-    if (await hasAskedWaterPermission()) setSaved(await fetchTodayWaterLitres());
+    let total = (await hasAskedWaterPermission()) ? await fetchTodayWaterLitres() : 0;
+    // Water logged on a Garmin watch or in Garmin Connect never reaches Apple
+    // Health; with Garmin connected the larger of the two totals is today's.
+    if (await isGarminConnected()) {
+      const garmin = await fetchGarminWaterToday().catch(() => null);
+      if (garmin != null && garmin > total) total = garmin;
+    }
+    setSaved(total);
   }, []);
 
   useEffect(() => { reload(); }, [reload, reloadKey]);

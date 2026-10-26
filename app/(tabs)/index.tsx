@@ -148,7 +148,7 @@ function buildRecoveryDetail(h: HealthData | null, baseline: number): string | u
   const parts: string[] = [];
   // Always show HRV slot — dash makes the gap visible on the card itself
   if (h.hrv !== null) {
-    const manualTag = h.hrvSource === 'manual' ? ' (manual)' : '';
+    const manualTag = h.hrvSource === 'manual' ? ' (manual)' : h.hrvSource === 'garmin' ? ' (Garmin)' : '';
     parts.push(`HRV ${h.hrv}ms${manualTag}`);
   } else {
     parts.push('HRV not recorded');

@@ -123,7 +123,7 @@ function buildRecovery(
       ? `Within 5 ms of ${baselinePhrase('hrv', hrvBaseline)}, typical autonomic state${contextSuffix}`
       : `${delta} ms below ${baselinePhrase('hrv', hrvBaseline)}: nervous system is under load, a sign of fatigue or stress${contextSuffix}`;
     metrics.push({
-      label:  isManualHrv ? 'Heart Rate Variability (manual)' : 'Heart Rate Variability',
+      label:  isManualHrv ? 'Heart Rate Variability (manual)' : h?.hrvSource === 'garmin' ? 'Heart Rate Variability (Garmin)' : 'Heart Rate Variability',
       value:  `${hrv} ms`,
       sub,
       status: delta >= 3 ? 'good' : delta >= -5 ? 'ok' : 'poor',

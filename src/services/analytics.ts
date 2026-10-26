@@ -51,6 +51,9 @@ export type AnalyticsEvent =
   | 'feedback_opened'
   | 'reading_check_shown'      // no props: which reading and which answer are health details
   | 'reading_check_answered'
+  | 'garmin_connect_started'
+  | 'garmin_connected'
+  | 'garmin_disconnected'
   | 'rating_prompted';         // { moment: 'day7' | 'good_day' } (iOS may still not show the sheet)
 
 type Props = Record<string, string | number | boolean | null>;
