@@ -22,3 +22,18 @@ verify_jwt = false
 
 [functions.founder-remaining]
 verify_jwt = false
+
+[functions.garmin-authorize]
+verify_jwt = false
+
+[functions.garmin-callback]
+verify_jwt = false
+
+[functions.garmin-webhook]
+verify_jwt = false
+
+[functions.garmin-disconnect]
+verify_jwt = false
+
+[functions.garmin-keepalive]
+verify_jwt = false
