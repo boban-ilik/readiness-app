@@ -31,6 +31,12 @@ export function env(name: string): string {
   return v;
 }
 
+/** A caller-supplied secret matches the configured one. An unset secret denies everyone. */
+export function secretMatches(name: string, supplied: string | null): boolean {
+  const expected = Deno.env.get(name);
+  return !!expected && !!supplied && expected === supplied;
+}
+
 /** Service-role client: bypasses RLS, so only for server-side writes. */
 export function adminClient(): SupabaseClient {
   return createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'), { auth: { persistSession: false } });

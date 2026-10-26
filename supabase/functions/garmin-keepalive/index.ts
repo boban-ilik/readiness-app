@@ -10,11 +10,11 @@
  */
 
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
-import { json, env, adminClient, refreshTokens, expiries } from '../_shared/garminApi.ts';
+import { json, secretMatches, adminClient, refreshTokens, expiries } from '../_shared/garminApi.ts';
 
 serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-  if (req.headers.get('x-cron-secret') !== env('GARMIN_CRON_SECRET')) return json({ error: 'Forbidden' }, 403);
+  if (!secretMatches('GARMIN_CRON_SECRET', req.headers.get('x-cron-secret'))) return json({ error: 'Forbidden' }, 403);
 
   const db  = adminClient();
   const due = new Date(Date.now() + 12 * 3_600_000).toISOString();

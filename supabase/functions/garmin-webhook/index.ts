@@ -11,7 +11,7 @@
  */
 
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
-import { adminClient, env, json, deleteGarminData } from '../_shared/garminApi.ts';
+import { adminClient, json, secretMatches, deleteGarminData } from '../_shared/garminApi.ts';
 import { SUMMARY_TYPES, TABLE_FOR, CONFLICT_FOR, itemsOf, garminUserId, mapSummary, type SummaryType } from '../_shared/garmin.ts';
 
 const MAX_BODY_BYTES = 5_000_000;
@@ -20,7 +20,7 @@ serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   const url = new URL(req.url);
-  if (url.searchParams.get('k') !== env('GARMIN_WEBHOOK_KEY')) return json({ error: 'Forbidden' }, 403);
+  if (!secretMatches('GARMIN_WEBHOOK_KEY', url.searchParams.get('k'))) return json({ error: 'Forbidden' }, 403);
 
   const type = url.pathname.split('/').filter(Boolean).pop() as SummaryType | undefined;
   if (!type || !SUMMARY_TYPES.includes(type)) return json({ error: 'Unknown summary type' }, 404);
