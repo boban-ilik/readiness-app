@@ -71,6 +71,20 @@ function scoreStatus(score: number): { label: string; color: string } {
   return                   { label: 'Low',     color: colors.score.critical };
 }
 
+/**
+ * Recovery is centred on the user's own baseline: at baseline it scores 50,
+ * and ordinary night-to-night wobble (resting heart rate within 2 bpm, HRV
+ * within 5 ms) moves it by about 7 points either way. That band is a normal
+ * night for this person, so it reads "Typical", not "Moderate" or "Reduced".
+ */
+export const TYPICAL_RECOVERY_LOW  = 43;
+export const TYPICAL_RECOVERY_HIGH = 58;
+
+export function recoveryStatus(score: number): { label: string; color: string } {
+  if (score >= TYPICAL_RECOVERY_LOW && score < TYPICAL_RECOVERY_HIGH) return { label: 'Typical', color: colors.score.fair };
+  return scoreStatus(score);
+}
+
 function fmtDur(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
@@ -85,7 +99,7 @@ function buildRecovery(
   rhrBaseline: number,
   hrvBaseline: number,
 ): BreakdownDetail {
-  const { label: statusLabel, color: statusColor } = scoreStatus(score);
+  const { label: statusLabel, color: statusColor } = recoveryStatus(score);
   const metrics: MetricRow[] = [];
 
   const rhr   = h?.restingHeartRate ?? null;
@@ -165,9 +179,12 @@ function buildRecovery(
     const signalCount  = (rhr != null ? 1 : 0) + (hrv != null ? 1 : 0);
     const goodSignals  = (rhr != null && (rhr - rhrBaseline) <= 2 ? 1 : 0)
                        + (hrv != null && (hrv - hrvBaseline) >= -5 ? 1 : 0);
+    const typical = statusLabel === 'Typical';
     const sub = signalCount === 2
       ? goodSignals === 2
-        ? 'Both heart rate variability and resting heart rate are pointing in a positive direction'
+        ? typical
+          ? 'Heart rate variability and resting heart rate are both close to your usual: a typical night for you'
+          : 'Both heart rate variability and resting heart rate are pointing in a positive direction'
         : goodSignals === 1
         ? 'Mixed signals: one metric is positive, one is under pressure'
         : 'Both heart rate variability and resting heart rate indicate your body is still under recovery load'
@@ -176,7 +193,7 @@ function buildRecovery(
       label:  'Overall Recovery Signal',
       value:  statusLabel,
       sub,
-      status: score >= 65 ? 'good' : score >= 45 ? 'ok' : 'poor',
+      status: score >= 65 ? 'good' : score >= TYPICAL_RECOVERY_LOW ? 'ok' : 'poor',
     });
   }
 

@@ -241,7 +241,7 @@ function buildSleepDetail(h: HealthData | null): string | undefined {
 export default function HomeScreen() {
   const router = useRouter();
   const scoreSnapshot = useScoreSnapshot();
-  const { readiness, isLoading, isRefreshing, error, refresh, rhrBaseline, hrvBaseline, setManualHRV } = useHealthData();
+  const { readiness, isLoading, isRefreshing, error, refresh, rhrBaseline, hrvBaseline, setManualHRV, loadedAt } = useHealthData();
   const { isPro, isTrialActive, trialDaysLeft, trialEndsAt, presentPaywall } = useSubscription();
   const calibration = useCalibrationStatus();
 
@@ -438,13 +438,16 @@ export default function HomeScreen() {
   }, []);
 
   // Fetch today's in-progress activity for the Activity card comparison row.
-  // Re-runs whenever the main data refreshes so a pull-to-refresh updates both rows.
+  // Re-runs after every finished load, including the silent refresh when the
+  // app comes back to the foreground. Keyed only to isLoading/isRefreshing, a
+  // first fetch made before any steps existed stayed empty for the rest of
+  // the day, and the "Today so far" line never appeared.
   useEffect(() => {
-    if (isLoading) return; // wait until HealthKit is initialised
+    if (isLoading || !loadedAt) return; // wait until HealthKit is initialised
     fetchTodayActivity()
       .then(setTodayActivity)
       .catch(() => {}); // non-fatal — card degrades gracefully to yesterday-only
-  }, [isLoading, isRefreshing]);
+  }, [isLoading, loadedAt]);
 
   // Load life events + compute 3-day forecast once data is ready.
   // If today's HealthKit score hasn't synced yet (score=0), we fall back to the

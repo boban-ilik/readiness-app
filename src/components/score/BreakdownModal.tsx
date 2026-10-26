@@ -23,7 +23,7 @@ import {
 } from 'react-native';
 import { useRef, useEffect } from 'react';
 import type { HealthData } from '../../types/index';
-import { buildBreakdownDetail, type MetricRow } from '@utils/breakdown';
+import { buildBreakdownDetail, recoveryStatus, type MetricRow } from '@utils/breakdown';
 import { useAIInsight }                          from '@hooks/useAIInsight';
 import { useMetricHistory }                      from '@hooks/useMetricHistory';
 import MetricSparkline                           from '@components/score/MetricSparkline';
@@ -212,7 +212,7 @@ export default function BreakdownModal({
 
   // ── AI insight (Pro only) ─────────────────────────────────────────────────
   // Must be called before any conditional returns (Rules of Hooks).
-  const statusLabelStr = scoreLabel(score);
+  const statusLabelStr = component === 'recovery' ? recoveryStatus(score).label : scoreLabel(score);
   const { insight: aiInsight, isLoading: aiLoading } = useAIInsight({
     component,
     score,

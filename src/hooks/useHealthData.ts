@@ -45,6 +45,8 @@ interface UseHealthDataReturn {
   /** Store a manually entered HRV value (ms) for today and re-score.
    *  Pass null to clear a previously saved manual entry. */
   setManualHRV:  (value: number | null) => Promise<void>;
+  /** Changes every time a load finishes (initial, pull-to-refresh or silent). */
+  loadedAt:      number;
 }
 
 // ─── Manual HRV store ─────────────────────────────────────────────────────────
@@ -301,6 +303,7 @@ export function useHealthData(): UseHealthDataReturn {
 
   // Tracks when HealthKit was last queried — used to throttle AppState refreshes.
   const lastFetchAt = useRef<number>(0);
+  const [loadedAt, setLoadedAt] = useState(0);
 
   const load = useCallback(async (mode: LoadMode = 'initial') => {
     console.log(`[Readiness] load() called — mode: ${mode}, iOS: ${Platform.OS === 'ios'}, hk: ${isHealthKitAvailable()}`);
@@ -464,6 +467,7 @@ export function useHealthData(): UseHealthDataReturn {
       setIsLoading(false);
       setIsRefreshing(false);
       lastFetchAt.current = Date.now();
+      setLoadedAt(lastFetchAt.current);
     }
   }, []);
 
@@ -529,5 +533,6 @@ export function useHealthData(): UseHealthDataReturn {
     rhrBaseline,
     hrvBaseline,
     setManualHRV,
+    loadedAt,
   };
 }
