@@ -17,7 +17,7 @@ const READS = [
   'Stress and Body Battery, for the stress part of the score',
   'Activities, for training load',
   'Water you log in Garmin Connect, for the Hydration row',
-  'VO2 max and fitness age, as context for your coach',
+  'VO2 max and fitness age, stored for later use (not used yet)',
 ];
 
 export default function GarminConnectScreen() {
