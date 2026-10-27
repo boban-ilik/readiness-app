@@ -188,6 +188,22 @@ export function mapSummary(type: keyof typeof TABLE_FOR, userId: string, item: R
 }
 
 /**
+ * One row per conflict key, so a single upsert never touches a row twice.
+ * Garmin can push several versions of the same day in one body; the one
+ * covering more time wins, and on a tie the later one.
+ */
+export function dedupeByConflict(type: keyof typeof TABLE_FOR, rows: MappedRow[]): MappedRow[] {
+  const keys = CONFLICT_FOR[type].split(',');
+  const byKey = new Map<string, MappedRow>();
+  for (const row of rows) {
+    const k = keys.map(c => String(row[c])).join('|');
+    const prev = byKey.get(k);
+    if (!prev || Number(row.duration_sec ?? 0) >= Number(prev.duration_sec ?? 0)) byKey.set(k, row);
+  }
+  return [...byKey.values()];
+}
+
+/**
  * The items of a push body for one summary type. Garmin sends
  * { "<type>": [ ... ] }; anything else is ignored.
  */

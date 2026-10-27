@@ -14,7 +14,7 @@
 
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import { adminClient, json, secretMatches, deleteGarminData } from '../_shared/garminApi.ts';
-import { SUMMARY_TYPES, TABLE_FOR, CONFLICT_FOR, itemsOf, garminUserId, mapSummary, type SummaryType } from '../_shared/garmin.ts';
+import { SUMMARY_TYPES, TABLE_FOR, CONFLICT_FOR, itemsOf, garminUserId, mapSummary, dedupeByConflict, type SummaryType } from '../_shared/garmin.ts';
 
 const MAX_BODY_BYTES = 5_000_000;
 
@@ -61,10 +61,10 @@ serve(async (req: Request) => {
       return json({ ok: true });
     }
 
-    const rows = items
+    const rows = dedupeByConflict(type, items
       .map(item => { const uid = userFor.get(garminUserId(item) ?? ''); return uid ? mapSummary(type, uid, item) : null; })
-      .filter((r): r is NonNullable<typeof r> => r !== null);
-    if (rows.length === 0) return json({ ok: true, stored: 0 });
+      .filter((r): r is NonNullable<typeof r> => r !== null));
+      if (rows.length === 0) return json({ ok: true, stored: 0 });
 
     const { error } = await db.from(TABLE_FOR[type]).upsert(rows, { onConflict: CONFLICT_FOR[type] });
     if (error) throw new Error(error.message);

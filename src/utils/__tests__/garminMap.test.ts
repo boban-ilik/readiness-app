@@ -1,4 +1,4 @@
-import { mapSummary, itemsOf, garminUserId } from '../../../supabase/functions/_shared/garmin';
+import { mapSummary, itemsOf, garminUserId, dedupeByConflict } from '../../../supabase/functions/_shared/garmin';
 
 describe('garmin summary mapping', () => {
   it('maps a daily summary to the stored columns', () => {
@@ -36,6 +36,16 @@ describe('garmin summary mapping', () => {
     expect(mapSummary('dailies', 'u1', { summaryId: 'x' })).toBeNull();
     expect(mapSummary('sleeps', 'u1', { calendarDate: '2026-10-25' })).toBeNull();
     expect(mapSummary('activities', 'u1', { activityType: 'RUNNING' })).toBeNull();
+  });
+
+  it('keeps one row per day when a push repeats a day', () => {
+    const day = (summaryId: string, durationInSeconds: number, steps: number) =>
+      mapSummary('dailies', 'u1', { summaryId, calendarDate: '2026-10-27', startTimeInSeconds: 1793059200, durationInSeconds, steps })!;
+    const other = mapSummary('dailies', 'u1', { summaryId: 'd0', calendarDate: '2026-10-26', durationInSeconds: 86400, steps: 8854 })!;
+    const rows = dedupeByConflict('dailies', [day('d1', 43200, 4100), other, day('d2', 50400, 5200), day('d3', 36000, 3900)]);
+    expect(rows).toHaveLength(2);
+    expect(rows.find(r => r.calendar_date === '2026-10-27')).toMatchObject({ summary_id: 'd2', steps: 5200 });
+    expect(rows.find(r => r.calendar_date === '2026-10-26')).toMatchObject({ steps: 8854 });
   });
 
   it('reads the items of a push body by summary type', () => {
