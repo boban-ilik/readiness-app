@@ -1,12 +1,14 @@
 /**
  * garmin-webhook: Garmin's push endpoint, one path per summary type.
  *
+ *   POST /functions/v1/garmin-webhook/<GARMIN_WEBHOOK_KEY>/<type>
  *   POST /functions/v1/garmin-webhook/<type>?k=<GARMIN_WEBHOOK_KEY>
  *   <type> in dailies | sleeps | hrv | stressDetails | userMetrics | hydration |
  *          activities | deregistrations | userPermissionsChange
  *
  * Garmin signs nothing, so the key in the registered URL is what proves the
- * caller. Items for Garmin users we don't know are dropped. Answers 200 fast;
+ * caller. API Tools drops query strings on save, so the key normally rides in
+ * the path. Items for Garmin users we don't know are dropped. Answers 200 fast;
  * Garmin retries on anything else.
  */
 
@@ -20,9 +22,11 @@ serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   const url = new URL(req.url);
-  if (!secretMatches('GARMIN_WEBHOOK_KEY', url.searchParams.get('k'))) return json({ error: 'Forbidden' }, 403);
+  const parts = url.pathname.split('/').filter(Boolean);
+  const type = parts.pop() as SummaryType | undefined;
+  const pathKey = parts.length && parts[parts.length - 1] !== 'garmin-webhook' ? parts[parts.length - 1] : null;
+  if (!secretMatches('GARMIN_WEBHOOK_KEY', pathKey ?? url.searchParams.get('k'))) return json({ error: 'Forbidden' }, 403);
 
-  const type = url.pathname.split('/').filter(Boolean).pop() as SummaryType | undefined;
   if (!type || !SUMMARY_TYPES.includes(type)) return json({ error: 'Unknown summary type' }, 404);
 
   const raw = await req.text();
