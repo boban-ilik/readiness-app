@@ -65,7 +65,7 @@
     <div class="logo">READINESS</div>
 
     <h1>Privacy Policy</h1>
-    <p class="updated">Last updated: 5 October 2026</p>
+    <p class="updated">Last updated: 27 October 2026</p>
 
     <div class="card">
       <p>Readiness is built on a simple principle: <strong style="color:#E8EAF0">your health data belongs to you.</strong> We collect only what is necessary to calculate your daily readiness score and personalise your coaching. We never sell your data, never share it with advertisers, and never use it for purposes beyond the app.</p>
@@ -89,6 +89,18 @@
       <li>Training load metrics (suffer score, moving time)</li>
     </ul>
     <p>Strava connection is optional. If connected, we fetch your recent activities via the Strava API to calculate training load and acute:chronic ratio. You can disconnect Strava at any time from your profile.</p>
+
+    <p><strong style="color:#E8EAF0">Garmin data (optional)</strong></p>
+    <ul>
+      <li>Overnight heart rate variability (HRV, which Garmin measures as RMSSD) and resting heart rate</li>
+      <li>Sleep duration, sleep stages and Garmin's sleep score</li>
+      <li>Daily steps, distance, calories, intensity minutes, stress level and Body Battery</li>
+      <li>Activities (type, name, start time, duration, distance, average heart rate and calories)</li>
+      <li>Water you log in Garmin Connect</li>
+      <li>VO2 max and fitness age</li>
+      <li>Your Garmin user ID and the access tokens Garmin issues for your connection</li>
+    </ul>
+    <p>Garmin connection is optional and off until you connect your Garmin account in your profile and agree on the consent screen that explains what is read, where it goes and how AI is used. From then on Garmin sends these daily summaries to our server whenever your watch syncs. Unlike Apple Health data, which is read on your device, Garmin data is stored on our servers (Supabase, in the EU), because Garmin delivers it to a server rather than to the app. It is stored against your account and used only for your own score, trends and coaching. Readiness receives Garmin data only from the moment you connect; it does not import your earlier Garmin history. VO2 max and fitness age are stored but not currently used in the app or sent to anyone.</p>
 
     <p><strong style="color:#E8EAF0">Menstrual cycle data (optional)</strong></p>
     <ul>
@@ -122,17 +134,18 @@
 
 
     <h2>3. Legal Bases for Processing (GDPR)</h2>
-    <p>For readers in the European Economic Area and the United Kingdom: the data controller is Boban Ilik, operating Readiness (contact details in Section 9). We rely on the following legal bases:</p>
+    <p>For readers in the European Economic Area and the United Kingdom: the data controller is Readiness DOO, 29 November 97, 1220 Tetovo, North Macedonia (contact details in Section 9). We rely on the following legal bases:</p>
     <ul>
-      <li><strong style="color:#E8EAF0">Explicit consent</strong> (Art. 6(1)(a) and Art. 9(2)(a)): for all health and fitness data. Health data is special-category data under the GDPR, and we process it only because you explicitly grant access: once through Apple's HealthKit permission screen, again for each optional connection such as Strava, again the first time you tap the water button, and again when you switch on cycle tracking in your profile (with Apple's permission screen again before any cycle data is read from Apple Health). You can withdraw consent at any time by revoking HealthKit access, disconnecting Strava, switching cycle tracking off, or deleting your account; withdrawal does not affect the lawfulness of processing before it.</li>
+      <li><strong style="color:#E8EAF0">Explicit consent</strong> (Art. 6(1)(a) and Art. 9(2)(a)): for all health and fitness data. Health data is special-category data under the GDPR, and we process it only because you explicitly grant access: once through Apple's HealthKit permission screen, again for each optional connection such as Strava or Garmin, again the first time you tap the water button, and again when you switch on cycle tracking in your profile (with Apple's permission screen again before any cycle data is read from Apple Health). You can withdraw consent at any time by revoking HealthKit access, disconnecting Strava or Garmin, switching cycle tracking off, or deleting your account; withdrawal does not affect the lawfulness of processing before it.</li>
       <li><strong style="color:#E8EAF0">Performance of a contract</strong> (Art. 6(1)(b)): for your account, syncing your scores between devices, and managing your subscription.</li>
       <li><strong style="color:#E8EAF0">Legitimate interests</strong> (Art. 6(1)(f)): for keeping the service secure, for the product-usage events and AI usage counts described in Section 1, and for enforcing fair-use limits on the AI features.</li>
     </ul>
     <p>Readiness does not make automated decisions about you that produce legal or similarly significant effects. The AI features generate coaching text from your metrics; they do not decide anything about your access to the service.</p>
 
     <h2>4. Data Storage, Retention &amp; International Transfers</h2>
-    <p>Account and score data is stored on Supabase servers in the EU (Ireland). All data in transit is encrypted via TLS. Your readiness score is calculated on your device; the daily metrics behind it (HRV, resting heart rate, sleep duration and efficiency) are stored alongside the score so your history follows your account. That data is encrypted at rest by our hosting provider and protected by row-level security, so it is only readable through your own signed-in account.</p>
+    <p>Account and score data is stored on Supabase servers in the EU (Ireland). All data in transit is encrypted via TLS. Your readiness score is calculated on your device; the daily metrics behind it (HRV, resting heart rate, sleep duration and efficiency) are stored alongside the score so your history follows your account. That data is encrypted at rest by our hosting provider and protected by row-level security, so it is only readable through your own signed-in account. If you connect Garmin, the Garmin summaries listed in Section 1 are stored there too, under the same encryption and row-level security; the access tokens for your Garmin connection can be read only by our server, never by the app.</p>
     <p><strong style="color:#E8EAF0">Retention.</strong> Account, profile, and score data is kept for as long as your account is active, and permanently removed from our servers within 30 days of account deletion. Coach chat history, the facts your coach remembers (which you can review and delete in Profile), your illness recovery tracking, your answers about unusual readings, past readiness forecasts, cached briefings, and preferences are stored only on your device; they are wiped when you sign into a different account and removed when you delete the app.</p>
+    <p>Garmin data is kept only while your Garmin account is connected. When you disconnect Garmin in your profile, we tell Garmin to stop sending data and delete every Garmin record we hold, including the access tokens, straight away. The same deletion happens when you remove Readiness from your Garmin Connect account, and Garmin data is removed with the rest of your account when you delete it.</p>
     <p><strong style="color:#E8EAF0">International transfers.</strong> Some of our service providers process data in the United States: Anthropic (AI coaching text), RevenueCat (subscription management) and, for this website only, Google (analytics). Where personal data leaves the EEA or UK, the transfer takes place under each provider's data processing agreement, which incorporates the European Commission's Standard Contractual Clauses.</p>
 
     <h2>5. Third-Party Services</h2>
@@ -142,6 +155,7 @@
       <li><strong style="color:#E8EAF0">Supabase</strong>: backend database and authentication; <a href="https://supabase.com/privacy" target="_blank">Supabase Privacy Policy</a></li>
       <li><strong style="color:#E8EAF0">RevenueCat</strong>: subscription management; <a href="https://www.revenuecat.com/privacy" target="_blank">RevenueCat Privacy Policy</a></li>
       <li><strong style="color:#E8EAF0">Google Analytics</strong>: used on this website (thereadiness.app) only, not in the app, to understand visitor traffic; it sets cookies in your browser. <a href="https://policies.google.com/privacy" target="_blank">Google Privacy Policy</a></li>
+      <li><strong style="color:#E8EAF0">Garmin Connect</strong>: only if you connect; Garmin sends your daily summaries to our server, governed by <a href="https://www.garmin.com/en-US/privacy/global/" target="_blank">Garmin's Privacy Policy</a></li>
       <li><strong style="color:#E8EAF0">Anthropic (Claude)</strong>: powers your daily insight, morning briefing, weekly report, and coach chat; <a href="https://www.anthropic.com/legal/privacy" target="_blank">Anthropic Privacy Policy</a></li>
     </ul>
 
@@ -159,7 +173,11 @@
       <li>In Coach Chat only: the messages you send; your profile details (age, biological sex, height, weight, training frequency and primary goal) so the advice fits you; your daily scores and the heart rate variability, resting heart rate and sleep duration behind them for the last 30 days; the step-by-step calculation of today's score; your Strava activities from the last 14 days (type, name, duration, distance and Strava's effort score) if you have connected Strava; and the facts your coach has remembered from earlier chats</li>
     </ul>
     <p>We do not send your email address or any account identifier. Anthropic processes this data solely to generate the text you see, and not for advertising. Under Anthropic's API terms, data sent through the Claude platform is excluded from model training.</p>
-    <p>Your readiness score and its Recovery, Sleep, and Stress breakdown are calculated on your device from Apple Health data. Anthropic is involved only when an AI feature produces text for you.</p>
+    <p>If you have connected Garmin, the HRV, resting heart rate, sleep, stress and step figures above come from Garmin instead of Apple Health where Garmin has them, and yesterday's workouts include your Garmin activities. Your Garmin user ID, access tokens, VO2 max, fitness age and Body Battery are never sent to Anthropic.</p>
+
+    <p><strong style="color:#E8EAF0">AI transparency statement for Garmin data.</strong> Before you connect Garmin, the consent screen tells you that summaries derived from your Garmin data are sent to Anthropic's Claude to write your daily insight, morning briefing, weekly report and coach chat replies, and Garmin is connected only when you tap "I agree, connect Garmin". Garmin data is never used to train AI models, by us or, under its API terms, by Anthropic. You can withdraw this consent at any time by disconnecting Garmin in your profile: from then on no Garmin data is sent to Anthropic, and the Garmin records we hold are deleted as described in Section 4. The app keeps working from Apple Health without Garmin.</p>
+
+    <p>Your readiness score and its Recovery, Sleep, and Stress breakdown are calculated on your device from Apple Health data, and from Garmin data if you have connected it. Anthropic is involved only when an AI feature produces text for you.</p>
 
     <h2>6. Children's Privacy</h2>
     <p>Readiness is not intended for children under 13. We do not knowingly collect personal data from children under 13. If you believe we have inadvertently collected such data, please contact us immediately.</p>
@@ -168,8 +186,9 @@
     <p>You can access, correct, or delete your personal data at any time. If you are in the EEA or UK, the GDPR specifically gives you the right to: access your data; correct it; have it erased; restrict or object to its processing; receive it in a portable format; withdraw consent at any time; and lodge a complaint with your national <a href="https://www.edpb.europa.eu/about-edpb/about-edpb/members_en" target="_blank">data protection authority</a>. To exercise any of these rights, use the in-app controls below or email us; we respond within 30 days.</p>
     <ul>
       <li><strong style="color:#E8EAF0">Delete account:</strong> Go to Profile → Delete account. This permanently removes your account and all associated data from our servers within 30 days.</li>
-      <li><strong style="color:#E8EAF0">Export or access your data:</strong> Contact us at <a href="mailto:support@thereadiness.app">support@thereadiness.app</a></li>
+      <li><strong style="color:#E8EAF0">Export or access your data, including Garmin data:</strong> Contact us at <a href="mailto:support@thereadiness.app">support@thereadiness.app</a></li>
       <li><strong style="color:#E8EAF0">Disconnect Strava:</strong> Profile → Strava → Disconnect</li>
+      <li><strong style="color:#E8EAF0">Disconnect Garmin:</strong> Profile → Garmin Connect → Disconnect. This deletes every Garmin record we hold. You can also remove Readiness from the connected apps in your Garmin Connect account.</li>
       <li><strong style="color:#E8EAF0">Revoke HealthKit access:</strong> iOS Settings → Privacy &amp; Security → Health → Readiness</li>
     </ul>
 
@@ -178,6 +197,7 @@
 
     <h2>9. Contact</h2>
     <p>If you have any questions about this privacy policy or how we handle your data, please contact us:</p>
+    <p>Readiness DOO, 29 November 97, 1220 Tetovo, North Macedonia</p>
     <p><a href="mailto:support@thereadiness.app">support@thereadiness.app</a></p>
 
     <footer>
