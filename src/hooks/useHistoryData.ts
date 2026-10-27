@@ -120,6 +120,11 @@ export function useHistoryData(days: 7 | 28 | 30 = 7): {
       setError(null);
       try {
         // ── Mock path (Expo Go / web) ──────────────────────────────────────
+        if (Platform.OS === 'ios' && !__DEV__ && !isHealthKitAvailable()) {
+          // Never demo history in a real build; Today shows the reason.
+          if (!cancelled) { setHistory([]); setError('Apple Health is unavailable in this build.'); setIsLoading(false); }
+          return;
+        }
         if (Platform.OS !== 'ios' || !isHealthKitAvailable()) {
           if (!cancelled) {
             setHistory(buildMockHistory(days));

@@ -21,6 +21,7 @@ import { localDateStr } from '@utils/index';
 import { excludeIllnessDays } from '@utils/illnessRecovery';
 import { loadIllnessEpisodes, isIllnessCapStored } from '@services/illnessEpisode';
 import { getRHRByDay, getHRVByDay } from '@services/healthSource';
+import { healthKitLoadReason } from '@services/healthKitModule';
 import { isGarminConnected, fetchGarminDays } from '@services/garmin';
 import { overlayGarminToday } from '@utils/garminSource';
 
@@ -360,8 +361,12 @@ export function useHealthData(): UseHealthDataReturn {
           console.warn('[Readiness] HealthKit block threw unexpectedly:', hkErr?.message ?? hkErr);
           // healthData stays null, baselines stay at defaults — score will be 50
         }
+      } else if (Platform.OS === 'ios' && !__DEV__) {
+        // A store or TestFlight build without a working Apple Health module.
+        // Showing demo numbers here is what hid the SDK 58 breakage, so say so.
+        throw new Error(`Apple Health could not be loaded (${healthKitLoadReason()}). Please update the app or contact support.`);
       } else {
-        // Expo Go / web — use mock data
+        // Expo Go / web: use mock data
         setHasPermission(true);
         healthData = MOCK_HEALTH_DATA;
         isDemoData = true;

@@ -6,28 +6,14 @@
  * patches/react-native-health+1.19.0.patch (applied on postinstall).
  */
 
+import { healthKitModule } from '@services/healthKitModule';
 import { Platform } from 'react-native';
 import { localDateStr } from '@utils/index';
 
 // react-native-health is only available on iOS native builds.
 // We lazy-import to prevent crashes on web/Android/Expo Go.
-let AppleHealthKit: any = null;
-
-if (Platform.OS === 'ios') {
-  try {
-    // react-native-health uses `module.exports = HealthKit` (CommonJS),
-    // so we take the module itself, NOT .default (which would be undefined).
-    const rnh = require('react-native-health');
-    const candidate = rnh.default ?? rnh;
-    // Only mark as available if the native module is actually linked
-    // (i.e. initHealthKit is a real function, not missing from NativeModules)
-    if (typeof candidate?.initHealthKit === 'function') {
-      AppleHealthKit = candidate;
-    }
-  } catch {
-    // Not available (Expo Go / web). Callers get false / [].
-  }
-}
+// Loaded once in healthKitModule; null on Android, web and Expo Go.
+const AppleHealthKit: any = healthKitModule();
 
 export type MenstrualFlowValue = 'unspecified' | 'light' | 'medium' | 'heavy' | 'none';
 
