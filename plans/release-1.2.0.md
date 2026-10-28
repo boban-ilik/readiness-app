@@ -31,7 +31,7 @@ Agreed 28 October 2026.
 | 7 | Draft What's New, add the Garmin line to the review notes | Claude | none |
 | 8 | ~~Approve the What's New text~~ (approved 28 October 2026, text below) | Boban | 7 |
 | 9 | ~~Create version 1.2.0 in App Store Connect, attach the build, set What's New and review notes, set automatic release~~ (done 28 October 2026: build 69; review notes: NEW IN 1.1 section replaced by NEW IN 1.2 Garmin section) | Claude | 5 passed, 8 |
-| 10 | Boban's yes to submit for review, then Claude submits | Boban, then Claude | 9 |
+| 10 | ~~Boban's yes to submit for review, then Claude submits~~ (submitted 28 October 2026, Waiting for Review) | Boban, then Claude | 9 |
 | 11 | Apple approves; the release goes out automatically | Apple | 10 |
 | 12 | Move main to the 1.2.0 code, tag `v1.2.0`, push | Claude | 11 |
 | 13 | Morning after release: check that scores save and Garmin data arrives for users who connected | Claude | 11 |
