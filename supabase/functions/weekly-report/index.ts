@@ -20,6 +20,7 @@
 
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { gate } from '../_shared/entitlement.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL') ?? '';
@@ -69,6 +70,9 @@ Deno.serve(async (req: Request) => {
 
     const { data: { user }, error: userError } = await userSupabase.auth.getUser();
     if (userError || !user) return json({ error: 'Unauthorized' }, 401);
+
+    const gated = await gate(req, { fn: 'weekly-report', dailyCap: 6 }, corsHeaders, { id: user.id, created_at: user.created_at });
+    if (!gated.ok) return gated.response;
 
     // ── Fetch last 7 days ─────────────────────────────────────────────────────
     const sevenDaysAgo = new Date();

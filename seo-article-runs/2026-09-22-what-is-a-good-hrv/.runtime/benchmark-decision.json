@@ -1,0 +1,84 @@
+{
+ "status": "benchmarked",
+ "rationale": "Three highest-ranking external articles matching the reader task were captured in full and benchmarked passage by passage (research.md section 3); every other top-ten organic row is excluded with a reason. All three selected pages also rank in the top ten for the secondary query 'hrv by age', supporting one article for both.",
+ "evidence_ref": "research.md#serp-and-competitor-benchmark",
+ "ranking_evidence": {
+  "basis": "observed_serp",
+  "reference": "Ahrefs SERP overview, keyword 'what is a good hrv', US, Ahrefs update 2026-09-17, retrieved by the orchestrator 2026-09-22 (.runtime/serp-what-is-a-good-hrv-us.json); secondary 'hrv by age' (update 2026-09-14) as corroboration.",
+  "inspection_complete": true,
+  "inspected_results": [
+   {
+    "url": "https://www.whoop.com/us/en/thelocker/what-is-a-good-hrv/",
+    "observed_position": 2,
+    "disposition": "selected",
+    "reason": "Highest-ranking external article for the reader task (is my number good, by age, personal baseline); AI Overview source; also #7 for 'hrv by age'."
+   },
+   {
+    "url": "https://www.kubios.com/blog/heart-rate-variability-normal-range/",
+    "observed_position": 4,
+    "disposition": "selected",
+    "reason": "Second-highest external article; HRV-analytics specialist with a reference list; normal-range, by-age and by-sex coverage; also #9 for the secondary query."
+   },
+   {
+    "url": "https://www.differenthealth.com/blog/what-is-a-good-hrv",
+    "observed_position": 6,
+    "disposition": "selected",
+    "reason": "Third-highest external article; only page with a numeric by-age, by-sex table traced to a primary dataset (Lifelines); #2 and AI Overview source for the secondary query."
+   },
+   {
+    "url": "https://www.webmd.com/heart/what-is-heart-rate-variability",
+    "observed_position": 7,
+    "disposition": "excluded",
+    "reason": "General medical explainer; one sentence of norms (Nunan 2010); no wearable 'is my number good' task."
+   },
+   {
+    "url": "https://www.hss.edu/health-library/move-better/heart-rate-variability",
+    "observed_position": 8,
+    "disposition": "excluded",
+    "reason": "Training-use page already benchmarked in full in run 2026-08-30; its by-age numbers are uncited and identical to Whoop's."
+   },
+   {
+    "url": "https://ouraring.com/blog/what-is-heart-rate-variability/",
+    "observed_position": 9,
+    "disposition": "excluded",
+    "reason": "Definitional 'what is HRV' page; Oura's by-age member data is on a separate page not on the SERP, used as evidence E17."
+   },
+   {
+    "url": "https://www.reddit.com/r/fitbit/comments/1i5bu90/hrv_what_are_peoples_average_scores_just_curious/",
+    "observed_position": 10,
+    "disposition": "excluded",
+    "reason": "Discussion thread, not an article; lived-experience lead only; capture blocked."
+   },
+   {
+    "url": "https://www.bodyspec.com/blog/post/what_is_a_good_hrv_status",
+    "observed_position": 11,
+    "disposition": "excluded",
+    "reason": "Fourth explainer of the same shape; 24-hour ECG norms relabelled as wearable status bands; sample capped at three higher-ranking pages."
+   },
+   {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3298675/",
+    "observed_position": 12,
+    "disposition": "excluded",
+    "reason": "Academic paper, evidence lead, not an editorial competitor."
+   },
+   {
+    "url": "https://insightcla.com/blog/average-sleeping-hrv-by-age/",
+    "observed_position": 13,
+    "disposition": "excluded",
+    "reason": "Outside the top ten organic rows; not inspected."
+   },
+   {
+    "url": "https://www.empirical.health/metrics/hrv/",
+    "observed_position": 14,
+    "disposition": "excluded",
+    "reason": "Outside the top ten; used as aggregator evidence for Apple Watch SDNN readers (E19)."
+   },
+   {
+    "url": "https://cardiomood.com/2023/06/17/what-is-a-good-hrv-by-age",
+    "observed_position": 15,
+    "disposition": "excluded",
+    "reason": "Outside the top ten for the primary query; #4 for the secondary; candidate fourth benchmark if wanted."
+   }
+  ]
+ }
+}

@@ -10,6 +10,7 @@
 
 import { NativeModules, Platform } from 'react-native';
 import { getScoreLabel } from '@constants/theme';
+import { getTrainingRecommendation } from '@utils/training';
 import type { ReadinessResult } from '@utils/readiness';
 
 const bridge = NativeModules.ReadinessDataBridge as
@@ -20,6 +21,16 @@ const bridge = NativeModules.ReadinessDataBridge as
         recovery: number,
         sleep:    number,
         stress:   number,
+      ): void;
+      /** Added alongside writeScore; absent on older native builds. */
+      writeScoreWithTraining?(
+        score:            number,
+        label:            string,
+        recovery:         number,
+        sleep:            number,
+        stress:           number,
+        trainingHeadline: string,
+        trainingZone:     number,
       ): void;
     }
   | undefined;
@@ -36,6 +47,21 @@ export function pushScoreToWidget(result: ReadinessResult): void {
   const { score, components } = result;
 
   try {
+    if (bridge.writeScoreWithTraining) {
+      const training = getTrainingRecommendation(score, components);
+      bridge.writeScoreWithTraining(
+        Math.round(score),
+        getScoreLabel(score),
+        Math.round(components.recovery),
+        Math.round(components.sleep),
+        Math.round(components.stress),
+        training.headline,
+        training.zone,
+      );
+      return;
+    }
+
+    // Older native binary (e.g. new JS delivered over the air): score only.
     bridge.writeScore(
       Math.round(score),
       getScoreLabel(score),

@@ -39,6 +39,12 @@ export interface CalibrationStatus {
   progress:      number;
   /** True while the join date is still loading from storage. */
   isLoading:     boolean;
+  /**
+   * Uncapped calendar days since onboarding, or null when no join date is
+   * stored (legacy install). Lets one-off day-7 moments tell "just finished
+   * calibration" apart from "has been here for months".
+   */
+  daysSinceJoined: number | null;
 }
 
 /** Difference in whole calendar days between two dates (today - start). */
@@ -58,6 +64,7 @@ export function useCalibrationStatus(): CalibrationStatus {
     daysLeft:      0,
     progress:      1,
     isLoading:     true,
+    daysSinceJoined: null,
   });
 
   useEffect(() => {
@@ -66,16 +73,17 @@ export function useCalibrationStatus(): CalibrationStatus {
 
       if (!joinedAt) {
         // No join date — either a legacy install or dev mode; don't show banner.
-        setStatus({ isCalibrating: false, daysComplete: 7, daysLeft: 0, progress: 1, isLoading: false });
+        setStatus({ isCalibrating: false, daysComplete: 7, daysLeft: 0, progress: 1, isLoading: false, daysSinceJoined: null });
         return;
       }
 
-      const daysComplete  = Math.min(calendarDaysSince(joinedAt), CALIBRATION_DAYS);
+      const daysSinceJoined = calendarDaysSince(joinedAt);
+      const daysComplete  = Math.min(daysSinceJoined, CALIBRATION_DAYS);
       const daysLeft      = Math.max(0, CALIBRATION_DAYS - daysComplete);
       const isCalibrating = daysComplete < CALIBRATION_DAYS;
       const progress      = daysComplete / CALIBRATION_DAYS;
 
-      setStatus({ isCalibrating, daysComplete, daysLeft, progress, isLoading: false });
+      setStatus({ isCalibrating, daysComplete, daysLeft, progress, isLoading: false, daysSinceJoined });
     })();
   }, []);
 

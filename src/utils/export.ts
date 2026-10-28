@@ -20,6 +20,7 @@
 import * as FileSystem from 'expo-file-system';
 import Constants       from 'expo-constants';
 import type { DayHistory } from '@hooks/useHistoryData';
+import { localDateStr } from '@utils/index';
 
 // ─── Expo Go detection ────────────────────────────────────────────────────────
 // Same dual-check used in useNotifications.ts — see comment there for rationale.
@@ -89,7 +90,7 @@ export async function exportHistoryCSV(history: DayHistory[]): Promise<void> {
   }
 
   const csv      = buildCSV(history);
-  const dateSlug = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const dateSlug = localDateStr(); // YYYY-MM-DD
   const fileName = `readiness_${dateSlug}.csv`;
   const fileUri  = (FileSystem.cacheDirectory ?? '') + fileName;
 

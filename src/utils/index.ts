@@ -14,10 +14,18 @@ export function formatDisplayDate(date: Date = new Date()): string {
 }
 
 /**
- * Format a date as ISO string "YYYY-MM-DD"
+ * Local calendar date as "YYYY-MM-DD".
+ *
+ * Every daily key in the app (score rows, caches, life events, cycle entries)
+ * must use this rather than `toISOString().split('T')[0]`, which is the UTC
+ * date: an evening in the Americas is already tomorrow in UTC, and the early
+ * hours in Europe are still yesterday.
  */
-export function toISODate(date: Date = new Date()): string {
-  return date.toISOString().split('T')[0];
+export function localDateStr(date: Date = new Date()): string {
+  const y  = date.getFullYear();
+  const mo = String(date.getMonth() + 1).padStart(2, '0');
+  const da = String(date.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${da}`;
 }
 
 /**
@@ -69,8 +77,9 @@ export function computeMedian(values: number[]): number {
 export function computeRHRBaseline(
   samples: number[],
   populationDefault = 60,
+  minSamples = 7,
 ): number {
-  if (samples.length < 7) return populationDefault; // not enough data yet
+  if (samples.length < minSamples) return populationDefault; // not enough data yet
 
   // Sort ascending, take the lower 80% to exclude illness/hard-effort spikes
   const sorted = [...samples].sort((a, b) => a - b);
@@ -92,8 +101,9 @@ export function computeRHRBaseline(
 export function computeHRVBaseline(
   samples: number[],
   populationDefault = 55,
+  minSamples = 7,
 ): number {
-  if (samples.length < 7) return populationDefault; // not enough data yet
+  if (samples.length < minSamples) return populationDefault; // not enough data yet
 
   // Sort ascending, skip the bottom 20% (low-HRV sick/stress outliers)
   const sorted = [...samples].sort((a, b) => a - b);

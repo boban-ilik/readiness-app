@@ -24,7 +24,9 @@
 
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { onScoreSaved } from '@services/scoreSync';
 import { supabase } from '@services/supabase';
+import { localDateStr } from '@utils/index';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -97,17 +99,17 @@ function buildInsight(
   weakLink:  'recovery' | 'sleep' | 'stress' | null,
 ): string {
   if (direction === 'improving') {
-    if (delta >= 15) return 'Big jump this week — your body is responding well. Great time for a quality session.';
+    if (delta >= 15) return 'Big jump this week. Your body is responding well. Great time for a quality session.';
     return 'Recovery trending up this week. Build on the momentum with a solid training block.';
   }
   if (direction === 'declining') {
     if (weakLink === 'sleep') return 'Sleep quality has been pulling scores down. Prioritise an early night before any hard session.';
     if (weakLink === 'recovery') return 'Heart rate variability and resting heart rate are dipping. Consider a recovery-focused day.';
     if (weakLink === 'stress') return 'Stress signals are elevated this week. Dial back intensity and focus on recovery.';
-    return '3-day dip in readiness — consider keeping this week lighter than planned.';
+    return '3-day dip in readiness: consider keeping this week lighter than planned.';
   }
   // stable
-  return 'Readiness is consistent this week — solid base to build on. Keep the rhythm going.';
+  return 'Readiness is consistent this week. Solid base to build on. Keep the rhythm going.';
 }
 
 function deriveWeakLink(
@@ -130,9 +132,11 @@ async function fetchTrend(): Promise<TrendData> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
+  // Seven calendar dates including today. Going back 7 days matched eight
+  // dates, and with ascending order + limit(7) the row dropped was today's.
   const since = new Date();
-  since.setDate(since.getDate() - 7);
-  const sinceStr = since.toISOString().split('T')[0];
+  since.setDate(since.getDate() - 6);
+  const sinceStr = localDateStr(since);
 
   const { data, error } = await supabase
     .from('readiness_scores')
@@ -175,8 +179,8 @@ export function useTrendData(): UseTrendDataReturn {
   const [isLoading, setIsLoading] = useState(true);
   const [error,     setError]     = useState<string | null>(null);
 
-  const load = async (forceRefresh = false) => {
-    setIsLoading(true);
+  const load = async (forceRefresh = false, silent = false) => {
+    if (!silent) setIsLoading(true);
     setError(null);
 
     try {
@@ -209,6 +213,12 @@ export function useTrendData(): UseTrendDataReturn {
   };
 
   useEffect(() => { load(); }, []);
+
+  // Today's row is saved in the background after the score appears. Re-read
+  // (bypassing the 30-minute cache) whenever a save lands, so the card never
+  // keeps a week that is missing today. Pull-to-refresh re-saves, so it
+  // refreshes the card too.
+  useEffect(() => onScoreSaved(() => { load(true, true); }), []);
 
   return {
     trend,

@@ -34,6 +34,7 @@ import {
   getScoreColor,
   getScoreLabel,
 } from '@constants/theme';
+import { localDateStr } from '@utils/index';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -103,7 +104,7 @@ function TrendBadge({ trend }: { trend?: 'improving' | 'declining' | 'stable' })
 const BAR_MAX_H = 72;
 
 function MiniBarChart({ scores }: { scores: WeeklyReportScore[] }) {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = localDateStr();
   return (
     <View style={styles.barChart}>
       {scores.map(day => {

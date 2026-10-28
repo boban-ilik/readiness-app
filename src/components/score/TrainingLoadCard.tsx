@@ -2,7 +2,8 @@
  * TrainingLoadCard
  *
  * Displays today's training prescription derived from the readiness score.
- * Sits behind a ProGate on the home screen — free users see the locked preview.
+ * This is the primary free action on Today, so users can act on their score
+ * before they decide whether they need the deeper Pro analysis.
  *
  * Props:
  *   score      — today's overall readiness score (0–100)

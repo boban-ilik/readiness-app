@@ -122,7 +122,7 @@ function trendInsight(days: DayHistory[]): Insight | null {
   if (diff >= 5) {
     return {
       icon:      '🚀',
-      headline:  `Recovering well — up ${diff} pts this week`,
+      headline:  `Recovering well, up ${diff} pts this week`,
       detail:    `Early week avg ${Math.round(avgFirst)} → Recent avg ${Math.round(avgSecond)}`,
       direction: 'positive',
     };
@@ -131,7 +131,7 @@ function trendInsight(days: DayHistory[]): Insight | null {
   if (diff <= -5) {
     return {
       icon:      '⚠️',
-      headline:  `Trending down — ${Math.abs(diff)} pts lower than early week`,
+      headline:  `Trending down, ${Math.abs(diff)} pts lower than early week`,
       detail:    `Early week avg ${Math.round(avgFirst)} → Recent avg ${Math.round(avgSecond)}. Extra recovery may help.`,
       direction: 'negative',
     };
@@ -158,7 +158,7 @@ export function computeInsights(history: DayHistory[]): Insight[] {
     return [{
       icon:      '⏳',
       headline:  'More data needed',
-      detail:    'Keep tracking — patterns appear after 3+ days.',
+      detail:    'Keep tracking. Patterns appear after 3+ days.',
       direction: 'neutral',
     }];
   }
@@ -177,7 +177,7 @@ export function computeInsights(history: DayHistory[]): Insight[] {
   return [{
     icon:      '📊',
     headline:  'Patterns coming into focus',
-    detail:    'Your data is consistent so far — keep logging for sharper insights.',
+    detail:    'Your data is consistent so far. Keep logging for sharper insights.',
     direction: 'neutral',
   }];
 }

@@ -1,0 +1,72 @@
+{
+ "status": "benchmarked",
+ "rationale": "The three highest-ranking external articles whose job is the reader task (raise a low HRV) were captured in full and benchmarked passage by passage against primary sources (research.md section 3). Every other top-ten organic or discussion row for the primary query is excluded with a reason. All three selected pages also rank in the top ten for the co-primary 'how to increase hrv' and are cited by the AI Overview on both queries, supporting one article for both. Positions are from the primary query's SERP. Position 5 is a Reddit discussions box holding two threads; the r/triathlon thread is listed and the r/welltory thread (https://www.reddit.com/r/welltory/comments/1fohl3r/my_hrv_is_low_how_can_i_improve_it_part_1_proven/) is excluded for the same reason: Discussion thread on a vendor subreddit, not an article; capture blocked, title only. The Oura page (https://ouraring.com/blog/8-ways-to-improve-your-hrv/) ranks only on the co-primary query (position 11) and is excluded: Not in the primary-query set; #11 for the co-primary only (outside its top ten). Client-rendered; read via WebFetch summary as a lead only (E39).",
+ "evidence_ref": "research.md#serp-and-competitor-benchmark",
+ "ranking_evidence": {
+  "basis": "observed_serp",
+  "reference": "Ahrefs SERP overview, keyword 'how to improve hrv', US, captured 2026-09-25, retrieved by the orchestrator (.runtime/serp-how-to-improve-hrv-us.json); co-primary 'how to increase hrv', US, 2026-09-25 (.runtime/serp-how-to-increase-hrv-us.json) as corroboration.",
+  "inspection_complete": true,
+  "inspected_results": [
+   {
+    "url": "https://my.clevelandclinic.org/health/symptoms/21773-heart-rate-variability-hrv",
+    "observed_position": 2,
+    "disposition": "excluded",
+    "reason": "General 'what is HRV' health-library explainer; improvement content is two bullets and one biofeedback sentence (about 100 words). Excluded on format and depth, not authority; its relevant passages are benchmarked in research.md section 3."
+   },
+   {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2903986/",
+    "observed_position": 4,
+    "disposition": "excluded",
+    "reason": "Academic review of exercise therapy in cardiac patients (Routledge 2010); evidence lead E33, not an editorial competitor."
+   },
+   {
+    "url": "https://www.reddit.com/r/triathlon/comments/1o89vkv/true_unhinged_tips_to_increase_hrv/",
+    "observed_position": 5,
+    "disposition": "excluded",
+    "reason": "Discussion thread, not an article; Reddit blocked curl and WebFetch, title only."
+   },
+   {
+    "url": "https://www.polar.com/en/guide/my-hrv-is-very-low",
+    "observed_position": 6,
+    "disposition": "selected",
+    "reason": "Highest-ranking external page whose job is the reader task; #2 for the co-primary; AI Overview source on both queries."
+   },
+   {
+    "url": "https://ucfhealth.com/our-services/cardiology/how-to-improve-heart-rate-variability/",
+    "observed_position": 7,
+    "disposition": "selected",
+    "reason": "Second-highest dedicated how-to-improve page; #9 for the co-primary; AI Overview source on both queries."
+   },
+   {
+    "url": "https://www.youtube.com/watch?v=2M0yhiUmHpo",
+    "observed_position": 8,
+    "disposition": "excluded",
+    "reason": "Video (Huberman clip, 8 min 45 s), not an article; its claim is registered in E39 and tested against E15."
+   },
+   {
+    "url": "https://www.differenthealth.com/blog/how-to-improve-hrv",
+    "observed_position": 9,
+    "disposition": "selected",
+    "reason": "Third-highest dedicated page; #6 for the co-primary; AI Overview source on both; the only page already ranking levers by evidence, so the closest competitor to the intake angle."
+   },
+   {
+    "url": "https://www.reddit.com/r/whoop/comments/ku8idw/if_you_really_want_to_increase_hrv_let_me_show/",
+    "observed_position": 10,
+    "disposition": "excluded",
+    "reason": "Discussion thread, not an article; capture blocked, title only."
+   },
+   {
+    "url": "https://mcpress.mayoclinic.org/healthy-heart/can-tracking-heart-rate-variability-improve-your-health/",
+    "observed_position": 11,
+    "disposition": "excluded",
+    "reason": "Outside the top ten organic rows for the primary query (#10 for the co-primary); HTTP 403 on curl and WebFetch, not inspected."
+   },
+   {
+    "url": "https://www.sbphysio.com/blog//blog/how-to-improve-hrv",
+    "observed_position": 12,
+    "disposition": "excluded",
+    "reason": "Outside the top ten; physio-clinic post selling a PDF tracker, skimmed only."
+   }
+  ]
+ }
+}

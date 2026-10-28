@@ -1,0 +1,32 @@
+{
+  "query": "what is a good hrv",
+  "locale": "us/en",
+  "provider": "ahrefs serp-overview",
+  "captured_at": "2026-09-22",
+  "pages": [
+    {
+      "url": "https://www.whoop.com/us/en/thelocker/what-is-a-good-hrv/",
+      "title": "What Is a Good HRV? Average HRV Ranges by Age for Adults (WHOOP)",
+      "observed_position": 2,
+      "selection_basis": "observed_rank",
+      "reason": "Highest-ranking external article for the primary query (position 2; also position 7 for 'hrv by age'); cited by the AI Overview; answers the exact reader task (is my number good, by-age ranges, personal baseline) with vendor population averages. DR 80, est. 12,835 monthly traffic.",
+      "capture_path": "whoop-what-is-a-good-hrv.md"
+    },
+    {
+      "url": "https://www.kubios.com/blog/heart-rate-variability-normal-range/",
+      "title": "Heart rate variability normal range (Kubios)",
+      "observed_position": 4,
+      "selection_basis": "observed_rank",
+      "reason": "Second-highest external article (position 4; position 9 for 'hrv by age'); the only selected page written by an HRV-analytics specialist with a reference list (Nunan 2010, Task Force 1996, Autonomic Aging dataset); covers normal RMSSD range, by-age and by-sex charts, sleep HRV and 'dangerously low' FAQ. DR 53, est. 8,491 monthly traffic.",
+      "capture_path": "kubios-hrv-normal-range.md"
+    },
+    {
+      "url": "https://www.differenthealth.com/blog/what-is-a-good-hrv",
+      "title": "What Is a Good HRV? Charts of Normal HRV by Age (Different Health)",
+      "observed_position": 6,
+      "selection_basis": "observed_rank",
+      "reason": "Third-highest external article (position 6; position 2 for 'hrv by age', where it leads the organic set and is cited by the AI Overview); the only page with a full numeric by-age, by-sex RMSSD table traced to a primary dataset (Lifelines, Tegegne 2020) and an explicit device-comparability section. DR 21, est. 5,373 monthly traffic.",
+      "capture_path": "differenthealth-what-is-a-good-hrv.md"
+    }
+  ]
+}

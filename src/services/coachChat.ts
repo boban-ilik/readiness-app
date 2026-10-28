@@ -7,6 +7,7 @@
 
 import { supabase } from '@services/supabase';
 import type { ReadinessResult } from '@utils/readiness';
+import { getCycleContext } from '@services/cycleTracking';
 import type { HealthData } from '@/types/index';
 import type { PatternInsight } from '@services/patternAnalysis';
 import type { WorkloadResult } from '@services/workloadAnalysis';
@@ -19,6 +20,11 @@ const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 export interface ChatMessage {
   role:    'user' | 'assistant';
   content: string;
+  /**
+   * Local date the message was written, YYYY-MM-DD. Absent on messages stored
+   * before this field existed, which are treated as older than today.
+   */
+  date?:   string;
 }
 
 export async function askCoach(
@@ -37,6 +43,8 @@ export async function askCoach(
   if (!session) throw new Error('Not signed in');
   if (!SUPABASE_URL) throw new Error('Supabase not configured');
 
+  const cycle = await getCycleContext();
+
   const controller = new AbortController();
   const timeout    = setTimeout(() => controller.abort(), 20_000);
 
@@ -51,6 +59,7 @@ export async function askCoach(
       },
       body: JSON.stringify({
         question,
+        cycle,
         score:      Math.round(readiness.score),
         scoreLabel: readiness.score >= 80 ? 'Optimal' : readiness.score >= 60 ? 'Good' : readiness.score >= 40 ? 'Moderate' : 'Low',
         components: {
@@ -77,11 +86,15 @@ export async function askCoach(
           event_type: e.event_type,
           notes:      e.notes,
         })),
-        history,
+        // The Edge Function spreads these straight into the Anthropic messages
+        // array, which rejects unexpected keys, so `date` is stripped here.
+        history: history.map(m => ({ role: m.role, content: m.content })),
         profile,
       }),
     });
 
+    if (res.status === 402) throw new Error('This needs Readiness Pro.');
+    if (res.status === 429) throw new Error('You have reached today\'s limit for this. Try again tomorrow.');
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.error ?? `HTTP ${res.status}`);

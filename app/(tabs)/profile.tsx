@@ -3,7 +3,7 @@ import {
   Alert, ScrollView, Image, Platform, Linking,
 } from 'react-native';
 import { SafeAreaView }              from 'react-native-safe-area-context';
-import { useEffect, useState }       from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AsyncStorage                  from '@react-native-async-storage/async-storage';
 import Constants                     from 'expo-constants';
 import { useRouter }                 from 'expo-router';
@@ -17,6 +17,7 @@ import { useStravaActivities }       from '@hooks/useStravaActivities';
 import { ProGate }                   from '@components/common/ProGate';
 import { Ionicons }                  from '@expo/vector-icons';
 import { NAME_KEY, FREQ_KEY, JOINED_AT_KEY } from '../onboarding';
+import { pushProfile }               from '@services/profileSync';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
@@ -210,7 +211,7 @@ function StepperRow({
 }: {
   label:       string;
   sublabel?:   string;
-  value:       number;
+  value:       number | null;
   unit:        string;
   min:         number;
   max:         number;
@@ -218,6 +219,10 @@ function StepperRow({
   onIncrement: () => void;
   topBorder?:  boolean;
 }) {
+  const isUnset = value === null;
+  const atMin = value !== null && value <= min;
+  const atMax = value !== null && value >= max;
+
   return (
     <RowBase
       label={label}
@@ -226,25 +231,25 @@ function StepperRow({
       right={
         <View style={styles.stepper}>
           <TouchableOpacity
-            style={[styles.stepBtn, value <= min && styles.stepBtnDisabled]}
+            style={[styles.stepBtn, (isUnset || atMin) && styles.stepBtnDisabled]}
             onPress={onDecrement}
-            disabled={value <= min}
+            disabled={isUnset || atMin}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={[styles.stepBtnText, value <= min && styles.stepBtnTextDisabled]}>−</Text>
+            <Text style={[styles.stepBtnText, (isUnset || atMin) && styles.stepBtnTextDisabled]}>−</Text>
           </TouchableOpacity>
 
           <Text style={styles.stepValue}>
-            {value}<Text style={styles.stepUnit}> {unit}</Text>
+            {isUnset ? 'Not set' : <>{value}<Text style={styles.stepUnit}> {unit}</Text></>}
           </Text>
 
           <TouchableOpacity
-            style={[styles.stepBtn, value >= max && styles.stepBtnDisabled]}
+            style={[styles.stepBtn, atMax && styles.stepBtnDisabled]}
             onPress={onIncrement}
-            disabled={value >= max}
+            disabled={atMax}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={[styles.stepBtnText, value >= max && styles.stepBtnTextDisabled]}>+</Text>
+            <Text style={[styles.stepBtnText, atMax && styles.stepBtnTextDisabled]}>+</Text>
           </TouchableOpacity>
         </View>
       }
@@ -442,7 +447,7 @@ function NotificationsContent() {
 export default function ProfileScreen() {
   const router                             = useRouter();
   const { user, signOut }                  = useAuth();
-  const { isPro, debugSetPro, presentPaywall, presentCustomerCenter } = useSubscription();
+  const { isPro, isTrialActive, trialDaysLeft, debugSetPro, presentPaywall, presentCustomerCenter } = useSubscription();
 
   // ── Profile fields ──────────────────────────────────────────────────────────
   const [userName,     setUserName]     = useState<string>('');
@@ -451,10 +456,10 @@ export default function ProfileScreen() {
   const [photoUri,     setPhotoUri]     = useState<string | null>(null);
 
   // Personal details
-  const [age,    setAge]    = useState<number>(30);
+  const [age,    setAge]    = useState<number | null>(null);
   const [sex,    setSex]    = useState<BiologicalSex | null>(null);
-  const [height, setHeight] = useState<number>(175); // cm
-  const [weight, setWeight] = useState<number>(75);  // kg
+  const [height, setHeight] = useState<number | null>(null); // cm
+  const [weight, setWeight] = useState<number | null>(null);  // kg
 
   // Training goal
   const [goal, setGoal] = useState<TrainingGoal | null>(null);
@@ -464,6 +469,20 @@ export default function ProfileScreen() {
 
   // ── Strava connection ────────────────────────────────────────────────────────
   const strava = useStravaActivities(7);
+
+  // ── Mirror profile edits to Supabase ────────────────────────────────────────
+  // Each field saves to AsyncStorage independently, so rather than pushing from
+  // nine handlers this watches the values and syncs once they settle. Debounced
+  // because sliders fire continuously while dragging.
+  const hasHydrated = useRef(false);
+  useEffect(() => {
+    if (!hasHydrated.current) {
+      hasHydrated.current = true;   // skip the initial load, nothing changed yet
+      return;
+    }
+    const t = setTimeout(() => { pushProfile().catch(() => {}); }, 1500);
+    return () => clearTimeout(t);
+  }, [userName, trainingFreq, age, sex, height, weight, goal]);
 
   // ── Load saved data ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -478,10 +497,10 @@ export default function ProfileScreen() {
         if (map[NAME_KEY])      setUserName(map[NAME_KEY]!.trim());
         if (map[FREQ_KEY])      setTrainingFreq(map[FREQ_KEY] as TrainingFrequency);
         if (map[JOINED_AT_KEY]) setJoinedAt(map[JOINED_AT_KEY]);
-        if (map[AGE_KEY])       setAge(Number(map[AGE_KEY]));
+        if (map[AGE_KEY] && Number.isFinite(Number(map[AGE_KEY]))) setAge(Number(map[AGE_KEY]));
         if (map[SEX_KEY])       setSex(map[SEX_KEY] as BiologicalSex);
-        if (map[HEIGHT_KEY])    setHeight(Number(map[HEIGHT_KEY]));
-        if (map[WEIGHT_KEY])    setWeight(Number(map[WEIGHT_KEY]));
+        if (map[HEIGHT_KEY] && Number.isFinite(Number(map[HEIGHT_KEY]))) setHeight(Number(map[HEIGHT_KEY]));
+        if (map[WEIGHT_KEY] && Number.isFinite(Number(map[WEIGHT_KEY]))) setWeight(Number(map[WEIGHT_KEY]));
         if (map[GOAL_KEY])      setGoal(map[GOAL_KEY] as TrainingGoal);
 
         // ── Validate stored photo URI ──────────────────────────────────────
@@ -522,7 +541,7 @@ export default function ProfileScreen() {
   const nativeNotReadyAlert = () => {
     const msg = IS_EXPO_GO
       ? 'expo-image-picker isn\'t available in Expo Go for this SDK version.\n\nRun a native build instead:\n  npx expo run:ios'
-      : 'The native ImagePicker module isn\'t registered in the running binary — the build is stale.\n\nRun a full clean rebuild:\n  cd ios && pod install && cd ..\n  npx expo run:ios --no-build-cache\n\nOr in Xcode: Product → Clean Build Folder (⇧⌘K) then run.';
+      : 'The native ImagePicker module isn\'t registered in the running binary. The build is stale.\n\nRun a full clean rebuild:\n  cd ios && pod install && cd ..\n  npx expo run:ios --no-build-cache\n\nOr in Xcode: Product → Clean Build Folder (⇧⌘K) then run.';
     Alert.alert('Photo picker unavailable', msg, [{ text: 'OK' }]);
   };
 
@@ -706,7 +725,7 @@ export default function ProfileScreen() {
       : `Android ${Platform.Version}`;
     const uid = user?.id?.slice(0, 8) ?? '—';
 
-    const subject = encodeURIComponent(`Bug Report — Readiness v${version}`);
+    const subject = encodeURIComponent(`Bug Report: Readiness v${version}`);
     const body    = encodeURIComponent(
       `App version: ${version}\nPlatform: ${platform}\nUser ID (partial): ${uid}\n\n` +
       `--- Describe the bug ---\n\n` +
@@ -868,7 +887,11 @@ export default function ProfileScreen() {
             <RowBase
               label="Plan"
               right={
-                isPro ? (
+                isTrialActive ? (
+                  <View style={styles.proPill}>
+                    <Text style={styles.proPillText}>PRO TRIAL · {trialDaysLeft}d left</Text>
+                  </View>
+                ) : isPro ? (
                   <View style={styles.proPill}>
                     <Text style={styles.proPillText}>PRO ♛</Text>
                   </View>
@@ -878,7 +901,9 @@ export default function ProfileScreen() {
               }
             />
           </TouchableOpacity>
-          {isPro && (
+          {/* Trial users have nothing to manage in the Customer Center — they
+              have no subscription yet. Show them the upgrade path instead. */}
+          {isPro && !isTrialActive && (
             <RowBase
               label="Manage subscription"
               sublabel="Cancel, upgrade, request refund, or contact support"
@@ -888,13 +913,15 @@ export default function ProfileScreen() {
           )}
         </SettingsCard>
 
-        {!isPro && (
+        {(!isPro || isTrialActive) && (
           <TouchableOpacity
             style={styles.upgradeButton}
             activeOpacity={0.85}
             onPress={presentPaywall}
           >
-            <Text style={styles.upgradeText}>Upgrade to Pro · $6.99/mo</Text>
+            <Text style={styles.upgradeText}>
+              {isTrialActive ? 'Keep Pro after your calibration week' : 'Upgrade to Pro · $9.99/mo'}
+            </Text>
           </TouchableOpacity>
         )}
 
@@ -950,8 +977,9 @@ export default function ProfileScreen() {
             unit="yrs"
             min={13}
             max={100}
-            onDecrement={() => saveAge(age - 1)}
-            onIncrement={() => saveAge(age + 1)}
+            sublabel={age === null ? 'Optional · tap + to set' : undefined}
+            onDecrement={() => { if (age !== null) saveAge(age - 1); }}
+            onIncrement={() => saveAge(age === null ? 30 : age + 1)}
             topBorder={false}
           />
           <SelectRow
@@ -965,8 +993,9 @@ export default function ProfileScreen() {
             unit="cm"
             min={100}
             max={250}
-            onDecrement={() => saveHeight(height - 1)}
-            onIncrement={() => saveHeight(height + 1)}
+            sublabel={height === null ? 'Optional · tap + to set' : undefined}
+            onDecrement={() => { if (height !== null) saveHeight(height - 1); }}
+            onIncrement={() => saveHeight(height === null ? 175 : height + 1)}
           />
           <StepperRow
             label="Weight"
@@ -974,8 +1003,9 @@ export default function ProfileScreen() {
             unit="kg"
             min={30}
             max={250}
-            onDecrement={() => saveWeight(weight - 1)}
-            onIncrement={() => saveWeight(weight + 1)}
+            sublabel={weight === null ? 'Optional · tap + to set' : undefined}
+            onDecrement={() => { if (weight !== null) saveWeight(weight - 1); }}
+            onIncrement={() => saveWeight(weight === null ? 75 : weight + 1)}
           />
         </SettingsCard>
 
@@ -1005,7 +1035,7 @@ export default function ProfileScreen() {
             <SettingsCard>
               <ToggleRow
                 label="Track menstrual cycle"
-                sublabel="Contextualise HRV and RHR changes across your cycle"
+                sublabel="Reads period dates from Apple Health and adjusts your score by phase"
                 value={cycle.settings.enabled}
                 onValueChange={(v) => cycle.updateSettings({ enabled: v })}
                 topBorder={false}
@@ -1034,7 +1064,9 @@ export default function ProfileScreen() {
                   />
                   <RowBase
                     label="Log period start"
-                    sublabel="Mark today as day 1 of your cycle"
+                    sublabel={cycle.entries.length > 0
+                      ? `${cycle.entries.length} period${cycle.entries.length === 1 ? '' : 's'} known${cycle.fromHealth > 0 ? `, ${cycle.fromHealth} from Apple Health` : ''}. Tap to mark today as day 1.`
+                      : 'Mark today as day 1 of your cycle'}
                     topBorder
                     right={
                       <TouchableOpacity
@@ -1055,7 +1087,7 @@ export default function ProfileScreen() {
               )}
             </SettingsCard>
             <Text style={styles.sectionHint}>
-              🔒 All cycle data is stored on your device only and never shared.
+              🔒 Your period dates stay on this device. Readiness reads them from Apple Health if you allow it, and from anything you log here. After two complete cycles, your score compares today with the same phase of your earlier cycles instead of the whole month. While tracking is on, your current cycle phase (not the dates) is sent with briefing and coach requests so the AI reads your numbers in context. Turn tracking off to stop both.
             </Text>
           </>
         )}
@@ -1063,7 +1095,7 @@ export default function ProfileScreen() {
         {/* ── Notifications — Pro feature ─────────────────────────────────── */}
         <ProGate
           feature="Custom Thresholds & Notifications"
-          description="Set a score target and get a morning digest — so your phone tells you how hard to push today."
+          description="Set a score target and get a morning digest, so your phone tells you how hard to push today."
           style={styles.proGateBlock}
         >
           <NotificationsContent />
@@ -1072,10 +1104,19 @@ export default function ProfileScreen() {
         {/* ── Support ─────────────────────────────────────────────────────── */}
         <SectionLabel title="SUPPORT" />
         <SettingsCard>
+          {/* Guideline 1.4.1 requires citations for health information to be
+              easy for the user to find, so this sits above Report a bug rather
+              than buried behind a web link. */}
+          <RowBase
+            label="Sources"
+            sublabel="Where the health information in Readiness comes from"
+            topBorder={false}
+            onPress={() => router.push('/sources')}
+            right={<Text style={styles.rowChevron}>›</Text>}
+          />
           <RowBase
             label="Report a bug"
             sublabel="Opens your email app with a pre-filled report"
-            topBorder={false}
             onPress={handleReportBug}
             right={<Text style={styles.rowChevron}>›</Text>}
           />

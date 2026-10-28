@@ -1,0 +1,36 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <!-- Source for public/og.png (1200x630 Open Graph card).
+       Regenerate with: qlmanage -t -s 1200 -o . src/og.svg  (see repo notes) -->
+  <rect width="1200" height="630" fill="#0D0F14"/>
+
+  <!-- Score ring, echoing the app's home screen -->
+  <g transform="translate(945, 315)">
+    <circle r="150" fill="none" stroke="#222840" stroke-width="26"/>
+    <circle r="150" fill="none" stroke="#7CB342" stroke-width="26"
+            stroke-linecap="round" stroke-dasharray="707 943"
+            transform="rotate(-217)"/>
+    <text x="0" y="18" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+          font-size="104" font-weight="800" fill="#7CB342">63</text>
+    <text x="0" y="66" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+          font-size="24" font-weight="600" letter-spacing="3" fill="#9BA3B8">GOOD TO GO</text>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="90" y="130" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="40" font-weight="800" fill="#F0F2F8">Readiness<tspan fill="#F5A623">.</tspan></text>
+
+  <!-- Headline -->
+  <text x="90" y="272" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="64" font-weight="800" fill="#F0F2F8">A readiness score</text>
+  <text x="90" y="348" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="64" font-weight="800" fill="#F0F2F8">for the watch</text>
+  <text x="90" y="424" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="64" font-weight="800" fill="#F5A623">you already own.</text>
+
+  <!-- Device strip -->
+  <text x="90" y="512" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="26" font-weight="500" fill="#5A6180">Apple Watch · Garmin · Polar · Fitbit · Whoop · Oura</text>
+
+  <!-- Bottom accent rule -->
+  <rect x="90" y="552" width="120" height="6" rx="3" fill="#F5A623"/>
+</svg>

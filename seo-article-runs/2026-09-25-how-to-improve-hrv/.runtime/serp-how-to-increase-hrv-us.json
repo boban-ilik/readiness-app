@@ -1,0 +1,73 @@
+{
+ "provider": "ahrefs serp-overview",
+ "country": "us",
+ "captured_at": "2026-09-25",
+ "keyword": "how to increase hrv",
+ "volume": 4800,
+ "difficulty": 8,
+ "results": [
+  {
+   "position": 1,
+   "type": "ai_overview",
+   "url": null
+  },
+  {
+   "position": 2,
+   "type": "organic",
+   "url": "https://www.polar.com/en/guide/my-hrv-is-very-low"
+  },
+  {
+   "position": 4,
+   "type": "organic",
+   "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC2903986/"
+  },
+  {
+   "position": 5,
+   "type": "organic",
+   "url": "https://www.reddit.com/r/triathlon/comments/1o89vkv/true_unhinged_tips_to_increase_hrv/"
+  },
+  {
+   "position": 6,
+   "type": "organic",
+   "url": "https://www.differenthealth.com/blog/how-to-improve-hrv"
+  },
+  {
+   "position": 7,
+   "type": "organic",
+   "url": "https://my.clevelandclinic.org/health/symptoms/21773-heart-rate-variability-hrv"
+  },
+  {
+   "position": 8,
+   "type": "organic video",
+   "url": "https://www.youtube.com/watch?v=2M0yhiUmHpo"
+  },
+  {
+   "position": 9,
+   "type": "organic",
+   "url": "https://ucfhealth.com/our-services/cardiology/how-to-improve-heart-rate-variability/"
+  },
+  {
+   "position": 10,
+   "type": "organic",
+   "url": "https://mcpress.mayoclinic.org/healthy-heart/can-tracking-heart-rate-variability-improve-your-health/"
+  },
+  {
+   "position": 11,
+   "type": "organic",
+   "url": "https://ouraring.com/blog/8-ways-to-improve-your-hrv/"
+  }
+ ],
+ "people_also_ask": [
+  "What is a good HRV for age?",
+  "Why is my HRV so low even though I'm fit?",
+  "Why is my HRV only 28?",
+  "Can low HRV be reversed?"
+ ],
+ "ai_overview_cited": [
+  "https://www.polar.com/en/guide/my-hrv-is-very-low",
+  "https://www.differenthealth.com/blog/how-to-improve-hrv",
+  "https://ucfhealth.com/our-services/cardiology/how-to-improve-heart-rate-variability/",
+  "https://ouraring.com/blog/8-ways-to-improve-your-hrv/",
+  "https://mcpress.mayoclinic.org/healthy-heart/can-tracking-heart-rate-variability-improve-your-health/"
+ ]
+}

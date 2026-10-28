@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '@services/supabase';
+import { localDateStr } from '@utils/index';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -48,7 +49,7 @@ export const EVENT_TYPES: EventMeta[] = [
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function toLocalDate(d = new Date()): string {
-  return d.toISOString().split('T')[0];
+  return localDateStr(d);
 }
 
 // ─── API ──────────────────────────────────────────────────────────────────────

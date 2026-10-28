@@ -78,7 +78,7 @@ export default function CorrelationsCard({ history }: CorrelationsCardProps) {
       {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          Patterns strengthen as you log more days · AI insights coming in Pro v2
+          Patterns strengthen as you log more days
         </Text>
       </View>
     </View>

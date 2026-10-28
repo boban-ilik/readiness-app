@@ -1,0 +1,80 @@
+<!--
+  Confirm signup — paste into Supabase Dashboard:
+  Authentication → Emails → Templates → Confirm signup
+
+  Suggested subject:  {{ .Token }} is your Readiness code
+
+  The app's signup flow verifies a 6-digit OTP, so {{ .Token }} is the
+  load-bearing variable here. Do not remove it.
+
+  Branding note: text wordmark instead of a logo image on purpose — no image
+  hosting dependency, nothing to block or break. Once thereadiness.app is live
+  and hosts the icon, a logo <img> can replace the wordmark row in all three
+  templates at once.
+-->
+<html>
+  <body style="margin:0; padding:0; background-color:#0D0F14;">
+    <div style="display:none; max-height:0; overflow:hidden;">
+      Your Readiness confirmation code is {{ .Token }}
+    </div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#0D0F14" style="background-color:#0D0F14;">
+      <tr>
+        <td align="center" style="padding:40px 16px;">
+          <table role="presentation" width="440" cellpadding="0" cellspacing="0" style="max-width:440px; width:100%;">
+
+            <!-- Wordmark -->
+            <tr>
+              <td align="center" style="padding-bottom:28px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                <span style="font-size:22px; font-weight:700; color:#F0F2F8; letter-spacing:0.5px;">Readiness</span>
+                <span style="font-size:22px; font-weight:700; color:#F5A623;">.</span>
+              </td>
+            </tr>
+
+            <!-- Card -->
+            <tr>
+              <td bgcolor="#1C2030" style="background-color:#1C2030; border-radius:16px; padding:36px 32px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="font-size:19px; font-weight:600; color:#F0F2F8; padding-bottom:12px;">
+                      Confirm your email
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="font-size:15px; line-height:23px; color:#9BA3B8; padding-bottom:28px;">
+                      Enter this code in the app to finish creating your account.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td align="center" style="padding-bottom:28px;">
+                      <table role="presentation" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td bgcolor="#0D0F14" style="background-color:#0D0F14; border:1px solid #2A3050; border-radius:12px; padding:18px 32px;">
+                            <span style="font-family:'SF Mono',SFMono-Regular,Menlo,Consolas,monospace; font-size:32px; font-weight:700; letter-spacing:10px; color:#F5A623;">{{ .Token }}</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="font-size:13px; line-height:20px; color:#5A6180;">
+                      This code expires shortly. If you didn't create a Readiness account, you can safely ignore this email.
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td align="center" style="padding-top:24px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:12px; line-height:18px; color:#5A6180;">
+                Readiness · Your daily recovery score<br>
+                <a href="https://thereadiness.app/privacy/" style="color:#5A6180; text-decoration:underline;">Privacy Policy</a>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

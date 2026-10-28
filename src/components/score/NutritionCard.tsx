@@ -13,8 +13,12 @@
  *   hrvBaseline — user's rolling HRV baseline in ms
  */
 
-import { View, Text, StyleSheet } from 'react-native';
+import { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getNutritionRecommendation } from '@utils/nutrition';
+import { PROFILE_WEIGHT_KEY } from '@services/userProfile';
 import type { ReadinessResult } from '@utils/readiness';
 import type { HealthData }      from '@/types/index';
 import {
@@ -57,7 +61,23 @@ export default function NutritionCard({
   healthData,
   hrvBaseline,
 }: NutritionCardProps) {
-  const rec = getNutritionRecommendation(score, components, healthData, hrvBaseline);
+  const router = useRouter();
+  const [weightKg, setWeightKg] = useState<number | undefined>(undefined);
+
+  // Weight is edited on the Profile tab while this screen stays mounted behind
+  // it, so re-read on focus rather than once on mount — otherwise the targets
+  // keep showing the old bodyweight until the app restarts.
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      AsyncStorage.getItem(PROFILE_WEIGHT_KEY)
+        .then(v => { if (active && v) setWeightKg(Number(v)); })
+        .catch(() => { /* falls back to generic targets */ });
+      return () => { active = false; };
+    }, []),
+  );
+
+  const rec = getNutritionRecommendation(score, components, healthData, hrvBaseline, weightKg);
 
   return (
     <View style={styles.card}>
@@ -80,6 +100,33 @@ export default function NutritionCard({
         <Text style={styles.hydrationIcon}>💧</Text>
         <Text style={styles.hydrationText}>{rec.hydration}</Text>
       </View>
+
+      {/* ── Protein pill (only when a bodyweight is on file) ── */}
+      {rec.protein && (
+        <View style={styles.hydrationPill}>
+          <Text style={styles.hydrationIcon}>🍗</Text>
+          <Text style={styles.hydrationText}>{rec.protein}</Text>
+        </View>
+      )}
+
+      {/* ── Weight affordance ── */}
+      <TouchableOpacity
+        style={styles.weightRow}
+        onPress={() => router.push('/(tabs)/profile')}
+        accessibilityRole="button"
+        accessibilityLabel={
+          weightKg
+            ? `Bodyweight ${weightKg} kilograms. Update in profile.`
+            : 'Add your bodyweight in profile'
+        }
+      >
+        <Text style={styles.weightText}>
+          {weightKg
+            ? `Hydration and protein scaled to ${weightKg} kg`
+            : 'Add your weight for personal hydration and protein targets'}
+        </Text>
+        <Text style={styles.weightChevron}>{weightKg ? 'Update ›' : 'Add ›'}</Text>
+      </TouchableOpacity>
 
       {/* ── Prioritise ── */}
       <View style={styles.section}>
@@ -171,6 +218,24 @@ const styles = StyleSheet.create({
   },
 
   // Hydration pill
+  weightRow: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    justifyContent: 'space-between',
+    gap:            spacing[2],
+    paddingVertical: spacing[1],
+  },
+  weightText: {
+    flex:     1,
+    color:    colors.text.secondary,
+    fontSize: fontSize.xs,
+  },
+  weightChevron: {
+    color:      colors.text.accent,
+    fontSize:   fontSize.xs,
+    fontWeight: fontWeight.semiBold,
+  },
+
   hydrationPill: {
     flexDirection: 'row',
     alignItems: 'flex-start',

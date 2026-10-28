@@ -16,5 +16,13 @@
         "EXPO_PUBLIC_FORCE_MOCK_HEALTHKIT_ON_IOS26": "false"
       }
     }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6760478506",
+        "appleTeamId": "M8QJGU33AU"
+      }
+    }
   }
 }

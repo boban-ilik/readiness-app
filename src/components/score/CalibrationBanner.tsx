@@ -33,37 +33,37 @@ interface DayCopy {
 const DAY_COPY: DayCopy[] = [
   // Day 0 (first time opening, no overnight data yet)
   {
-    headline: 'First reading — Day 1 of 7 🔬',
+    headline: 'First reading: Day 1 of 7 🔬',
     body:     "We're reading your baseline now. Scores get sharper as we learn your personal norms.",
   },
   // Day 1
   {
-    headline: 'Learning your normal — Day 2 of 7',
-    body:     "Building your HRV and RHR baselines. One night down — each one adds more accuracy.",
+    headline: 'Learning your normal: Day 2 of 7',
+    body:     "Building your HRV and RHR baselines. One night down. Each one adds more accuracy.",
   },
   // Day 2
   {
-    headline: 'Patterns forming — Day 3 of 7',
+    headline: 'Patterns forming: Day 3 of 7',
     body:     'Your baselines are taking shape. HRV readings are starting to stabilise.',
   },
   // Day 3
   {
-    headline: 'Halfway calibrated — Day 4 of 7',
+    headline: 'Halfway calibrated: Day 4 of 7',
     body:     'Four days of data in. Your recovery baseline is becoming more personal.',
   },
   // Day 4
   {
-    headline: 'Getting accurate — Day 5 of 7',
+    headline: 'Getting accurate: Day 5 of 7',
     body:     'Most of your baseline is formed. Scores are now much closer to your personal ceiling.',
   },
   // Day 5
   {
-    headline: 'Almost there — Day 6 of 7',
+    headline: 'Almost there: Day 6 of 7',
     body:     'One more night and your 7-day baselines will be fully calibrated.',
   },
   // Day 6 (last day — calibration completes tonight)
   {
-    headline: 'Final calibration day — Day 7 of 7 ✓',
+    headline: 'Final calibration day: Day 7 of 7 ✓',
     body:     "Tonight locks in your personal baselines. Starting tomorrow, your score is fully personalised.",
   },
 ];
@@ -119,8 +119,12 @@ export function CalibrationBanner({ status }: CalibrationBannerProps) {
             ]}
           />
         ))}
+        {/* Counts nights of data collected, which is one behind the day you
+            are on — you are on day 3 after two nights. Labelling this "2 / 7
+            days" beside a headline reading "Day 3 of 7" made the banner look
+            like it was contradicting itself. */}
         <Text style={styles.dotsLabel}>
-          {status.daysComplete} / {CALIBRATION_DAYS} days
+          {status.daysComplete} {status.daysComplete === 1 ? 'night' : 'nights'} collected
         </Text>
       </View>
 

@@ -99,6 +99,8 @@ declare module 'react-native-purchases' {
     getOfferings(): Promise<PurchasesOfferings>;
     purchasePackage(pkg: PurchasesPackage): Promise<PurchaseResult>;
     restorePurchases(): Promise<CustomerInfo>;
+    /** True once configure() has run (SDK 8.x: `static isConfigured()`). */
+    isConfigured(): Promise<boolean>;
     addCustomerInfoUpdateListener(listener: CustomerInfoUpdateListener): void;
     removeCustomerInfoUpdateListener(listener: CustomerInfoUpdateListener): void;
     logIn(appUserID: string): Promise<{ customerInfo: CustomerInfo; created: boolean }>;

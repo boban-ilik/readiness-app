@@ -125,6 +125,8 @@ export async function fetchWeeklyReport(): Promise<WeeklyReport> {
     clearTimeout(timeout);
   }
 
+  if (res.status === 402) throw new Error('The weekly report needs Readiness Pro.');
+  if (res.status === 429) throw new Error('You have reached today\'s limit for this. Try again tomorrow.');
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     let msg: string;

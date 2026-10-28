@@ -37,11 +37,15 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const hasNavigated = useRef(false);
 
+  // Re-read whenever the signed-in user changes. AuthContext wipes device-local
+  // data before publishing the new user, so a different account signing in has
+  // an empty flag here and is correctly sent through onboarding — rather than
+  // inheriting the previous user's "already onboarded" state.
   useEffect(() => {
     AsyncStorage.getItem(ONBOARDING_KEY)
       .then(v => setOnboardingDone(v === 'true'))
       .catch(() => setOnboardingDone(false));
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     if (isLoading || onboardingDone === null) return;
@@ -83,7 +87,22 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     }
 
     if (user && !onboardingDone && !inOnboarding) {
-      router.replace('/onboarding');
+      // `onboardingDone` is read once on mount. The onboarding screen writes
+      // the flag straight to AsyncStorage and then navigates to /(tabs), so
+      // this state is stale for exactly one render — long enough to bounce the
+      // user back into the onboarding they just finished. Confirm against
+      // storage before redirecting.
+      let cancelled = false;
+      AsyncStorage.getItem(ONBOARDING_KEY)
+        .then(v => {
+          if (cancelled) return;
+          if (v === 'true') setOnboardingDone(true);
+          else router.replace('/onboarding');
+        })
+        .catch(() => {
+          if (!cancelled) router.replace('/onboarding');
+        });
+      return () => { cancelled = true; };
     }
   }, [user, isLoading, onboardingDone, segments, router]);
 

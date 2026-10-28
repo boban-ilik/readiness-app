@@ -27,6 +27,7 @@ import {
   type LifeEvent,
 } from '@services/lifeEvents';
 import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
+import { localDateStr } from '@utils/index';
 
 interface Props {
   events:    LifeEvent[];
@@ -40,7 +41,7 @@ export default function LifeEventTagger({ events, onTagged }: Props) {
   const [isSaving,     setIsSaving]     = useState(false);
 
   // Today's events only (for the chip display)
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr();
   const todayEvents = events.filter(e => e.date === today);
 
   async function handleSave() {
@@ -164,7 +165,7 @@ export default function LifeEventTagger({ events, onTagged }: Props) {
                     style={styles.notesInput}
                     value={notes}
                     onChangeText={setNotes}
-                    placeholder={`E.g. "${meta?.label}" — anything specific?`}
+                    placeholder={`E.g. "${meta?.label}", anything specific?`}
                     placeholderTextColor={colors.text.tertiary}
                     maxLength={120}
                     multiline

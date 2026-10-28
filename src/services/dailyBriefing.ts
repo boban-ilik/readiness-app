@@ -15,6 +15,8 @@ import { getScoreLabel } from '@constants/theme';
 import type { PatternInsight } from '@services/patternAnalysis';
 import type { WorkloadResult } from '@services/workloadAnalysis';
 import type { LifeEvent } from '@services/lifeEvents';
+import { getCycleContext } from '@services/cycleTracking';
+import { localDateStr } from '@utils/index';
 
 const SUPABASE_URL     = process.env.EXPO_PUBLIC_SUPABASE_URL     ?? '';
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
@@ -22,10 +24,9 @@ const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface DailyBriefing {
-  headline:   string;
-  overview:   string;
-  focusAreas: string[];
-  actionPlan: string;
+  headline: string;
+  overview: string;
+  doToday:  string[];
 }
 
 // ─── Feedback ─────────────────────────────────────────────────────────────────
@@ -56,7 +57,7 @@ export async function loadYesterdayFeedback(): Promise<BriefingFeedback | null> 
   try {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    const key = FEEDBACK_KEY_PREFIX + d.toISOString().split('T')[0];
+    const key = FEEDBACK_KEY_PREFIX + localDateStr(d);
     const raw = await AsyncStorage.getItem(key);
     return raw ? JSON.parse(raw) : null;
   } catch {
@@ -67,20 +68,65 @@ export async function loadYesterdayFeedback(): Promise<BriefingFeedback | null> 
 // ─── Cache ────────────────────────────────────────────────────────────────────
 
 function todayKey(): string {
+  // Local date, not UTC: a briefing is "today's" from the user's perspective.
   const d = new Date();
-  return `@readiness/daily_briefing_v1_${d.toISOString().split('T')[0]}`;
+  const local = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `@readiness/daily_briefing_v1_${local}`;
 }
 
-async function getCached(): Promise<DailyBriefing | null> {
+/**
+ * Identifies the data a briefing was written from.
+ *
+ * Caching on date alone meant a briefing generated early in the morning —
+ * before HealthKit had finished writing last night's sleep — stayed on screen
+ * after the score refreshed. The result was coaching that confidently cited
+ * numbers the rest of the app no longer showed: "you slept well (8.2 hours)"
+ * beside a breakdown reading 6h 17m.
+ */
+function dataFingerprint(readiness: ReadinessResult, healthData: HealthData): string {
+  const h = healthData;
+  return [
+    Math.round(readiness.score),
+    Math.round(readiness.components.recovery),
+    Math.round(readiness.components.sleep),
+    Math.round(readiness.components.stress),
+    h.hrv ?? '-',
+    h.restingHeartRate ?? '-',
+    h.sleepDuration ?? '-',
+    h.deepSleep ?? '-',
+    h.remSleep ?? '-',
+    h.sleepEfficiency ?? '-',
+  ].join('|');
+}
+
+interface CachedBriefing {
+  briefing:    DailyBriefing;
+  fingerprint: string;
+}
+
+async function getCached(fingerprint: string): Promise<DailyBriefing | null> {
   try {
     const raw = await AsyncStorage.getItem(todayKey());
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as CachedBriefing | DailyBriefing;
+
+    // Entries written before fingerprinting existed have no fingerprint —
+    // discard them rather than risk showing stale numbers.
+    if (!('fingerprint' in parsed) || !('briefing' in parsed)) return null;
+
+    // Entries written before the focus/action merge carry the old four-field
+    // shape, which would render an empty action list. Discard and regenerate.
+    if (!Array.isArray(parsed.briefing?.doToday)) return null;
+
+    return parsed.fingerprint === fingerprint ? parsed.briefing : null;
   } catch { return null; }
 }
 
-async function setCache(briefing: DailyBriefing): Promise<void> {
+async function setCache(briefing: DailyBriefing, fingerprint: string): Promise<void> {
   try {
-    await AsyncStorage.setItem(todayKey(), JSON.stringify(briefing));
+    const payload: CachedBriefing = { briefing, fingerprint };
+    await AsyncStorage.setItem(todayKey(), JSON.stringify(payload));
   } catch { /* non-fatal */ }
 }
 
@@ -97,9 +143,11 @@ export async function fetchDailyBriefing(
   lifeEvents:  LifeEvent[] = [],
 ): Promise<DailyBriefing> {
 
-  // Return cached version for the day unless forced
+  // Reuse today's briefing only if it was written from the same data. A score
+  // that refreshes after HealthKit catches up must take its coaching with it.
+  const fingerprint = dataFingerprint(readiness, healthData);
   if (!forceRefresh) {
-    const cached = await getCached();
+    const cached = await getCached(fingerprint);
     if (cached) return cached;
   }
 
@@ -110,6 +158,7 @@ export async function fetchDailyBriefing(
 
   // Load yesterday's feedback before making the request so the AI can adjust tone
   const yesterdayFeedback = await loadYesterdayFeedback();
+  const cycle = await getCycleContext();
 
   const controller = new AbortController();
   const timeout    = setTimeout(() => controller.abort(), 25_000);
@@ -151,16 +200,19 @@ export async function fetchDailyBriefing(
         workload,
         lifeEvents,
         yesterdayFeedback,
+        cycle,
       }),
     });
 
+    if (res.status === 402) throw new Error('This needs Readiness Pro.');
+    if (res.status === 429) throw new Error('You have reached today\'s limit for this. Try again tomorrow.');
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.error ?? `HTTP ${res.status}`);
     }
 
     const briefing: DailyBriefing = await res.json();
-    await setCache(briefing);
+    await setCache(briefing, fingerprint);
     return briefing;
 
   } finally {

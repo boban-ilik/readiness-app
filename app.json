@@ -2,7 +2,7 @@
   "expo": {
     "name": "Readiness",
     "slug": "readiness",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "readiness",
@@ -30,10 +30,11 @@
         ]
       },
       "infoPlist": {
-        "NSHealthShareUsageDescription": "Readiness reads your Apple Watch health data (HRV, resting heart rate, sleep) to calculate your daily readiness score.",
+        "NSHealthShareUsageDescription": "Readiness reads your Apple Watch health data (HRV, resting heart rate, sleep, and period dates if you turn on cycle tracking) to calculate your daily readiness score.",
         "NSHealthUpdateUsageDescription": "Readiness does not write any health data.",
         "NSCameraUsageDescription": "Readiness uses your camera to take a profile photo.",
         "NSPhotoLibraryUsageDescription": "Readiness uses your photo library to set a profile picture.",
+        "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
           "fetch"
         ]

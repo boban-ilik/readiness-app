@@ -205,7 +205,7 @@ function classifyTrend(acRatio: number | null, atl: number): TrendMeta {
     display: 'Overreaching risk',
     emoji:   '⚠️',
     color:   '#EF4444',
-    insight: `This week's load is ${Math.round(acRatio * 100 - 100)}% above your 4-week average. High spike loads increase injury risk — consider scaling back for 1–2 days.`,
+    insight: `This week's load is ${Math.round(acRatio * 100 - 100)}% above your 4-week average. High spike loads increase injury risk. Consider scaling back for 1–2 days.`,
   };
 
   if (acRatio >= 1.11) return {
@@ -213,7 +213,7 @@ function classifyTrend(acRatio: number | null, atl: number): TrendMeta {
     display: 'Building',
     emoji:   '📈',
     color:   '#F59E0B',
-    insight: `You're training ${Math.round((acRatio - 1) * 100)}% above your recent average — a productive ramp. Keep recovery sleep consistent to absorb the load.`,
+    insight: `You're training ${Math.round((acRatio - 1) * 100)}% above your recent average, a productive ramp. Keep recovery sleep consistent to absorb the load.`,
   };
 
   if (acRatio >= 0.90) return {
@@ -221,7 +221,7 @@ function classifyTrend(acRatio: number | null, atl: number): TrendMeta {
     display: 'Maintaining',
     emoji:   '✅',
     color:   '#22C55E',
-    insight: 'Load is consistent with your 4-week average — a great place to be for sustained fitness gains.',
+    insight: 'Load is consistent with your 4-week average, a great place to be for sustained fitness gains.',
   };
 
   if (acRatio >= 0.70) return {
@@ -229,7 +229,7 @@ function classifyTrend(acRatio: number | null, atl: number): TrendMeta {
     display: 'Easy week',
     emoji:   '🌿',
     color:   '#60A5FA',
-    insight: `Load is ${Math.round((1 - acRatio) * 100)}% below your average — a natural taper or recovery week. Good for absorbing previous training.`,
+    insight: `Load is ${Math.round((1 - acRatio) * 100)}% below your average, a natural taper or recovery week. Good for absorbing previous training.`,
   };
 
   return {
