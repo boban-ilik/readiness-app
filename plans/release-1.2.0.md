@@ -29,7 +29,7 @@ Agreed 28 October 2026.
 | 5 | Run the checklist on the new build from TestFlight, report anything that fails | Boban | 3, 4 |
 | 6 | If anything fails: fix, rebuild, retest only what failed | Claude, then Boban | 5 |
 | 7 | Draft What's New, add the Garmin line to the review notes | Claude | none |
-| 8 | Approve the What's New text | Boban | 7 |
+| 8 | ~~Approve the What's New text~~ (approved 28 October 2026, text below) | Boban | 7 |
 | 9 | Create version 1.2.0 in App Store Connect, attach the build, set What's New and review notes, set automatic release | Claude | 5 passed, 8 |
 | 10 | Boban's yes to submit for review, then Claude submits | Boban, then Claude | 9 |
 | 11 | Apple approves; the release goes out automatically | Apple | 10 |
@@ -53,3 +53,11 @@ Agreed 28 October 2026.
 
 - Whether the controller change to Readiness DOO needs the change notice promised in Section 8 of the privacy policy.
 - Usage Data → Product Interaction on the App Store privacy label (steps already given; independent of 1.2.0).
+
+## Approved What's New (28 October 2026)
+
+Garmin, direct. Connect your Garmin account in Profile and Readiness reads your overnight HRV, resting heart rate, sleep and stress straight from Garmin, so there's no HRV to type in by hand. It's optional, and you can disconnect any time.
+
+Typical means typical. When your recovery is close to your usual, the Breakdown now says Typical instead of Reduced or Moderate.
+
+Also: rebuilt on a newer foundation for current iOS, and today's activity updates every time Today refreshes.
