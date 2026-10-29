@@ -31,7 +31,7 @@ Agreed 28 October 2026.
 | 7 | Draft What's New, add the Garmin line to the review notes | Claude | none |
 | 8 | ~~Approve the What's New text~~ (approved 28 October 2026, text below) | Boban | 7 |
 | 9 | ~~Create version 1.2.0 in App Store Connect, attach the build, set What's New and review notes, set automatic release~~ (done 28 October 2026: build 69; review notes: NEW IN 1.1 section replaced by NEW IN 1.2 Garmin section) | Claude | 5 passed, 8 |
-| 10 | ~~Boban's yes to submit for review, then Claude submits~~ (submitted 28 October 2026, Waiting for Review) | Boban, then Claude | 9 |
+| 10 | ~~Boban's yes to submit for review, then Claude submits~~ (submitted 28 October 2026; rejected 29 October; resubmitted 29 October with build 75, Waiting for Review. See below.) | Boban, then Claude | 9 |
 | 11 | Apple approves; the release goes out automatically | Apple | 10 |
 | 12 | Move main to the 1.2.0 code, tag `v1.2.0`, push | Claude | 11 |
 | 13 | Morning after release: check that scores save and Garmin data arrives for users who connected | Claude | 11 |
@@ -53,6 +53,22 @@ Agreed 28 October 2026.
 
 - Whether the controller change to Readiness DOO needs the change notice promised in Section 8 of the privacy policy.
 - Usage Data → Product Interaction on the App Store privacy label (steps already given; independent of 1.2.0).
+
+## Rejection and resubmission (29 October 2026)
+
+Build 69 was rejected under guideline 5.6.3: the rating sheet appeared on the reviewer's first launch, over the Health Access screen. Cause: the good-day rating ask counted days from the account's join date, and the demo account is old, so a fresh install qualified at once.
+
+Fixes shipped in build 75 (commits 700dcf7 to ee5e8d1 on `claude/garmin`):
+
+- No rating ask before the 3rd separate day the app is opened on the device (the 5.6.3 fix).
+- A slow answer on the Health Access sheet no longer reads as "Health access denied" (the 10 s guard treated the wait as a denial; found on a fresh install of build 72).
+- Visual: illness card buttons, ring tap hint, Tag my day chip height, event tag text inside the chip, forecast pills inside the card.
+
+Also done: reply sent to App Review (29 October, 9:37); the review notes' Garmin paragraph now says the demo account is already connected to a Garmin account, so Garmin data shows with no setup. Builds 70 to 74 were intermediate; 73 failed on a full disk (Xcode DerivedData, 30 GB), so the build command now clears `DerivedData/Readiness-*` first.
+
+Resubmitting a rejected version through the API returned "Version is not ready to be submitted yet" until the version page's **Update Review** button was pressed in App Store Connect; after that, **Resubmit to App Review** worked.
+
+Demo account note: it is connected to Boban's Garmin, so the reviewer sees Garmin data. Disconnect in Profile would delete that connection and its stored data.
 
 ## Approved What's New (28 October 2026)
 
