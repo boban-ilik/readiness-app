@@ -36,6 +36,7 @@ create table if not exists public.garmin_connections (
 );
 alter table public.garmin_connections enable row level security;
 revoke all on public.garmin_connections from anon, authenticated;
+drop trigger if exists garmin_connections_updated_at on public.garmin_connections;
 create trigger garmin_connections_updated_at
   before update on public.garmin_connections
   for each row execute function public.set_updated_at();
@@ -51,6 +52,7 @@ grant select on public.garmin_connection_status to authenticated;
 -- the table itself has no grant for authenticated.
 grant select (user_id, garmin_user_id, permissions, status, connected_at, updated_at)
   on public.garmin_connections to authenticated;
+drop policy if exists "read own connection" on public.garmin_connections;
 create policy "read own connection" on public.garmin_connections
   for select to authenticated using (auth.uid() = user_id);
 
@@ -191,7 +193,9 @@ begin
     execute format('revoke all on public.%I from anon', t);
     execute format('revoke all on public.%I from authenticated', t);
     execute format('grant select on public.%I to authenticated', t);
+    execute format('drop policy if exists "read own rows" on public.%I', t);
     execute format('create policy "read own rows" on public.%I for select to authenticated using (auth.uid() = user_id)', t);
+    execute format('drop trigger if exists %I_updated_at on public.%I', t, t);
     execute format('create trigger %I_updated_at before update on public.%I for each row execute function public.set_updated_at()', t, t);
   end loop;
 end $$;
@@ -202,17 +206,23 @@ end $$;
 create extension if not exists pg_cron with schema pg_catalog;
 create extension if not exists pg_net with schema extensions;
 
-select cron.schedule(
-  'garmin-keepalive',
-  '17 */6 * * *',
-  $cron$
-  select net.http_post(
-    url     := 'https://vgvrmhqkcqdimgwzbbhc.supabase.co/functions/v1/garmin-keepalive',
-    headers := jsonb_build_object(
-      'Content-Type',  'application/json',
-      'x-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'garmin_cron_secret')
-    ),
-    body    := '{}'::jsonb
-  );
-  $cron$
-);
+-- Scheduled once: a second run of this file leaves the existing job alone.
+do $$
+begin
+  if not exists (select 1 from cron.job where jobname = 'garmin-keepalive') then
+    perform cron.schedule(
+      'garmin-keepalive',
+      '17 */6 * * *',
+      $cron$
+      select net.http_post(
+        url     := 'https://vgvrmhqkcqdimgwzbbhc.supabase.co/functions/v1/garmin-keepalive',
+        headers := jsonb_build_object(
+          'Content-Type',  'application/json',
+          'x-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'garmin_cron_secret')
+        ),
+        body    := '{}'::jsonb
+      );
+      $cron$
+    );
+  end if;
+end $$;

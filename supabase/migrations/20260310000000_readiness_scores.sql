@@ -55,6 +55,7 @@ begin
 end;
 $$;
 
+drop trigger if exists readiness_scores_updated_at on public.readiness_scores;
 create trigger readiness_scores_updated_at
   before update on public.readiness_scores
   for each row execute function public.set_updated_at();
@@ -64,16 +65,19 @@ create trigger readiness_scores_updated_at
 alter table public.readiness_scores enable row level security;
 
 -- SELECT — users may only read their own rows
+drop policy if exists "Users can read own scores" on public.readiness_scores;
 create policy "Users can read own scores"
   on public.readiness_scores for select
   using (auth.uid() = user_id);
 
 -- INSERT — users may only insert rows for themselves
+drop policy if exists "Users can insert own scores" on public.readiness_scores;
 create policy "Users can insert own scores"
   on public.readiness_scores for insert
   with check (auth.uid() = user_id);
 
 -- UPDATE — users may only update their own rows
+drop policy if exists "Users can update own scores" on public.readiness_scores;
 create policy "Users can update own scores"
   on public.readiness_scores for update
   using (auth.uid() = user_id)
