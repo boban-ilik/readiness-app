@@ -27,7 +27,7 @@ export const GARMIN_CONNECTED_KEY = '@readiness/garmin_connected';
 export interface GarminConnection {
   garminUserId: string;
   permissions:  string[];
-  status:       'active' | 'revoked';
+  status:       'pending' | 'active' | 'revoked';
   connectedAt:  string;
 }
 
@@ -57,6 +57,15 @@ export async function startGarminConnect(): Promise<void> {
   const { url } = await callFunction('garmin-authorize');
   if (typeof url !== 'string') throw new Error('[Garmin] No authorisation URL');
   await Linking.openURL(url);
+}
+
+/**
+ * Finishes the connection garmin-callback left pending: proves to the server
+ * that this signed-in account is the one that started the flow. Rejects with
+ * the server's error ('not_yours' when it was another account's attempt).
+ */
+export async function confirmGarminConnection(nonce: string): Promise<void> {
+  await callFunction('garmin-confirm', { nonce });
 }
 
 /** Tells Garmin, deletes every stored Garmin row, forgets the local flag. */

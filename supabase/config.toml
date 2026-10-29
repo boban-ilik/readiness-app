@@ -37,3 +37,6 @@ verify_jwt = false
 
 [functions.garmin-keepalive]
 verify_jwt = false
+
+[functions.garmin-confirm]
+verify_jwt = false

@@ -20,6 +20,29 @@ export function isRevokedTokenError(e: unknown): boolean {
   return status === 400 || status === 401;
 }
 
+/** The pending connection row garmin-confirm looks up by nonce. */
+export interface PendingConnectionRow {
+  user_id:            string;
+  status:             string;
+  confirm_expires_at: string | null;
+}
+
+export type ConfirmDecision = 'activate' | 'reject' | 'expired';
+
+/**
+ * Whether a confirm may activate a connection: the row must exist, still be
+ * pending, belong to the signed-in user and not have expired. 'reject' and
+ * 'expired' both end in 403 and the pending row being deleted; they are
+ * told apart only for the log.
+ */
+export function decideGarminConfirm(input: { row: PendingConnectionRow | null; jwtUserId: string; now?: number }): ConfirmDecision {
+  const { row, jwtUserId, now = Date.now() } = input;
+  if (!row || row.status !== 'pending' || row.user_id !== jwtUserId) return 'reject';
+  const expires = row.confirm_expires_at ? Date.parse(row.confirm_expires_at) : NaN;
+  if (Number.isNaN(expires) || expires <= now) return 'expired';
+  return 'activate';
+}
+
 export type SummaryType =
   | 'dailies' | 'sleeps' | 'hrv' | 'stressDetails' | 'userMetrics' | 'hydration'
   | 'activities' | 'deregistrations' | 'userPermissionsChange';

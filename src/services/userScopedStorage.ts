@@ -54,6 +54,7 @@ export const USER_SCOPED_KEYS = [
   '@readiness/strava_refresh_token',
   '@readiness/strava_expires_at',
   '@readiness/strava_athlete_name',
+  '@readiness/strava_oauth_state',
 
   // Garmin connection mirror (GARMIN_CONNECTED_KEY in services/garmin.ts):
   // the next account on this phone must not inherit "Garmin connected"
