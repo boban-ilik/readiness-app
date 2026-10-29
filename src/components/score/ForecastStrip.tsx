@@ -169,7 +169,7 @@ function ForecastCard({
         </View>
 
         <View style={styles.scoreRow}>
-          <View>
+          <View style={styles.scoreBlock}>
             <Text style={[styles.score, { color: scoreColor }]}>{day.score}</Text>
             <Text style={styles.scoreCaption}>Projected readiness</Text>
           </View>
@@ -387,7 +387,13 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     marginTop: 2,
   },
+  // The card is 192 wide: "Projected readiness" plus a "↓ Dropping" pill
+  // does not fit on one line, so the caption wraps and the pills never clip.
+  scoreBlock: {
+    flexShrink: 1,
+  },
   scoreMeta: {
+    flexShrink: 0,
     alignItems: 'flex-end',
     gap: spacing[1],
   },
