@@ -26,7 +26,7 @@
  */
 
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
-import { gate, readJsonBody } from '../_shared/entitlement.ts';
+import { gate, readJsonBody, refundCall } from '../_shared/entitlement.ts';
 import { sanitiseIllness, illnessLines, ILLNESS_RULE, type IllnessInput } from '../_shared/illness.ts';
 import { sanitiseWater, waterLines, WATER_RULE, type WaterInput } from '../_shared/water.ts';
 import { sanitiseReadingCheck, readingCheckLines, READING_CHECK_RULE, type ReadingCheckInput } from '../_shared/readingCheck.ts';
@@ -367,11 +367,13 @@ serve(async (req: Request) => {
   try {
     const parsed = await readJsonBody<CoachChatInput>(req, MAX_BODY_BYTES);
     if (parsed === 'too_large') {
+      await refundCall(gated.callId);
       return new Response(JSON.stringify({ error: 'Request too large' }), {
         status: 413, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       });
     }
     if (parsed === 'invalid') {
+      await refundCall(gated.callId);
       return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
         status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       });
@@ -406,6 +408,7 @@ serve(async (req: Request) => {
     input.readingCheck = sanitiseReadingCheck(input.readingCheck);
 
     if (!input.question?.trim() || typeof input.score !== 'number') {
+      await refundCall(gated.callId);
       return new Response(JSON.stringify({ error: 'Invalid input' }), {
         status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       });
@@ -413,6 +416,7 @@ serve(async (req: Request) => {
 
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!apiKey) {
+      await refundCall(gated.callId);
       return new Response(JSON.stringify({ error: 'Server configuration error' }), {
         status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       });
@@ -482,6 +486,7 @@ serve(async (req: Request) => {
     }
 
     if (!claudeRes.ok || !data) {
+      await refundCall(gated.callId);
       return new Response(JSON.stringify({ error: `Upstream error: ${claudeRes.status}` }), {
         status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
       });
@@ -514,6 +519,7 @@ serve(async (req: Request) => {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('[coach-chat] error:', message);
+    await refundCall(gated.callId);
     return new Response(JSON.stringify({ error: message }), {
       status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
     });

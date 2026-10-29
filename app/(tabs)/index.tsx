@@ -29,7 +29,7 @@ import BreakdownModal from '@components/score/BreakdownModal';
 import DailyBriefingModal from '@components/score/DailyBriefingModal';
 import CalibrationReportModal from '@components/score/CalibrationReportModal';
 import { hasSeenCalibrationReport, markCalibrationReportSeen } from '@services/calibrationReport';
-import { canUseFreeBriefing, markFreeBriefingUsed } from '@services/freeBriefing';
+import { canUseFreeBriefing, markFreeBriefingUsed, chargesFreeBriefing } from '@services/freeBriefing';
 import ShareCard from '@components/score/ShareCard';
 import { colors, fontSize, fontWeight, spacing, radius, getScoreColor, getScoreLabel } from '@constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -642,7 +642,7 @@ export default function HomeScreen() {
             if (!hasUsableScore) return;
             if (!isPro) {
               if (await canUseFreeBriefing()) {
-                await markFreeBriefingUsed();
+                // The week is marked used once a briefing is delivered (onDelivered below).
                 track('briefing_opened', { pro: isPro }); setBriefingVisible(true);
               } else {
                 presentPaywall();
@@ -1039,6 +1039,7 @@ export default function HomeScreen() {
         healthData={readiness?.healthData ?? null}
         rhrBaseline={rhrBaseline}
         hrvBaseline={hrvBaseline}
+        onDelivered={(fresh) => { if (chargesFreeBriefing({ isPro, fresh })) void markFreeBriefingUsed(); }}
       />
 
       {/* ── Off-screen share card — rendered but not visible ─────────────────
