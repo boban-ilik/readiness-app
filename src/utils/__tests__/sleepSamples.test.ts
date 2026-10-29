@@ -1,4 +1,4 @@
-import { summariseSleepSamples } from '../sleepSamples';
+import { summariseSleepSamples, todaysSleep } from '../sleepSamples';
 import { calculateReadiness } from '../readiness';
 import type { HealthData } from '@/types/index';
 
@@ -88,5 +88,39 @@ describe('warning banner with only a typed-in HRV (1.0.4)', () => {
     const msg = calculateReadiness(data).dataQuality.warningMessage ?? '';
     expect(msg).toContain('HRV you entered');
     expect(msg).not.toContain('Heart rate is tracked');
+  });
+});
+
+describe("today's sleep uses History's rule (1.2.1)", () => {
+  const night = [
+    s('2026-09-22T22:40:00', '2026-09-22T23:50:00', 'CORE'),
+    s('2026-09-22T23:50:00', '2026-09-23T01:10:00', 'DEEP'),
+    s('2026-09-23T01:10:00', '2026-09-23T05:00:00', 'CORE'),
+    s('2026-09-23T05:00:00', '2026-09-23T06:30:00', 'REM'),
+  ];
+  const at = (iso: string) => new Date(iso);
+
+  it('returns the night that ended this morning, with its bounds for the HRV window', () => {
+    const r = todaysSleep(night, at('2026-09-23T09:00:00'));
+    expect(r?.duration).toBe(470);
+    expect(r?.deep).toBe(80);
+    expect(new Date(r!.start!).getHours()).toBe(22);
+    expect(new Date(r!.end!).getHours()).toBe(6);
+  });
+
+  it('keeps the night when an afternoon nap was recorded after it', () => {
+    const withNap = [...night, s('2026-09-23T14:00:00', '2026-09-23T15:10:00', 'ASLEEP')];
+    expect(todaysSleep(withNap, at('2026-09-23T16:00:00'))?.duration).toBe(470);
+  });
+
+  it('is null when the only session ended yesterday morning', () => {
+    expect(todaysSleep(night, at('2026-09-24T09:00:00'))).toBeNull();
+  });
+
+  it('skips a session ending today at 14:00 or later', () => {
+    const late = [s('2026-09-23T08:00:00', '2026-09-23T14:00:00', 'ASLEEP')];
+    expect(todaysSleep(late, at('2026-09-23T16:00:00'))).toBeNull();
+    const later = [s('2026-09-23T09:30:00', '2026-09-23T15:30:00', 'ASLEEP')];
+    expect(todaysSleep(later, at('2026-09-23T17:00:00'))).toBeNull();
   });
 });

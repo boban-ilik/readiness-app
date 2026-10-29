@@ -13,7 +13,7 @@
 import { healthKitModule } from '@services/healthKitModule';
 import { Platform } from 'react-native';
 import { summariseTodayHRV, dailyOvernightHRV, OVERNIGHT_START_HOUR, type HRVSample } from '@utils/hrvSamples';
-import { summariseSleepSamples, splitSleepSessions, sleepByDay, type SleepSummary } from '@utils/sleepSamples';
+import { sleepByDay, todaysSleep, NAP_END_HOUR, type SleepSummary, type SleepSampleLike } from '@utils/sleepSamples';
 import { noDataReason, type NoDataReason } from '@utils/noData';
 import type { HealthData } from '@/types/index';
 
@@ -663,31 +663,15 @@ function fetchSleepData(startDate: string, endDate: string): Promise<SleepSummar
         return resolve(null);
       }
 
-      // ── Isolate the most recent sleep session ────────────────────────────────
-      // The 48-hour fetch window captures multiple nights. Garmin writes data for
-      // each night separately, so we sort samples by start time, split into
-      // sessions wherever there is a gap > 4 hours (daytime waking period),
-      // and take only the final session = last night's sleep.
-      const sessions = splitSleepSessions(results as any[]);
-
-      const session = sessions[sessions.length - 1] ?? [];
-      console.log(`[Readiness] Sleep sessions in window: ${sessions.length} — using last (${session.length} samples)`);
-
-      // Debug: show what Garmin wrote for this session
-      const dbg: Record<string, { count: number; mins: number }> = {};
-      session.forEach((s: any) => {
-        const m = (new Date(s.endDate).getTime() - new Date(s.startDate).getTime()) / 60000;
-        const v = String(s.value ?? '?');
-        if (!dbg[v]) dbg[v] = { count: 0, mins: 0 };
-        dbg[v].count++;
-        dbg[v].mins += m;
-      });
-      Object.entries(dbg).forEach(([v, d]) =>
-        console.log(`  ${v}: ${d.count} samples, ${Math.round(d.mins)}min`),
-      );
-
-      const summary = summariseSleepSamples(session);
-      console.log(`[Readiness] Sleep parsed → total:${summary?.duration ?? 0}min deep:${summary?.deep ?? 'n/a'} rem:${summary?.rem ?? 'n/a'} eff:${summary?.efficiency ?? 'n/a'}`);
+      // Last night by History's rule (sleepByDay): the session that ended
+      // today before 14:00, the longer one if two did. Nothing ending today
+      // resolves null, and the score then renormalises over what was measured.
+      const summary = todaysSleep(results as SleepSampleLike[], new Date(endDate));
+      if (!summary) {
+        console.log(`[Readiness] Sleep: ${results.length} samples in window, none in a session ending today before ${NAP_END_HOUR}:00`);
+        return resolve(null);
+      }
+      console.log(`[Readiness] Sleep parsed: total:${summary.duration}min deep:${summary.deep ?? 'n/a'} rem:${summary.rem ?? 'n/a'} eff:${summary.efficiency ?? 'n/a'} (${summary.start ?? '?'} to ${summary.end ?? '?'})`);
       resolve(summary);
     });
   });
