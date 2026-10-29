@@ -216,20 +216,22 @@ const styles = StyleSheet.create({
     alignItems:        'center',
     gap:               spacing[1],
     paddingHorizontal: spacing[3],
-    paddingVertical:   spacing[2],
+    paddingVertical:   spacing[1],
     borderRadius:      radius.full ?? 99,
     borderWidth:       1,
     borderStyle:       'dashed' as const,
     borderColor:       colors.border.subtle,
   },
   tagBtnPlus: {
-    fontSize:   fontSize.base,
+    fontSize:   fontSize.sm,
+    lineHeight: 18,
     color:      colors.text.tertiary,
     fontWeight: fontWeight.medium,
   },
   tagBtnLabel: {
-    fontSize: fontSize.xs,
-    color:    colors.text.tertiary,
+    fontSize:   fontSize.xs,
+    lineHeight: 18,
+    color:      colors.text.tertiary,
   },
 
   chip: {
@@ -244,10 +246,11 @@ const styles = StyleSheet.create({
     borderColor:       colors.border.subtle,
     maxWidth:          140,
   },
-  chipEmoji: { fontSize: 13 },
+  chipEmoji: { fontSize: 13, lineHeight: 18 },
   chipLabel: {
-    fontSize: fontSize.xs,
-    color:    colors.text.secondary,
+    fontSize:   fontSize.xs,
+    lineHeight: 18,
+    color:      colors.text.secondary,
   },
 
   hint: {
