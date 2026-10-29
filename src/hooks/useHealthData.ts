@@ -291,6 +291,8 @@ export function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Pr
   ]);
 }
 
+const HEALTH_DENIED_MESSAGE = 'Health access denied. Go to Settings → Privacy & Security → Health → Readiness to grant access.';
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useHealthData(): UseHealthDataReturn {
@@ -305,6 +307,10 @@ export function useHealthData(): UseHealthDataReturn {
   // Tracks when HealthKit was last queried — used to throttle AppState refreshes.
   const lastFetchAt = useRef<number>(0);
   const [loadedAt, setLoadedAt] = useState(0);
+
+  // Lets a load that gave up waiting on the Health Access sheet run again
+  // once iOS answers, without the callback depending on itself.
+  const loadRef = useRef<((mode?: LoadMode) => Promise<void>) | null>(null);
 
   const load = useCallback(async (mode: LoadMode = 'initial') => {
     console.log(`[Readiness] load() called — mode: ${mode}, iOS: ${Platform.OS === 'ios'}, hk: ${isHealthKitAvailable()}`);
@@ -340,9 +346,13 @@ export function useHealthData(): UseHealthDataReturn {
         // Extra try/catch guards against native NSExceptions that bypass JS catch.
         try {
           console.log('[Readiness] Requesting HealthKit permissions…');
-          const granted = await withTimeout(requestHealthKitPermissions(), 10_000, false);
+          // On a fresh install iOS shows the Health Access sheet here and only
+          // calls back once it closes. Reading that sheet can take longer than
+          // the timeout, so a timeout means "no answer yet", not "denied".
+          const request = requestHealthKitPermissions();
+          const granted = await withTimeout<boolean | null>(request, 10_000, null);
           console.log('[Readiness] HealthKit permissions result:', granted);
-          setHasPermission(granted);
+          setHasPermission(granted === true);
 
           if (granted) {
             // Unknown until each baseline loads: if one times out and the
@@ -354,8 +364,10 @@ export function useHealthData(): UseHealthDataReturn {
               withTimeout(getPersonalRHRBaseline(),    8_000, 60),
               withTimeout(getPersonalHRVBaseline(),    8_000, 55),
             ]);
+          } else if (granted === false) {
+            setError(HEALTH_DENIED_MESSAGE);
           } else {
-            setError('Health access denied. Go to Settings → Privacy & Security → Health → Readiness to grant access.');
+            request.then(ok => { if (ok) loadRef.current?.('silent'); else setError(HEALTH_DENIED_MESSAGE); });
           }
         } catch (hkErr: any) {
           console.warn('[Readiness] HealthKit block threw unexpectedly:', hkErr?.message ?? hkErr);
@@ -527,6 +539,8 @@ export function useHealthData(): UseHealthDataReturn {
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription.remove();
   }, [load]);
+
+  useEffect(() => { loadRef.current = load; }, [load]);
 
   return {
     readiness,
