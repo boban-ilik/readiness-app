@@ -1193,6 +1193,9 @@ const styles = StyleSheet.create({
     color:       colors.text.tertiary,
     marginTop:   spacing[1],
     letterSpacing: 0.3,
+    // Keep clear of the ring: the inside narrows below the centre
+    maxWidth:    150,
+    textAlign:   'center',
   },
   scoreDelta: {
     fontSize:    11,
