@@ -26,12 +26,14 @@ begin
   end loop;
 end $$;
 
-drop function if exists public.handle_new_user();
-drop function if exists public.handle_updated_at();
-
+-- Tables first: handle_updated_at still has triggers on profiles, and
+-- dropping the tables with cascade removes those before the function goes.
 drop table if exists public.health_snapshots cascade;
 drop table if exists public.journal_entries  cascade;
 drop table if exists public.notification_log cascade;
 drop table if exists public.weekly_reports   cascade;
 drop table if exists public.profiles         cascade;
 drop table if exists public.user_streaks     cascade;
+
+drop function if exists public.handle_new_user();
+drop function if exists public.handle_updated_at();
