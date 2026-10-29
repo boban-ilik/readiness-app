@@ -22,7 +22,7 @@ import { excludeIllnessDays } from '@utils/illnessRecovery';
 import { loadIllnessEpisodes, isIllnessCapStored } from '@services/illnessEpisode';
 import { getRHRByDay, getHRVByDay } from '@services/healthSource';
 import { healthKitLoadReason } from '@services/healthKitModule';
-import { isGarminConnected, fetchGarminDays } from '@services/garmin';
+import { isGarminConnected, fetchGarminDays, refreshGarminConnection } from '@services/garmin';
 import { overlayGarminToday } from '@utils/garminSource';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -359,6 +359,11 @@ export function useHealthData(): UseHealthDataReturn {
             // stand-in is used, it must not be worded as the user's own.
             setBaselineSource('rhr', undefined);
             setBaselineSource('hrv', undefined);
+            // The Garmin flag is a local mirror of the connection on Supabase
+            // and can go stale (a disconnect on another phone, a reinstall).
+            // Refresh it once per load before anything reads it; a slow or
+            // failed read keeps the cached flag and never holds up the score.
+            await withTimeout(refreshGarminConnection().catch(() => null), 3_000, null);
             [healthData, baseline, hrvBase] = await Promise.all([
               withTimeout(fetchTodaysHealthData(),    12_000, null),
               withTimeout(getPersonalRHRBaseline(),    8_000, 60),
