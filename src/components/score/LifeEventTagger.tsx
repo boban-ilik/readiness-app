@@ -244,10 +244,13 @@ const styles = StyleSheet.create({
     backgroundColor:   colors.bg.elevated,
     borderWidth:       1,
     borderColor:       colors.border.subtle,
-    maxWidth:          140,
+    // Wide enough for every label; a label that still does not fit shrinks
+    // and truncates inside the padding instead of running past the border.
+    maxWidth:          220,
   },
   chipEmoji: { fontSize: 13, lineHeight: 18 },
   chipLabel: {
+    flexShrink: 1,
     fontSize:   fontSize.xs,
     lineHeight: 18,
     color:      colors.text.secondary,
