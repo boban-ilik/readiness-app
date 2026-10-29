@@ -63,6 +63,17 @@ function basicAuth(): string {
   return 'Basic ' + btoa(`${env('GARMIN_CONSUMER_KEY')}:${env('GARMIN_CONSUMER_SECRET')}`);
 }
 
+/** A token endpoint answer other than 2xx, with the HTTP status for callers
+ *  that must tell a revoked token (400, 401) from a Garmin outage (5xx). */
+export class GarminTokenError extends Error {
+  status: number;
+  constructor(status: number, body: string) {
+    super(`Garmin token endpoint ${status}: ${body.slice(0, 200)}`);
+    this.name = 'GarminTokenError';
+    this.status = status;
+  }
+}
+
 async function tokenRequest(params: Record<string, string>): Promise<TokenSet> {
   const res = await fetch(GARMIN.tokenUrl, {
     method:  'POST',
@@ -70,7 +81,7 @@ async function tokenRequest(params: Record<string, string>): Promise<TokenSet> {
     body:    new URLSearchParams({ client_id: env('GARMIN_CONSUMER_KEY'), client_secret: env('GARMIN_CONSUMER_SECRET'), ...params }).toString(),
   });
   const text = await res.text();
-  if (!res.ok) throw new Error(`Garmin token endpoint ${res.status}: ${text.slice(0, 200)}`);
+  if (!res.ok) throw new GarminTokenError(res.status, text);
   const data = JSON.parse(text) as TokenSet;
   if (!data.access_token || !data.refresh_token) throw new Error('Garmin token response incomplete');
   return data;

@@ -8,6 +8,18 @@
  * time and must replace what was stored (Health API 2.0, section 5.1).
  */
 
+/**
+ * True only for a token refresh Garmin rejected outright (400 invalid_grant,
+ * 401): the refresh token is gone and the connection is revoked. Timeouts,
+ * network errors and Garmin 5xx are transient and must be retried, so they
+ * return false. garminApi.ts attaches `status` to the error it throws.
+ */
+export function isRevokedTokenError(e: unknown): boolean {
+  if (!(e instanceof Error)) return false;
+  const status = (e as Error & { status?: unknown }).status;
+  return status === 400 || status === 401;
+}
+
 export type SummaryType =
   | 'dailies' | 'sleeps' | 'hrv' | 'stressDetails' | 'userMetrics' | 'hydration'
   | 'activities' | 'deregistrations' | 'userPermissionsChange';

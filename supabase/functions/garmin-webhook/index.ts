@@ -39,7 +39,13 @@ serve(async (req: Request) => {
 
   const db = adminClient();
   const garminIds = [...new Set(items.map(garminUserId).filter((x): x is string => !!x))];
-  const { data: conns } = await db.from('garmin_connections').select('user_id, garmin_user_id').in('garmin_user_id', garminIds);
+  const { data: conns, error: connErr } = await db.from('garmin_connections').select('user_id, garmin_user_id').in('garmin_user_id', garminIds);
+  if (connErr) {
+    // With no lookup every item maps to no user and a 200 would tell Garmin
+    // the batch was stored. A 500 makes Garmin send it again.
+    console.error(`[garmin-webhook] ${type}: connection lookup failed:`, connErr.message);
+    return json({ error: 'Connection lookup failed' }, 500);
+  }
   const userFor = new Map<string, string>((conns ?? []).map((c: { user_id: string; garmin_user_id: string }) => [c.garmin_user_id, c.user_id]));
 
   try {
