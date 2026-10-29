@@ -20,7 +20,7 @@ import { pushScoreToWidget, setWidgetIllnessCap } from '@services/widgetBridge';
 import { localDateStr } from '@utils/index';
 import { excludeIllnessDays } from '@utils/illnessRecovery';
 import { loadIllnessEpisodes, isIllnessCapStored } from '@services/illnessEpisode';
-import { getRHRByDay, getHRVByDay } from '@services/healthSource';
+import { getRHRByDay, getHRVByDay, isGarminHRVUnavailable } from '@services/healthSource';
 import { healthKitLoadReason } from '@services/healthKitModule';
 import { isGarminConnected, fetchGarminDays, refreshGarminConnection } from '@services/garmin';
 import { overlayGarminToday } from '@utils/garminSource';
@@ -191,10 +191,18 @@ export async function getPersonalHRVBaseline(): Promise<number> {
   // and Apple values are a different measure and would skew the baseline.
   const garmin = await isGarminConnected();
   const [fromSource, manual, episodes] = await Promise.all([
-    getHRVByDay(30),
+    getHRVByDay(30, { garminRequired: true }).catch(e => { if (isGarminHRVUnavailable(e)) return null; throw e; }),
     garmin ? Promise.resolve({} as Record<string, number>) : loadManualHRVByDay(30),
     loadIllnessEpisodes(),
   ]);
+  if (fromSource === null) {
+    // Garmin is connected but its history could not be read. Apple HRV is a
+    // different measure, so there is no fallback: the population stand-in
+    // serves this load and nothing is cached, so the next load tries again.
+    console.warn('[Readiness] HRV baseline: Garmin history unavailable, using the stand-in for this load');
+    setBaselineSource('hrv', false);
+    return computeHRVBaseline([]);
+  }
   const history = Object.values(excludeIllnessDays({ ...fromSource, ...manual }, episodes, localDateStr()));
   const baseline = computeHRVBaseline(history);
   console.log('[Readiness] HRV baseline computed:', baseline, 'ms from', history.length, 'days');

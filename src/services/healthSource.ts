@@ -21,8 +21,32 @@ export async function getRHRByDay(days: number): Promise<Record<string, number>>
   return garmin ? { ...apple, ...garmin.rhr } : apple;
 }
 
-export async function getHRVByDay(days: number): Promise<Record<string, number>> {
+const GARMIN_HRV_UNAVAILABLE = 'GarminHRVUnavailable';
+
+/** The error getHRVByDay throws when Garmin is connected, the caller asked
+ *  for Garmin's history only, and the read failed. */
+export function isGarminHRVUnavailable(e: unknown): boolean {
+  return e instanceof Error && e.name === GARMIN_HRV_UNAVAILABLE;
+}
+
+/**
+ * With `garminRequired`, a failed Garmin read throws a GarminHRVUnavailable
+ * error instead of falling back to Apple Health: Apple's SDNN is a different
+ * measure from Garmin's RMSSD, and a caller that stores the result (the
+ * 30-day baseline) must not keep either an empty or an Apple history as the
+ * Garmin baseline. Without it, a failed read falls back to Apple as before.
+ */
+export async function getHRVByDay(days: number, opts: { garminRequired?: boolean } = {}): Promise<Record<string, number>> {
   if (await isGarminConnected()) {
+    if (opts.garminRequired) {
+      try {
+        return (await fetchGarminDays(days)).hrv;
+      } catch (e) {
+        const err = new Error(`Garmin HRV history unavailable: ${e instanceof Error ? e.message : String(e)}`);
+        err.name = GARMIN_HRV_UNAVAILABLE;
+        throw err;
+      }
+    }
     const garmin = await FAIL_SOFT(fetchGarminDays(days), null);
     if (garmin) return garmin.hrv;
   }

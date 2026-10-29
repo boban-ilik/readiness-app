@@ -112,6 +112,12 @@ export async function fetchGarminDays(days: number): Promise<GarminDays> {
     supabase.from('garmin_hrv').select('calendar_date, last_night_avg').gte('calendar_date', since),
     supabase.from('garmin_hydration').select('calendar_date, fluid_ml').gte('calendar_date', since),
   ]);
+  // A failed read throws instead of standing in as an empty day: the HRV
+  // baseline would otherwise cache the stand-in until tomorrow. healthSource
+  // falls back to Apple Health for resting heart rate and sleep.
+  const failed = ([['garmin_daily', daily], ['garmin_sleep', sleep], ['garmin_hrv', hrv], ['garmin_hydration', hydration]] as const)
+    .find(([, r]) => r.error);
+  if (failed) throw new Error(`[Garmin] ${failed[0]} read failed: ${failed[1].error?.message}`);
   return garminDaysFromRows({
     daily:     (daily.data     ?? []) as GarminDailyRow[],
     sleep:     (sleep.data     ?? []) as GarminSleepRow[],
