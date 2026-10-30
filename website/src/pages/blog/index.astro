@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
+import { SITE, breadcrumbs, websiteRef } from '../../schema';
 
 const posts = (await getCollection('blog')).sort(
   (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
@@ -8,12 +9,39 @@ const posts = (await getCollection('blog')).sort(
 
 const fmt = (d: Date) =>
   d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+const title = 'Blog | Readiness';
+const description =
+  'Plain-spoken writing on HRV, sleep, recovery and readiness scores, from the makers of Readiness Coach.';
+const pageUrl = `${SITE}/blog/`;
+const schema = [
+  {
+    '@type': 'CollectionPage',
+    '@id': `${pageUrl}#webpage`,
+    url: pageUrl,
+    name: title,
+    description,
+    inLanguage: 'en',
+    isPartOf: websiteRef,
+    breadcrumb: { '@id': `${pageUrl}#breadcrumb` },
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: posts.map((post, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: post.data.title,
+        url: `${SITE}/blog/${post.id}/`,
+      })),
+    },
+  },
+  breadcrumbs(pageUrl, [
+    { name: 'Home', url: `${SITE}/` },
+    { name: 'Blog', url: pageUrl },
+  ]),
+];
 ---
 
-<Base
-  title="Blog | Readiness"
-  description="Plain-spoken writing on HRV, sleep, recovery and readiness scores, from the makers of Readiness Coach."
->
+<Base title={title} description={description} schema={schema}>
   <section class="blog-index">
     <div class="wrap">
       <span class="kicker">Blog</span>

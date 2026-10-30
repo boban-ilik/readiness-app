@@ -59,6 +59,62 @@
       font-size: 13px;
     }
   </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://thereadiness.app/#organization",
+        "name": "Readiness",
+        "url": "https://thereadiness.app/"
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://thereadiness.app/#website",
+        "name": "Readiness",
+        "url": "https://thereadiness.app/",
+        "publisher": {
+          "@id": "https://thereadiness.app/#organization"
+        }
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://thereadiness.app/privacy/#webpage",
+        "url": "https://thereadiness.app/privacy/",
+        "name": "Privacy Policy",
+        "inLanguage": "en",
+        "isPartOf": {
+          "@id": "https://thereadiness.app/#website"
+        },
+        "publisher": {
+          "@id": "https://thereadiness.app/#organization"
+        },
+        "breadcrumb": {
+          "@id": "https://thereadiness.app/privacy/#breadcrumb"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://thereadiness.app/privacy/#breadcrumb",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://thereadiness.app/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Privacy Policy",
+            "item": "https://thereadiness.app/privacy/"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
   <div class="container">

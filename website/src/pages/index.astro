@@ -1,7 +1,18 @@
 ---
 import Base from '../layouts/Base.astro';
+import {
+  SITE,
+  APP_ID,
+  APP_STORE_URL,
+  LOGO_URL,
+  OG_IMAGE_URL,
+  publisherRef,
+  websiteRef,
+} from '../schema';
 
-const APP_STORE_URL = 'https://apps.apple.com/app/id6760478506';
+const title = 'Readiness | A readiness score for the watch you already own';
+const description =
+  'Daily readiness scores from your HRV, resting heart rate and sleep, read from Apple Health. Works with Apple Watch, Garmin, Polar, Fitbit and more. No extra hardware.';
 
 const features = [
   {
@@ -81,9 +92,55 @@ const faqs = [
     a: 'Subscriptions are billed by Apple and cancelled in your iPhone settings under Apple Account → Subscriptions, any time. The 14-day free trial on the annual plan can be cancelled before it converts and you will not be charged.',
   },
 ];
+
+const pageUrl = `${SITE}/`;
+const schema = [
+  {
+    '@type': 'WebPage',
+    '@id': `${pageUrl}#webpage`,
+    url: pageUrl,
+    name: title,
+    description,
+    inLanguage: 'en',
+    isPartOf: websiteRef,
+    about: { '@id': APP_ID },
+    primaryImageOfPage: { '@type': 'ImageObject', url: OG_IMAGE_URL, width: 1200, height: 630 },
+  },
+  {
+    '@type': ['SoftwareApplication', 'MobileApplication'],
+    '@id': APP_ID,
+    name: 'Readiness Coach',
+    alternateName: 'Readiness Coach: HRV Score',
+    description:
+      'Turns the HRV, resting heart rate and sleep your watch writes to Apple Health into one readiness score every morning, with a daily AI briefing, coach chat, a three-day forecast and overtraining alerts.',
+    applicationCategory: 'HealthApplication',
+    operatingSystem: 'iOS 15.0 or later',
+    image: LOGO_URL,
+    screenshot: [`${SITE}/screens/briefing.png`, `${SITE}/screens/history.png`],
+    installUrl: APP_STORE_URL,
+    sameAs: [APP_STORE_URL],
+    datePublished: '2026-08-11',
+    author: publisherRef,
+    publisher: publisherRef,
+    offers: [
+      { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD', url: APP_STORE_URL, availability: 'https://schema.org/InStock' },
+      { '@type': 'Offer', name: 'Readiness Pro, monthly', category: 'subscription', price: '9.99', priceCurrency: 'USD', url: APP_STORE_URL, availability: 'https://schema.org/InStock' },
+      { '@type': 'Offer', name: 'Readiness Pro, annual', category: 'subscription', price: '69.99', priceCurrency: 'USD', url: APP_STORE_URL, availability: 'https://schema.org/InStock' },
+    ],
+  },
+  {
+    '@type': 'FAQPage',
+    '@id': `${pageUrl}#faq`,
+    mainEntity: faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  },
+];
 ---
 
-<Base>
+<Base title={title} description={description} schema={schema}>
   <!-- ── Hero ─────────────────────────────────────────────────────────── -->
   <section class="hero">
     <div class="wrap">
