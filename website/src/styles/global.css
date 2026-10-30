@@ -60,6 +60,7 @@ a { color: var(--amber); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 section { padding: 88px 0; }
+@media (max-width: 760px) { section { padding: 48px 0; } }
 
 .kicker {
   display: block;
@@ -193,7 +194,7 @@ section { padding: 88px 0; }
   .today .coach { max-width: 32em; }
 }
 @media (max-width: 480px) {
-  .hero { padding-top: 40px; }
+  .hero { padding-top: 40px; padding-bottom: 56px; }
   .day .dow, .day .verdict { font-size: 0.8rem; }
   .day.past .score { font-size: 1.75rem; }
   .today { grid-template-columns: 1fr; row-gap: 12px; }
