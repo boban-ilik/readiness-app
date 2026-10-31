@@ -15,9 +15,15 @@
   --good:       #7CB342;
   --optimal:    #43A047;
 
+  /* Score scale, from theme.ts */
+  --score-poor:    #F4511E;
+  --score-fair:    #FB8C00;
+  --score-good:    #7CB342;
+  --score-optimal: #43A047;
+
   --border-subtle: #232840;
 
-  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font: 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
   --max-w: 1080px;
 }
@@ -31,6 +37,7 @@ html {
 
 body {
   font-family: var(--font);
+  font-variation-settings: 'wdth' 100;
   background: var(--bg-primary);
   color: var(--text-secondary);
   font-size: 17px;
@@ -53,6 +60,7 @@ a { color: var(--amber); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 section { padding: 88px 0; }
+@media (max-width: 760px) { section { padding: 48px 0; } }
 
 .kicker {
   display: block;
@@ -113,23 +121,98 @@ section { padding: 88px 0; }
 @media (max-width: 760px) { .site-nav { display: none; } }
 
 /* ── Hero ────────────────────────────────────────────────────────────────── */
-.hero { padding: 96px 0 72px; }
-.hero .wrap {
+/* A week of mornings: six past scores small, today's large with the coach's
+   verdict. Amber marks action and "now"; the score colours carry the data. */
+.hero { padding: 72px 0 96px; }
+
+.week {
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 56px;
-  align-items: center;
+  grid-template-columns: repeat(6, auto) 1fr;
+  column-gap: clamp(20px, 3.2vw, 40px);
+  align-items: end;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--border-subtle);
 }
+.day { min-width: 0; }
+.day .dow { font-size: 0.9rem; color: var(--text-tertiary); font-weight: 500; }
+.day .score {
+  display: block;
+  font-variation-settings: 'wdth' 68;
+  font-weight: 700;
+  font-size: clamp(2.2rem, 4.2vw, 3.4rem);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  margin: 6px 0 8px;
+}
+.day .verdict { font-size: 0.95rem; color: var(--text-secondary); }
+
+.today {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 24px;
+  align-items: end;
+  padding-left: 24px;
+  border-left: 2px solid var(--amber);
+}
+.today .dow { color: var(--amber); }
+.today .score {
+  font-size: clamp(5.5rem, 11vw, 9.5rem);
+  margin: 2px 0 0;
+  letter-spacing: -0.03em;
+}
+.today .coach {
+  color: var(--text-primary);
+  font-size: clamp(1rem, 1.35vw, 1.15rem);
+  line-height: 1.45;
+  max-width: 24em;
+  padding-bottom: 0.45em;
+}
+.today .coach strong { font-weight: 600; }
+
+.c-poor    { color: var(--score-poor); }
+.c-fair    { color: var(--score-fair); }
+.c-good    { color: var(--score-good); }
+.c-optimal { color: var(--score-optimal); }
+
+.pitch { margin-top: 56px; }
+.hero h1 {
+  max-width: 15ch;
+  font-weight: 600;
+  font-size: clamp(2.3rem, 5.2vw, 4rem);
+  line-height: 1.04;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.hero .lede { margin-top: 24px; font-size: clamp(1.05rem, 1.5vw, 1.25rem); max-width: 30em; }
+.hero .actions { margin-top: 36px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.hero .devices { font-size: 0.95rem; color: var(--text-tertiary); max-width: 32em; }
+
 @media (max-width: 860px) {
-  .hero .wrap { grid-template-columns: 1fr; }
-  .hero-phone { justify-self: center; }
+  .week { grid-template-columns: repeat(6, minmax(0, 1fr)); column-gap: 12px; row-gap: 32px; }
+  .today { grid-column: 1 / -1; column-gap: 20px; padding-left: 20px; }
+  .today .coach { max-width: 32em; }
 }
-.hero p.lede { margin: 20px 0 32px; font-size: 1.15rem; max-width: 520px; }
-.hero-devices {
-  margin-top: 28px;
-  font-size: 0.85rem;
-  color: var(--text-tertiary);
-  letter-spacing: 0.02em;
+@media (max-width: 480px) {
+  .hero { padding-top: 40px; padding-bottom: 56px; }
+  .day .dow, .day .verdict { font-size: 0.8rem; }
+  .day.past .score { font-size: 1.75rem; }
+  .today { grid-template-columns: 1fr; row-gap: 12px; }
+  .today .coach { padding-bottom: 0; }
+}
+
+/* One reveal on load: past days appear in order, then today's number counts up
+   (see the script in index.astro). Reduced motion shows the final state. */
+@media (prefers-reduced-motion: no-preference) {
+  .day.past { opacity: 0; transform: translateY(6px); animation: hero-appear 0.45s ease-out forwards; }
+  .day.past:nth-child(1) { animation-delay: 0.05s; }
+  .day.past:nth-child(2) { animation-delay: 0.15s; }
+  .day.past:nth-child(3) { animation-delay: 0.25s; }
+  .day.past:nth-child(4) { animation-delay: 0.35s; }
+  .day.past:nth-child(5) { animation-delay: 0.45s; }
+  .day.past:nth-child(6) { animation-delay: 0.55s; }
+  .today .coach { opacity: 0; animation: hero-appear 0.6s ease-out 1.5s forwards; }
+  @keyframes hero-appear { to { opacity: 1; transform: none; } }
 }
 
 /* Phone frame — a CSS bezel around a real screenshot */
