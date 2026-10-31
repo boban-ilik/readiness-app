@@ -24,7 +24,7 @@ export default function ProBanner({ mode, daysLeft, onPress, onDismiss }: Props)
     ? (daysLeft <= 1
         ? 'Last day of your free Pro week. Keep the breakdown, trend and coach.'
         : `${daysLeft} days left of your free Pro week. Keep the breakdown, trend and coach.`)
-    : 'Deeper recovery, nutrition, trends, forecast and unlimited coach.';
+    : 'Recovery detail, nutrition, trends and the coach.';
 
   return (
     <View style={styles.banner}>

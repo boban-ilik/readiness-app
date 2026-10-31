@@ -211,6 +211,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   // from RevenueCat can OR it in — otherwise a real "not subscribed" response
   // would immediately switch the dev toggle back off.
   const devProRef = useRef(false);
+  // __DEV__-only free override: the Developer toggle switched off simulates
+  // the free tier even when RevenueCat reports an entitlement, so the free
+  // layout can be checked on a Pro test account.
+  const devFreeRef = useRef(false);
+  const withDev = (entitled: boolean) => devProRef.current || (devFreeRef.current ? false : entitled);
 
   // ── Bootstrap ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -224,7 +229,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       //    never sell anything until the toggle was switched back off.
       if (__DEV__) {
         const devVal = await AsyncStorage.getItem(DEV_OVERRIDE_KEY).catch(() => null);
-        devProRef.current = devVal === 'true';
+        devProRef.current  = devVal === 'true';
+        devFreeRef.current = devVal === 'false';
         if (devProRef.current && !cancelled) setIsPro(true);
       }
 
@@ -246,13 +252,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
         const info = await Purchases.getCustomerInfo();
         if (!cancelled) {
-          setIsPro(devProRef.current || !!info.entitlements.active[ENTITLEMENT_PRO]); setIsLifetime(isLifetimeEntitlement(info));
+          setIsPro(withDev(!!info.entitlements.active[ENTITLEMENT_PRO])); setIsLifetime(isLifetimeEntitlement(info));
         }
 
         // Real-time updates: fires after purchase, restore, or subscription change
         Purchases.addCustomerInfoUpdateListener((updatedInfo: CustomerInfo) => {
           if (!cancelled) {
-            setIsPro(devProRef.current || !!updatedInfo.entitlements.active[ENTITLEMENT_PRO]); setIsLifetime(isLifetimeEntitlement(updatedInfo));
+            setIsPro(withDev(!!updatedInfo.entitlements.active[ENTITLEMENT_PRO])); setIsLifetime(isLifetimeEntitlement(updatedInfo));
           }
         });
 
@@ -294,14 +300,14 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         if (userId) {
           const { customerInfo } = await Purchases.logIn(userId);
           if (!cancelled) {
-            setIsPro(devProRef.current || !!customerInfo.entitlements.active[ENTITLEMENT_PRO]); setIsLifetime(isLifetimeEntitlement(customerInfo));
+            setIsPro(withDev(!!customerInfo.entitlements.active[ENTITLEMENT_PRO])); setIsLifetime(isLifetimeEntitlement(customerInfo));
           }
         } else {
           // logOut() rejects when the current user is already anonymous —
           // that's an expected no-op, swallowed by the catch below.
           const customerInfo = await Purchases.logOut();
           if (!cancelled) {
-            setIsPro(devProRef.current || !!customerInfo.entitlements.active[ENTITLEMENT_PRO]); setIsLifetime(isLifetimeEntitlement(customerInfo));
+            setIsPro(withDev(!!customerInfo.entitlements.active[ENTITLEMENT_PRO])); setIsLifetime(isLifetimeEntitlement(customerInfo));
           }
         }
       } catch (e) {
@@ -322,7 +328,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       const Purchases = await getPurchases();
       if (!Purchases) return;
       const info = await Purchases.getCustomerInfo();
-      setIsPro(devProRef.current || !!info.entitlements.active[ENTITLEMENT_PRO]); setIsLifetime(isLifetimeEntitlement(info));
+      setIsPro(withDev(!!info.entitlements.active[ENTITLEMENT_PRO])); setIsLifetime(isLifetimeEntitlement(info));
     } catch (e) {
       console.warn('[Subscription] refreshEntitlements failed:', e);
     }
@@ -384,7 +390,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const debugSetPro = useCallback(async (value: boolean) => {
     if (!__DEV__) return;
     await AsyncStorage.setItem(DEV_OVERRIDE_KEY, value ? 'true' : 'false');
-    devProRef.current = value;
+    devProRef.current  = value;
+    devFreeRef.current = !value;
     setIsPro(value);
   }, []);
 
