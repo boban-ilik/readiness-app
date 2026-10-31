@@ -30,12 +30,23 @@ export default function GarminCallbackScreen() {
       let failure: string | null = null;
       if (status === 'ok') {
         if (typeof nonce === 'string' && nonce) {
-          try {
-            await confirmGarminConnection(nonce);
-          } catch (e: any) {
-            failure = e?.message === 'not_yours'
+          // Runs in the first moments after iOS hands the app back from the
+          // browser, so a failed attempt is retried before giving up. The
+          // final error is shown so a failure in the field can be diagnosed.
+          let lastError: unknown = null;
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try { await confirmGarminConnection(nonce); lastError = null; break; }
+            catch (e) {
+              lastError = e;
+              if ((e as Error)?.message === 'not_yours') break;
+              await new Promise(r => setTimeout(r, 1500));
+            }
+          }
+          if (lastError) {
+            const msg = (lastError as Error)?.message ?? String(lastError);
+            failure = msg === 'not_yours'
               ? 'This Garmin link was started from a different account.'
-              : 'Garmin accepted, but confirming the link failed. Please try again.';
+              : `Garmin accepted, but confirming the link failed (${msg}). Please try again.`;
           }
         }
         const conn = failure ? null : await refreshGarminConnection();
