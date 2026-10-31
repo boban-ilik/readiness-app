@@ -19,6 +19,8 @@ export type AnalyticsEvent =
   | 'onboarding_complete'
   | 'new_today_shown'         // { kind }
   | 'trial_ending_shown'      // { when: 'today' | 'tomorrow' }
+  | 'today_section_toggled'   // { section, open }
+  | 'pro_banner_tapped'       // { mode: 'trial' | 'upsell' }
   | 'trial_ending_keep_pro'
   | 'first_look_shown'        // { from: 'today' | 'history' }
   | 'onboarding_step'         // { step, name }: one per onboarding screen shown

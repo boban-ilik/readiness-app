@@ -29,6 +29,8 @@ interface TrainingLoadCardProps {
   score:      number;
   components: ReadinessResult['components'];
   illnessCap?: boolean;
+  /** Render as a row inside TodayPlanCard: no card chrome of its own. */
+  flat?:       boolean;
 }
 
 // ─── Zone badge ───────────────────────────────────────────────────────────────
@@ -54,6 +56,7 @@ export default function TrainingLoadCard({
   score,
   components,
   illnessCap = false,
+  flat = false,
 }: TrainingLoadCardProps) {
   const rec = getTrainingRecommendation(score, components, { illnessCap });
   const [showWhy, setShowWhy] = useState(false);
@@ -66,7 +69,7 @@ export default function TrainingLoadCard({
   const isRest = rec.durationMin === 0;
 
   return (
-    <View style={styles.card}>
+    <View style={flat ? styles.flat : styles.card}>
 
       {/* ── Top row: zone badge + headline ── */}
       <View style={styles.topRow}>
@@ -152,6 +155,9 @@ const styles = StyleSheet.create({
     gap: spacing[3],
     borderWidth: 1,
     borderColor: colors.border.subtle,
+  },
+  flat: {
+    gap: spacing[3],
   },
 
   // Top row

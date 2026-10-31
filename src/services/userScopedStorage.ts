@@ -60,6 +60,10 @@ export const USER_SCOPED_KEYS = [
   // the next account on this phone must not inherit "Garmin connected"
   '@readiness/garmin_connected',
 
+  // Today layout memory (CollapsibleSection, ProBanner)
+  '@readiness/today_week_open',
+  '@readiness/pro_banner_dismissed_day',
+
   // Notification preferences and dedupe state
   '@readiness/notif_digest_enabled',
   '@readiness/notif_digest_hour',
