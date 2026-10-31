@@ -77,3 +77,13 @@ Garmin, direct. Connect your Garmin account in Profile and Readiness reads your 
 Typical means typical. When your recovery is close to your usual, the Breakdown now says Typical instead of Reduced or Moderate.
 
 Also: rebuilt on a newer foundation for current iOS, and today's activity updates every time Today refreshes.
+
+## Second rejection and the 1.2.1 resubmission (31 October 2026)
+
+- Build 75 rejected under 2.3.10: the screenshots carried a drawn status bar ("9:41" and hand-made icons from the frame template). Apple offered to approve the bug fixes as they were; Boban chose to fix the screenshots and ship the audit fixes as 1.2.1 instead.
+- Screenshots regenerated with `assets/appstore-6.5/framed/build_121.py`: the capture's real iOS status bar, only the island pill drawn. Uploaded and reported COMPLETE.
+- App Store version renamed 1.2.0 to 1.2.1; What's New gained a fixes paragraph.
+- Builds: 76 (audit fixes 1 to 8) failed the Garmin confirm step on a device while the same code passed in the simulator; 77 added three retries and the error text, and connected on the device; 78 built before two late fixes and was never uploaded; 79 is the submitted build, with the Today redesign (plans/today-redesign.md), the banner copy fix and the dev-only free toggle.
+- Deployed to production Supabase: garmin-callback v3, garmin-confirm v1 (needed by the 1.2.1 confirm flow).
+- Resubmitted via Update Review then Resubmit to App Review at 13:48 UTC on 31 October 2026. State: Waiting for Review, build 79, automatic release.
+- Still open: Rising/Steady on the forecast cards; duplicate same-day tags; the demo account's Disconnect Garmin risk; the morning notification untested on 1.2.x.
