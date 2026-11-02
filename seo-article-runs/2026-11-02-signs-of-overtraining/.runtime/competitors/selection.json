@@ -1,0 +1,32 @@
+{
+  "query": "signs of overtraining",
+  "locale": "us/en",
+  "provider": "ahrefs serp-overview",
+  "captured_at": "2026-11-02",
+  "pages": [
+    {
+      "url": "https://my.clevelandclinic.org/health/diseases/overtraining-syndrome",
+      "title": "Overtraining Syndrome: Symptoms, Causes & Treatment Options (Cleveland Clinic)",
+      "observed_position": 2,
+      "selection_basis": "observed_rank",
+      "reason": "Highest-ranking organic result (position 2, first organic row) and its job is the reader task: what overtraining syndrome is, its symptoms by stage, how it is diagnosed, how long it lasts and how it is treated. Cited by the AI Overview on both the primary and secondary query. Health-library article format.",
+      "capture_path": "clevelandclinic-overtraining-syndrome.md"
+    },
+    {
+      "url": "https://www.hss.edu/health-library/move-better/overtraining",
+      "title": "Overtraining: What It Is, Symptoms, and Recovery (Hospital for Special Surgery)",
+      "observed_position": 5,
+      "selection_basis": "observed_rank",
+      "reason": "Next highest-ranking accessible article whose job is the reader task (position 5): overreaching vs overtraining, three grouped symptom lists, a recovery section with a return-to-training rule, prevention. Position 4 (Hoag Orthopedic Institute) returned HTTP 403 to every capture route and is excluded as inaccessible, so HSS is the second selected page. Cited by the AI Overview on both queries.",
+      "capture_path": "hss-overtraining.md"
+    },
+    {
+      "url": "https://www.nasm.org/resource-center/blog/recovery/overtraining-how-trainers-spot-it-prevent-it-and-program-around-it",
+      "title": "Overtraining: How Trainers Spot It, Prevent It, and Program Around It (NASM)",
+      "observed_position": 6,
+      "selection_basis": "observed_rank",
+      "reason": "Third highest-ranking accessible article matching the reader task (position 6): the spectrum from functional overreaching to overtraining syndrome, warning signs across performance, body and mind, recovery and comeback programming, FAQ. Written for trainers but answers the same questions. Published 2026-09-29, the freshest page in the set. Cited by the AI Overview on both queries.",
+      "capture_path": "nasm-overtraining-trainers.md"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+ "provider": "ahrefs serp-overview",
+ "country": "us",
+ "captured_at": "2026-11-02",
+ "ahrefs_update_date": "2026-10-21T23:25:36Z",
+ "keyword": "overtraining symptoms",
+ "volume": 1200,
+ "note": "Secondary query, retrieved by the orchestrator via the Ahrefs MCP serp-overview tool (top_positions 12). AI Overview sitelinks deduplicated. Position 2 is a People Also Ask block.",
+ "ai_overview_cited_urls": [
+  "https://my.clevelandclinic.org/health/diseases/overtraining-syndrome",
+  "https://www.hss.edu/health-library/move-better/overtraining",
+  "https://www.hoagorthopedicinstitute.com/blog/2026/january/avoiding-overtraining-how-to-stay-active-without/",
+  "https://en.wikipedia.org/wiki/Overtraining",
+  "https://www.racmn.com/blog/signs-and-symptoms-of-overtraining-what-to-watch-out-for",
+  "https://www.youtube.com/watch?v=WHuYqooUdnw",
+  "https://www.k-state.edu/counseling/services/resources/self_help/overtraining.html",
+  "https://www.nasm.org/resource-center/blog/recovery/overtraining-how-trainers-spot-it-prevent-it-and-program-around-it",
+  "https://www.youtube.com/watch?v=oI0lPiNEm2g"
+ ],
+ "people_also_ask": [
+  "Can overtraining stop fat loss?",
+  "What are some signs that a woman's body is changing from working out?",
+  "How to avoid overtraining?",
+  "Can overtraining cause high blood pressure?"
+ ],
+ "results": [
+  {"position": 1, "type": "ai_overview", "url": null},
+  {"position": 2, "type": "people_also_ask", "url": null},
+  {"position": 3, "type": "organic", "url": "https://www.physio-pedia.com/Overtraining_Syndrome", "title": "Overtraining Syndrome", "domain_rating": 83, "traffic": 195},
+  {"position": 4, "type": "organic", "url": "https://www.reddit.com/r/xxfitness/comments/18i0bru/signs_of_overtraining/", "title": "Signs of Overtraining? : r/xxfitness", "domain_rating": 95, "traffic": 156},
+  {"position": 5, "type": "organic", "url": "https://www.surreyphysio.co.uk/article/overtraining-syndrome-six-signs-of-overtraining/", "title": "Overtraining Syndrome - Six Signs of Overtraining", "domain_rating": 42, "traffic": 60},
+  {"position": 6, "type": "organic", "url": "https://www.chesapeakehand.com/2020/12/23/overtraining-syndrome-10-signs-that-may-suggest-youre-training-too-hard/", "title": "Overtraining Syndrome: 10 Signs that May Suggest You're Training Too Hard", "domain_rating": 18, "traffic": 40},
+  {"position": 7, "type": "organic", "url": "https://www.verywellfit.com/overtraining-syndrome-and-athletes-3119386", "title": "Overtraining Syndrome: Warning Signs and How to Cut Back", "domain_rating": 84, "traffic": 27},
+  {"position": 8, "type": "organic", "url": "https://inbodyusa.com/blogs/inbodyblog/7-signs-of-overtraining-and-how-to-heal/", "title": "7 Signs of Overtraining and How To Heal", "domain_rating": 72, "traffic": 14},
+  {"position": 9, "type": "organic", "url": "https://medlineplus.gov/ency/patientinstructions/000807.htm", "title": "Are you getting too much exercise?", "domain_rating": 91, "traffic": 668},
+  {"position": 10, "type": "organic", "url": "https://www.hsnstore.eu/blog/health-and-beauty/injuries/overtraining-what-is-it-why-does-it-happen-symptoms-how-to-detect-it-and-prevent-it/", "title": "Overtraining: What it is, Why, Symptoms, and Detection", "domain_rating": 33, "traffic": 3}
+ ]
+}
