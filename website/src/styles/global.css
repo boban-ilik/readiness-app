@@ -443,3 +443,54 @@ details p { margin-top: 14px; font-size: 0.95rem; }
 }
 .post-cta h3 { font-size: 1.25rem; }
 .post-cta p { max-width: 520px; margin: 12px auto 22px; font-size: 0.95rem; }
+
+/* ── Cookie banner ───────────────────────────────────────────────────────── */
+.cookie-banner {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 50;
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 16px 20px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+.cookie-banner[hidden] { display: none; }
+.cookie-banner p { margin: 0; flex: 1 1 280px; }
+.cookie-banner a { color: var(--amber); }
+.cookie-actions { display: flex; gap: 10px; flex: 0 0 auto; }
+/* Accept and Decline look the same: refusing is as easy as agreeing. */
+.cookie-btn {
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 10px;
+  border: 1px solid var(--text-secondary);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.cookie-btn:hover { border-color: var(--text-primary); background: var(--bg-tertiary); }
+.cookie-btn:focus-visible, .link-button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.link-button:hover { text-decoration: underline; }

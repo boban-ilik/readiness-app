@@ -51,14 +51,7 @@ const jsonLd = JSON.stringify({
 
     <script type="application/ld+json" set:html={jsonLd} />
 
-    <!-- Google tag (gtag.js) -->
-    <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-7N5S436JZ0"></script>
-    <script is:inline>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-7N5S436JZ0');
-    </script>
+    <!-- Google Analytics loads only after the visitor accepts (cookie banner at the end of body). -->
   </head>
   <body>
     <header class="site-header">
@@ -99,7 +92,7 @@ const jsonLd = JSON.stringify({
           <div>
             <h4>Support</h4>
             <ul>
-              <li><a href="/support">Support</a></li>
+              <li><a href="/support/">Support</a></li>
               <li><a href="/#faq">FAQ</a></li>
               <li><a href="mailto:support@thereadiness.app">support@thereadiness.app</a></li>
             </ul>
@@ -107,8 +100,9 @@ const jsonLd = JSON.stringify({
           <div>
             <h4>Trust</h4>
             <ul>
-              <li><a href="/privacy">Privacy Policy</a></li>
+              <li><a href="/privacy/">Privacy Policy</a></li>
               <li><a href="/#science">Sources</a></li>
+              <li><button type="button" class="link-button" data-cookie-settings>Cookie settings</button></li>
             </ul>
           </div>
         </div>
@@ -118,5 +112,75 @@ const jsonLd = JSON.stringify({
         </div>
       </div>
     </footer>
+
+    <div class="cookie-banner" id="cookie-banner" role="region" aria-label="Cookie choice" hidden>
+      <p>
+        We use Google Analytics cookies to see which pages people read. Nothing is set unless you accept.
+        <a href="/privacy/">Privacy Policy</a>
+      </p>
+      <div class="cookie-actions">
+        <button type="button" class="cookie-btn" data-cookie-choice="denied">Decline</button>
+        <button type="button" class="cookie-btn" data-cookie-choice="granted">Accept</button>
+      </div>
+    </div>
+
+    <script is:inline>
+      (function () {
+        var KEY = 'readiness_cookie_consent';
+        var GA_ID = 'G-7N5S436JZ0';
+        var banner = document.getElementById('cookie-banner');
+
+        function read() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+        function save(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
+
+        function loadAnalytics() {
+          if (window.__readinessGA) return;
+          window.__readinessGA = true;
+          window.dataLayer = window.dataLayer || [];
+          window.gtag = function () { window.dataLayer.push(arguments); };
+          window.gtag('js', new Date());
+          window.gtag('config', GA_ID);
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+          document.head.appendChild(s);
+        }
+
+        // Withdrawing consent removes the cookies Google Analytics set.
+        function clearAnalyticsCookies() {
+          document.cookie.split(';').forEach(function (c) {
+            var name = c.split('=')[0].trim();
+            if (name.indexOf('_ga') !== 0) return;
+            ['', '; domain=thereadiness.app', '; domain=.thereadiness.app'].forEach(function (d) {
+              document.cookie = name + '=; Max-Age=0; path=/' + d;
+            });
+          });
+        }
+
+        function choose(value) {
+          var wasGranted = read() === 'granted';
+          save(value);
+          banner.hidden = true;
+          if (value === 'granted') { loadAnalytics(); return; }
+          // Stop the running tag first, or it rewrites its cookie before the reload.
+          window['ga-disable-' + GA_ID] = true;
+          clearAnalyticsCookies();
+          // The already-running tag would keep sending; a reload drops it.
+          if (wasGranted) window.location.reload();
+        }
+
+        document.querySelectorAll('[data-cookie-choice]').forEach(function (b) {
+          b.addEventListener('click', function () { choose(b.getAttribute('data-cookie-choice')); });
+        });
+        document.querySelectorAll('[data-cookie-settings]').forEach(function (b) {
+          b.addEventListener('click', function () { banner.hidden = false; });
+        });
+
+        var current = read();
+        if (current === 'granted') loadAnalytics();
+        else if (current === 'denied') clearAnalyticsCookies();
+        else banner.hidden = false;
+      })();
+    </script>
   </body>
 </html>
