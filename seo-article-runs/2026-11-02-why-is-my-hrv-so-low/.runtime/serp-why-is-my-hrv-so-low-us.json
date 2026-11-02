@@ -1,0 +1,32 @@
+{
+ "provider": "ahrefs serp-overview",
+ "country": "us",
+ "captured_at": "2026-11-02",
+ "serp_update_date": "2026-11-01T23:45:58Z",
+ "keyword": "why is my hrv so low",
+ "volume": 1500,
+ "difficulty": 14,
+ "traffic_potential": 900,
+ "parent_topic": "low hrv meaning",
+ "results": [
+  {"position": 1, "type": "ai_overview", "url": null, "ai_overview_sources": [
+    "https://www.polar.com/en/guide/my-hrv-is-very-low",
+    "https://www.whoop.com/us/en/thelocker/low-hrv/",
+    "https://nurosym.com/blogs/articles/low-hrv",
+    "https://www.ultrahuman.com/blog/hrv-and-stress-explained-how-your-body-signals-overload/",
+    "https://support.trainwithmorpheus.com/support/solutions/articles/4000226378-what-it-means-if-your-hrv-is-always-low-"
+  ]},
+  {"position": 2, "type": "organic", "url": "https://www.whoop.com/us/en/thelocker/low-hrv/", "title": "Low HRV Symptoms: 6 Signs, Causes, and Ways to Improve", "domain_rating": 81, "traffic": 1743, "keywords": 141},
+  {"position": 3, "type": "organic", "url": "https://www.polar.com/en/guide/my-hrv-is-very-low", "title": "My HRV is Very Low. Can I Increase My Heart Rate Variability?", "domain_rating": 79, "traffic": 4968, "keywords": 317},
+  {"position": 4, "type": "people_also_ask", "questions": ["Should I worry if my HRV is low?", "Is 20 HRV normal?", "Is an HRV of 17 bad?", "How can you fix low HRV?"]},
+  {"position": 5, "type": "discussion", "url": "https://www.reddit.com/r/Garmin/comments/w6r3t6/hrv_is_consistently_low/", "title": "HRV is consistently low"},
+  {"position": 5, "type": "discussion", "url": "https://www.rapamycin.news/t/should-i-be-concerned-about-low-hrv-heart-rate-variability/13302/40", "title": "Should I be concerned about low HRV (heart rate variability)?"},
+  {"position": 5, "type": "discussion", "url": "https://www.trainerroad.com/forum/t/hrv-illness-level-low-but-not-sick/97399", "title": "HRV illness-level low but not sick - Training"},
+  {"position": 6, "type": "organic", "url": "https://my.clevelandclinic.org/health/symptoms/21773-heart-rate-variability-hrv", "title": "Heart Rate Variability (HRV)", "domain_rating": 92, "traffic": 42225, "keywords": 819},
+  {"position": 7, "type": "organic", "url": "https://nurosym.com/blogs/articles/low-hrv", "title": "Low HRV: What It Means, Causes & When to Be Concerned", "domain_rating": 53, "traffic": 929, "keywords": 59},
+  {"position": 8, "type": "organic", "url": "https://www.reddit.com/r/ouraring/comments/169mzw7/why_is_my_hrv_always_super_low_1725_i_am_in_super/", "title": "Why is my HRV always super low 17-25? I am in ...", "domain_rating": 95, "traffic": 421, "keywords": 109, "sitelinks": ["https://www.reddit.com/r/Garmin/comments/w6r3t6/hrv_is_consistently_low/", "https://www.reddit.com/r/Garmin/comments/1f9j7ic/im_22_years_old_my_hrv_is_very_low_what_should_i/"]},
+  {"position": 9, "type": "organic", "url": "https://www.health.harvard.edu/heart-health/how-relevant-is-heart-rate-variability", "title": "How relevant is heart rate variability?", "domain_rating": 93, "traffic": 7629, "keywords": 342},
+  {"position": 10, "type": "organic video", "url": "https://www.youtube.com/watch?v=gPnY-4qlve0", "title": "The Truth About Low HRV and Low RHR", "domain_rating": 99, "traffic": 50, "keywords": 19},
+  {"position": 11, "type": "organic", "url": "https://www.garmin.com/en-US/garmin-technology/health-science/hrv-status/", "title": "HRV Status | Garmin Technology", "domain_rating": 91, "traffic": 6931, "keywords": 489}
+ ]
+}
