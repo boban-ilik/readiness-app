@@ -87,3 +87,9 @@ Also: rebuilt on a newer foundation for current iOS, and today's activity update
 - Deployed to production Supabase: garmin-callback v3, garmin-confirm v1 (needed by the 1.2.1 confirm flow).
 - Resubmitted via Update Review then Resubmit to App Review at 13:48 UTC on 31 October 2026. State: Waiting for Review, build 79, automatic release.
 - Still open: Rising/Steady on the forecast cards; duplicate same-day tags; the demo account's Disconnect Garmin risk; the morning notification untested on 1.2.x.
+
+## Third rejection: 1.4.1 (2 November 2026)
+
+- Build 79 rejected under 1.4.1 Physical Harm: the reviewer read the Garmin link as "connects to external medical hardware" and asked for regulatory documents, region limits or a jurisdiction statement, and a medical disclaimer in the description.
+- Done with Boban's approval: medical disclaimer appended to the description (before the EULA line); reply sent in App Store Connect at 11:57 local explaining the app reads consumer wearable data through HealthKit and Garmin's Health API, connects to no hardware, and makes no medical claim; version resubmitted with the same build 79 via Update Review then Resubmit.
+- If Apple holds the hardware reading: options are an App Review appointment (Tuesdays and Thursdays) or an appeal; no documents of the kind requested exist for consumer wearables.
