@@ -1,0 +1,40 @@
+{
+  "query": "body battery garmin",
+  "locale": "US English",
+  "provider": "ahrefs serp-overview",
+  "captured_at": "2026-11-02",
+  "pages": [
+    {
+      "url": "https://www.garmin.com/en-US/garmin-technology/health-science/body-battery/",
+      "title": "Body Battery Energy Monitoring | Garmin Technology",
+      "observed_position": 2,
+      "selection_basis": "observed_rank",
+      "reason": "First organic result and first AI Overview source. Garmin's own long-form explainer of what Body Battery is built from (heart rate, HRV, movement; stress 0 to 100; sleep pressure; fitness) and when a low value matters. Its job matches the reader task (what it measures, why it drains) and the explainer format; it is also the article's primary source.",
+      "capture_path": "garmin-body-battery-technology.md"
+    },
+    {
+      "url": "https://support.garmin.com/en-US/?faq=VOFJAsiXut9K19k1qEn5W5",
+      "title": "Garmin Body Battery Frequently Asked Questions | Garmin Customer Support",
+      "observed_position": 6,
+      "selection_basis": "observed_rank",
+      "reason": "Garmin's support FAQ; AI Overview source. Its six questions are the reader task in Garmin's own words (Charged and Drained, low after sleeping, stuck at 5 and the 5 to 7 day personal-baseline learning period, device not worn, other devices, TrueUp sync). Outranks the blog (8) and Sonar (10). Captured by the orchestrator as rendered page text in the desktop browser pane on 2026-11-02 after HTTP 403 on curl and WebFetch. Added as a fourth capture rather than a replacement: the blog is the only drain-causes article with cited studies and Sonar the only third-party format peer.",
+      "capture_path": "garmin-support-body-battery-faq.md"
+    },
+    {
+      "url": "https://www.garmin.com/en-US/blog/fitness/5-reasons-your-body-battery-running-low/",
+      "title": "5 reasons your Body Battery says you're running low (Garmin blog)",
+      "observed_position": 8,
+      "selection_basis": "observed_rank",
+      "reason": "Highest-ranking page after the Garmin technology page and FAQ whose job is the 'why does it drain' half of the reader task in article form (five causes: routines, sleep, fitness, alcohol, individual variation), with two cited studies. Garmin blog, published 2024-10-15, modified 2026-08-31; AI Overview source. Position 7 (owner's manual) ranks above it but is a 200-word reference page, not an explainer; it is benchmarked by passage and used as evidence.",
+      "capture_path": "garmin-blog-5-reasons-body-battery-low.md"
+    },
+    {
+      "url": "https://www.sonarhealth.co/blog/what-is-body-battery/",
+      "title": "What Is Body Battery? How Garmin's Energy Score Works (Sonar Health)",
+      "observed_position": 10,
+      "selection_basis": "observed_rank",
+      "reason": "The only third-party explainer in the organic top ten (DR 16, published 2026-06-30) and the page whose format most closely matches the planned article: scale table, drains and recharges, accuracy and proprietary-algorithm caveat, comparison with other brands' scores, FAQ mirroring the PAA box. AI Overview source.",
+      "capture_path": "sonarhealth-what-is-body-battery.md"
+    }
+  ]
+}

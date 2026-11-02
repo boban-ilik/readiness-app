@@ -1,0 +1,345 @@
+{
+  "approval_mode": "automatic",
+  "archetype": {
+    "recommended": null,
+    "selected": null
+  },
+  "artifacts": {
+    "article.md": {
+      "bytes": 21926,
+      "sha256": "afa18fc2e4b8924e5d36f5f1e9e2947a4200793c1eb6713f19ff7b418bf1c2f0",
+      "status": "completed"
+    },
+    "brief.md": {
+      "bytes": 15128,
+      "sha256": "0baaa4e54d10fbe8a7ca46ed37ee6060df27595721c5428ce68d227c66baaff3",
+      "status": "completed"
+    },
+    "draft.md": {
+      "bytes": 22493,
+      "sha256": "09b5f2aa485dd7cf7335d2838c55e9b9a16a1e646ffc7d5d01bf81a2901fd229",
+      "status": "completed"
+    },
+    "qa.md": {
+      "bytes": 3356,
+      "sha256": "50f7d920fbdc82962eb1b1cc538b5a5df775aa1bde2938a9e14d6250d25a2c6f",
+      "status": "completed"
+    },
+    "research.md": {
+      "bytes": 111020,
+      "sha256": "b7cc39b8c049dda07544615b072331279cb0cac88250fe9c8177baf5876bdd6e",
+      "status": "completed"
+    },
+    "run.json": {
+      "status": "completed"
+    }
+  },
+  "checkpoints": {
+    "archetype": true,
+    "brief": true
+  },
+  "competitor_benchmark": {
+    "competitor_sha256": "0a1220b907e7229f48a1abd9727d6bc90d521e3dd88f5b11c1c46953df3eb0e6",
+    "evidence_ref": "research.md#serp-and-competitor-benchmark",
+    "ranking_evidence": {
+      "basis": "observed_serp",
+      "inspected_results": [
+        {
+          "disposition": "selected",
+          "observed_position": 2,
+          "reason": "First organic result and first AI Overview source. Garmin's long-form explainer of the inputs (heart rate, HRV, movement; stress 0 to 100; sleep pressure; fitness) and of when a low value matters. Matches the reader task and the explainer format; also the article's primary source.",
+          "url": "https://www.garmin.com/en-US/garmin-technology/health-science/body-battery/"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 4,
+          "reason": "Discussion thread, not an article; HTTP 403 via old.reddit.com and the .json endpoint, WebFetch refuses the domain. Title only.",
+          "url": "https://www.reddit.com/r/Garmin/comments/1i49kbw/how_useful_is_garmins_body_battery/"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 5,
+          "reason": "Position 5 is a discussions feature holding three items, recorded once here: this Reddit thread plus two Facebook garminforum group posts (https://www.facebook.com/groups/garminforum/posts/2579850509041534/ and https://www.facebook.com/groups/garminforum/posts/1957605001266091/). None is an article; Reddit returned HTTP 403 and the Facebook posts return a login shell with no post text. Titles only.",
+          "url": "https://www.reddit.com/r/Garmin/comments/1t65us1/is_garmins_body_battery_genuinely_useful_or_just/"
+        },
+        {
+          "disposition": "selected",
+          "observed_position": 6,
+          "reason": "Garmin support FAQ; AI Overview source; outranks the blog and Sonar and its six questions are the reader task in Garmin's own words (Charged and Drained, low after sleeping, stuck at 5 and the 5 to 7 day baseline learning period, device not worn, other devices, TrueUp sync). HTTP 403 to curl and WebFetch; captured by the orchestrator as rendered page text on 2026-11-02 and registered as a fourth capture.",
+          "url": "https://support.garmin.com/en-US/?faq=VOFJAsiXut9K19k1qEn5W5"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 7,
+          "reason": "vivoactive 5 owner's manual entry (about 200 words: definition, 5 to 100 bands, glance navigation, four tips). Captured in full and used as primary evidence (E2) and benchmarked by passage, but it is a reference page, not an explainer, so it is not one of the three.",
+          "url": "https://www8.garmin.com/manuals/webhelp/GUID-5D183A14-BB43-4A9B-B441-5F824214CE40/EN-US/GUID-87E1392B-2C55-40B7-A1FF-3AB9252DA0A0.html"
+        },
+        {
+          "disposition": "selected",
+          "observed_position": 8,
+          "reason": "Highest-ranking page after the Garmin technology page and FAQ whose job is the 'why does it drain' half of the reader task in article form (five causes with two cited studies). Garmin blog, published 2024-10-15, modified 2026-08-31; AI Overview source. Retained alongside the FAQ because it is the only page on the SERP that explains the drain causes in article form.",
+          "url": "https://www.garmin.com/en-US/blog/fitness/5-reasons-your-body-battery-running-low/"
+        },
+        {
+          "disposition": "excluded",
+          "observed_position": 9,
+          "reason": "Garmin video ('answers to some FAQs'), not an article; HTTP 200 returns a login shell, answers not captured.",
+          "url": "https://www.facebook.com/Garmin/videos/body-battery-your-personal-on-wrist-energy-monitor-lets-dive-in-to-the-answers-t/2734122170118760/"
+        },
+        {
+          "disposition": "selected",
+          "observed_position": 10,
+          "reason": "The only third-party explainer in the organic top ten (DR 16, published 2026-06-30); its format most closely matches the planned article (scale table, drains and recharges, accuracy caveat, brand comparison, FAQ mirroring the PAA box); AI Overview source. Retained when the FAQ was added, making the sample four pages by disclosed enlargement.",
+          "url": "https://www.sonarhealth.co/blog/what-is-body-battery/"
+        }
+      ],
+      "inspection_complete": true,
+      "reference": "Ahrefs SERP overview, keyword 'body battery garmin', US, SERP dated 2026-10-20, retrieved by the orchestrator 2026-11-02 (.runtime/serp-body-battery-garmin-us.json); secondary 'garmin training readiness', US, SERP dated 2026-09-25 (.runtime/serp-garmin-training-readiness-us.json) recorded for context."
+    },
+    "rationale": "Four pages from the observed top ten were captured in full and benchmarked passage by passage against Garmin's own documentation and primary physiology sources (research.md section 3). The default sample is the three highest-ranking pages whose job matches the reader task and the explainer format; those are Garmin's technology page (position 2), Garmin's support FAQ (position 6) and Garmin's blog (position 8). The FAQ returned HTTP 403 to curl and WebFetch during research and was captured afterwards by the orchestrator as rendered page text in the desktop browser pane, then added to the set. Sonar Health (position 10), the only third-party explainer on the SERP and the format peer the planned article will compete with for a non-Garmin slot, was retained rather than displaced, so the sample is four pages by a disclosed enlargement, not a replacement. The vivoactive 5 owner's manual at position 7 is a 200-word reference entry rather than an explainer; it was captured and is used as evidence E2 and benchmarked by passage. Every other top-ten organic, discussion or video row is excluded with a reason; Reddit and Facebook rows could not be read (login walls) and the Garmin video is not an article. Positions are from the primary query's SERP dated 2026-10-20; the secondary query 'garmin training readiness' (SERP dated 2026-09-25) has no article in its organic top ten and no Garmin documentation outside AI Overview sources, so no competitor was selected from it; its rows are recorded in research.md section 3.",
+    "recorded_at": "2026-11-02T12:08:04.250489+00:00",
+    "research_sha256": "b7cc39b8c049dda07544615b072331279cb0cac88250fe9c8177baf5876bdd6e",
+    "run_id": "2026-11-02-garmin-body-battery-explained",
+    "source_sha256": null,
+    "status": "benchmarked"
+  },
+  "competitor_pages": {
+    "bytes": 36881,
+    "captured_at": "2026-11-02",
+    "locale": "US English",
+    "pages": [
+      {
+        "bytes": 11008,
+        "observed_position": 2,
+        "reason": "First organic result and first AI Overview source. Garmin's own long-form explainer of what Body Battery is built from (heart rate, HRV, movement; stress 0 to 100; sleep pressure; fitness) and when a low value matters. Its job matches the reader task (what it measures, why it drains) and the explainer format; it is also the article's primary source.",
+        "selection_basis": "observed_rank",
+        "sha256": "ca79ec2e476f1edf2d7fd9f7e5e602d564cad3f27316ae0c07b553569e9bf7ef",
+        "title": "Body Battery Energy Monitoring | Garmin Technology",
+        "url": "https://www.garmin.com/en-US/garmin-technology/health-science/body-battery/"
+      },
+      {
+        "bytes": 5979,
+        "observed_position": 6,
+        "reason": "Garmin's support FAQ; AI Overview source. Its six questions are the reader task in Garmin's own words (Charged and Drained, low after sleeping, stuck at 5 and the 5 to 7 day personal-baseline learning period, device not worn, other devices, TrueUp sync). Outranks the blog (8) and Sonar (10). Captured by the orchestrator as rendered page text in the desktop browser pane on 2026-11-02 after HTTP 403 on curl and WebFetch. Added as a fourth capture rather than a replacement: the blog is the only drain-causes article with cited studies and Sonar the only third-party format peer.",
+        "selection_basis": "observed_rank",
+        "sha256": "ba2779dd5304158166e314691c6114d658ce64af126892aa7e6da9c0a646eedb",
+        "title": "Garmin Body Battery Frequently Asked Questions | Garmin Customer Support",
+        "url": "https://support.garmin.com/en-US/?faq=VOFJAsiXut9K19k1qEn5W5"
+      },
+      {
+        "bytes": 6961,
+        "observed_position": 8,
+        "reason": "Highest-ranking page after the Garmin technology page and FAQ whose job is the 'why does it drain' half of the reader task in article form (five causes: routines, sleep, fitness, alcohol, individual variation), with two cited studies. Garmin blog, published 2024-10-15, modified 2026-08-31; AI Overview source. Position 7 (owner's manual) ranks above it but is a 200-word reference page, not an explainer; it is benchmarked by passage and used as evidence.",
+        "selection_basis": "observed_rank",
+        "sha256": "9fa109f86afa3557b7e43346bbc413ace758b1ce0fd2ed4dfdcf42a6a41b41e8",
+        "title": "5 reasons your Body Battery says you're running low (Garmin blog)",
+        "url": "https://www.garmin.com/en-US/blog/fitness/5-reasons-your-body-battery-running-low/"
+      },
+      {
+        "bytes": 8974,
+        "observed_position": 10,
+        "reason": "The only third-party explainer in the organic top ten (DR 16, published 2026-06-30) and the page whose format most closely matches the planned article: scale table, drains and recharges, accuracy and proprietary-algorithm caveat, comparison with other brands' scores, FAQ mirroring the PAA box. AI Overview source.",
+        "selection_basis": "observed_rank",
+        "sha256": "f63bdaa230eaa852aabdb93dd88c5d61d79bb918e9068424c7f51c48c69b2f7a",
+        "title": "What Is Body Battery? How Garmin's Energy Score Works (Sonar Health)",
+        "url": "https://www.sonarhealth.co/blog/what-is-body-battery/"
+      }
+    ],
+    "provider": "ahrefs serp-overview",
+    "query": "body battery garmin",
+    "sha256": "0a1220b907e7229f48a1abd9727d6bc90d521e3dd88f5b11c1c46953df3eb0e6",
+    "snapshot_path": ".runtime/competitor-pages.json"
+  },
+  "consent": {
+    "apify": null,
+    "openrouter": {
+      "events": []
+    }
+  },
+  "current_stage": "qa",
+  "doctrine": {
+    "files": [
+      {
+        "bytes": 1859,
+        "path": "ai-visibility.md",
+        "sha256": "ca9850ff7d19ded6c9917e7db8c5a30a5f1c3eff042f1046a8a6ca0fe56a973a"
+      },
+      {
+        "bytes": 4936,
+        "path": "editing.md",
+        "sha256": "780a6312311d3675be998a1e9820d15eb3a1523de995225281c8f2c38df00944"
+      },
+      {
+        "bytes": 5612,
+        "path": "links.md",
+        "sha256": "e8b023c0522c6ad32344bd1d64ea082c1f91f02450766f7dda941d0bc6eda691"
+      },
+      {
+        "bytes": 2848,
+        "path": "sources-evidence.md",
+        "sha256": "10b3ab3031dd8472e48c93e698029211ffbb6bdfa5749da0e962d5f161d62ed9"
+      },
+      {
+        "bytes": 3661,
+        "path": "voice.md",
+        "sha256": "5d00c742d4e1353b41ccc7478912dd2515079a88b700b7cbf416ca553c5d4111"
+      },
+      {
+        "bytes": 5882,
+        "path": "writing.md",
+        "sha256": "d878fd031213771e5a81315f32797f32c3f717039d4c0ae7ac779ad6bcbc8136"
+      }
+    ],
+    "hash": "8a473bcf31622b9906b2129ef590923eb39737ef9a6d85e444d5c4d7a0a711c5",
+    "paths": [
+      "ai-visibility.md",
+      "editing.md",
+      "links.md",
+      "sources-evidence.md",
+      "voice.md",
+      "writing.md"
+    ],
+    "root": "/Users/bobanilikj/.claude/plugins/cache/authority-hacker-plugins/seo-article-writer-v2/0.1.13/doctrine",
+    "snapshot_path": ".runtime/doctrine-snapshot.json",
+    "snapshot_sha256": "aa49d4e672126c94fdf55e9788db90e2a1e82bf1aaff814432cccfa28f8db85c",
+    "source": "bundled",
+    "warnings": [
+      "no user doctrine loaded; using bundled doctrine"
+    ]
+  },
+  "failure": null,
+  "final_gate": {
+    "edited_before_humanize": {
+      "bytes": 21908,
+      "sha256": "01b77d937c74fdf13424e6f3f5942479ceb9188b72695f44dde83fefe74a88de"
+    },
+    "humanizer": {
+      "input_sha256": "01b77d937c74fdf13424e6f3f5942479ceb9188b72695f44dde83fefe74a88de",
+      "output_sha256": "afa18fc2e4b8924e5d36f5f1e9e2947a4200793c1eb6713f19ff7b418bf1c2f0"
+    },
+    "passed": true,
+    "qa_decision": "passed",
+    "site_url": "https://thereadiness.app/blog/garmin-body-battery-explained/"
+  },
+  "last_valid_artifact": "qa.md",
+  "mode": "new",
+  "model_routes": {
+    "editor": {
+      "effective": "unknown",
+      "fallback_used": false,
+      "provider": "native",
+      "requested": "automatic"
+    },
+    "writer": {
+      "effective": "unknown",
+      "fallback_used": false,
+      "provider": "native",
+      "requested": "automatic"
+    }
+  },
+  "openrouter_calls": [],
+  "openrouter_candidates_purged": 0,
+  "openrouter_responses_purged": 0,
+  "openrouter_totals": {
+    "accepted_calls": 0,
+    "cost_usd": 0.0,
+    "logical_calls": 0,
+    "provider_generations": 0,
+    "rejected_calls": 0,
+    "unknown_cost_calls": 0
+  },
+  "profile": {
+    "hash": null,
+    "name": null,
+    "root": null,
+    "selection": "bundled"
+  },
+  "provenance": {
+    "history": {
+      "editor": [
+        {
+          "attempt": 1,
+          "bytes": 21908,
+          "id": "a8a9ac1b9fd229bd1",
+          "kind": "subagent",
+          "model_route": {
+            "effective": "unknown",
+            "fallback_used": false,
+            "provider": "native",
+            "requested": "automatic"
+          },
+          "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-11-02-garmin-body-battery-explained/.runtime/edited-before-humanize.md",
+          "sha256": "01b77d937c74fdf13424e6f3f5942479ceb9188b72695f44dde83fefe74a88de"
+        }
+      ],
+      "writer": [
+        {
+          "attempt": 1,
+          "bytes": 22493,
+          "id": "a0fee782018bb0183",
+          "kind": "subagent",
+          "model_route": {
+            "effective": "unknown",
+            "fallback_used": false,
+            "provider": "native",
+            "requested": "automatic"
+          },
+          "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-11-02-garmin-body-battery-explained/draft.md",
+          "sha256": "09b5f2aa485dd7cf7335d2838c55e9b9a16a1e646ffc7d5d01bf81a2901fd229"
+        }
+      ]
+    },
+    "outputs": {
+      "editor": {
+        "attempt": 1,
+        "bytes": 21908,
+        "id": "a8a9ac1b9fd229bd1",
+        "kind": "subagent",
+        "model_route": {
+          "effective": "unknown",
+          "fallback_used": false,
+          "provider": "native",
+          "requested": "automatic"
+        },
+        "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-11-02-garmin-body-battery-explained/.runtime/edited-before-humanize.md",
+        "sha256": "01b77d937c74fdf13424e6f3f5942479ceb9188b72695f44dde83fefe74a88de"
+      },
+      "writer": {
+        "attempt": 1,
+        "bytes": 22493,
+        "id": "a0fee782018bb0183",
+        "kind": "subagent",
+        "model_route": {
+          "effective": "unknown",
+          "fallback_used": false,
+          "provider": "native",
+          "requested": "automatic"
+        },
+        "path": "/Users/bobanilikj/readiness-app/.claude/worktrees/epic-perlman-d80d80/seo-article-runs/2026-11-02-garmin-body-battery-explained/draft.md",
+        "sha256": "09b5f2aa485dd7cf7335d2838c55e9b9a16a1e646ffc7d5d01bf81a2901fd229"
+      }
+    }
+  },
+  "qa": {
+    "editor_fresh_context": true,
+    "execution_contexts": {
+      "editor": {
+        "id": "a8a9ac1b9fd229bd1",
+        "kind": "subagent"
+      },
+      "writer": {
+        "id": "a0fee782018bb0183",
+        "kind": "subagent"
+      }
+    },
+    "writer_fresh_context": true
+  },
+  "rejected_openrouter_outputs_purged": 0,
+  "research_stop_closed": true,
+  "run_contract_version": 4,
+  "run_id": "2026-11-02-garmin-body-battery-explained",
+  "schema_version": 1,
+  "source_presentation": "automatic",
+  "status": "completed",
+  "topic": null
+}

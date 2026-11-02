@@ -1,0 +1,60 @@
+{
+  "status": "benchmarked",
+  "rationale": "Four pages from the observed top ten were captured in full and benchmarked passage by passage against Garmin's own documentation and primary physiology sources (research.md section 3). The default sample is the three highest-ranking pages whose job matches the reader task and the explainer format; those are Garmin's technology page (position 2), Garmin's support FAQ (position 6) and Garmin's blog (position 8). The FAQ returned HTTP 403 to curl and WebFetch during research and was captured afterwards by the orchestrator as rendered page text in the desktop browser pane, then added to the set. Sonar Health (position 10), the only third-party explainer on the SERP and the format peer the planned article will compete with for a non-Garmin slot, was retained rather than displaced, so the sample is four pages by a disclosed enlargement, not a replacement. The vivoactive 5 owner's manual at position 7 is a 200-word reference entry rather than an explainer; it was captured and is used as evidence E2 and benchmarked by passage. Every other top-ten organic, discussion or video row is excluded with a reason; Reddit and Facebook rows could not be read (login walls) and the Garmin video is not an article. Positions are from the primary query's SERP dated 2026-10-20; the secondary query 'garmin training readiness' (SERP dated 2026-09-25) has no article in its organic top ten and no Garmin documentation outside AI Overview sources, so no competitor was selected from it; its rows are recorded in research.md section 3.",
+  "evidence_ref": "research.md#serp-and-competitor-benchmark",
+  "ranking_evidence": {
+    "basis": "observed_serp",
+    "reference": "Ahrefs SERP overview, keyword 'body battery garmin', US, SERP dated 2026-10-20, retrieved by the orchestrator 2026-11-02 (.runtime/serp-body-battery-garmin-us.json); secondary 'garmin training readiness', US, SERP dated 2026-09-25 (.runtime/serp-garmin-training-readiness-us.json) recorded for context.",
+    "inspection_complete": true,
+    "inspected_results": [
+      {
+        "url": "https://www.garmin.com/en-US/garmin-technology/health-science/body-battery/",
+        "observed_position": 2,
+        "disposition": "selected",
+        "reason": "First organic result and first AI Overview source. Garmin's long-form explainer of the inputs (heart rate, HRV, movement; stress 0 to 100; sleep pressure; fitness) and of when a low value matters. Matches the reader task and the explainer format; also the article's primary source."
+      },
+      {
+        "url": "https://www.reddit.com/r/Garmin/comments/1i49kbw/how_useful_is_garmins_body_battery/",
+        "observed_position": 4,
+        "disposition": "excluded",
+        "reason": "Discussion thread, not an article; HTTP 403 via old.reddit.com and the .json endpoint, WebFetch refuses the domain. Title only."
+      },
+      {
+        "url": "https://www.reddit.com/r/Garmin/comments/1t65us1/is_garmins_body_battery_genuinely_useful_or_just/",
+        "observed_position": 5,
+        "disposition": "excluded",
+        "reason": "Position 5 is a discussions feature holding three items, recorded once here: this Reddit thread plus two Facebook garminforum group posts (https://www.facebook.com/groups/garminforum/posts/2579850509041534/ and https://www.facebook.com/groups/garminforum/posts/1957605001266091/). None is an article; Reddit returned HTTP 403 and the Facebook posts return a login shell with no post text. Titles only."
+      },
+      {
+        "url": "https://support.garmin.com/en-US/?faq=VOFJAsiXut9K19k1qEn5W5",
+        "observed_position": 6,
+        "disposition": "selected",
+        "reason": "Garmin support FAQ; AI Overview source; outranks the blog and Sonar and its six questions are the reader task in Garmin's own words (Charged and Drained, low after sleeping, stuck at 5 and the 5 to 7 day baseline learning period, device not worn, other devices, TrueUp sync). HTTP 403 to curl and WebFetch; captured by the orchestrator as rendered page text on 2026-11-02 and registered as a fourth capture."
+      },
+      {
+        "url": "https://www8.garmin.com/manuals/webhelp/GUID-5D183A14-BB43-4A9B-B441-5F824214CE40/EN-US/GUID-87E1392B-2C55-40B7-A1FF-3AB9252DA0A0.html",
+        "observed_position": 7,
+        "disposition": "excluded",
+        "reason": "vivoactive 5 owner's manual entry (about 200 words: definition, 5 to 100 bands, glance navigation, four tips). Captured in full and used as primary evidence (E2) and benchmarked by passage, but it is a reference page, not an explainer, so it is not one of the three."
+      },
+      {
+        "url": "https://www.garmin.com/en-US/blog/fitness/5-reasons-your-body-battery-running-low/",
+        "observed_position": 8,
+        "disposition": "selected",
+        "reason": "Highest-ranking page after the Garmin technology page and FAQ whose job is the 'why does it drain' half of the reader task in article form (five causes with two cited studies). Garmin blog, published 2024-10-15, modified 2026-08-31; AI Overview source. Retained alongside the FAQ because it is the only page on the SERP that explains the drain causes in article form."
+      },
+      {
+        "url": "https://www.facebook.com/Garmin/videos/body-battery-your-personal-on-wrist-energy-monitor-lets-dive-in-to-the-answers-t/2734122170118760/",
+        "observed_position": 9,
+        "disposition": "excluded",
+        "reason": "Garmin video ('answers to some FAQs'), not an article; HTTP 200 returns a login shell, answers not captured."
+      },
+      {
+        "url": "https://www.sonarhealth.co/blog/what-is-body-battery/",
+        "observed_position": 10,
+        "disposition": "selected",
+        "reason": "The only third-party explainer in the organic top ten (DR 16, published 2026-06-30); its format most closely matches the planned article (scale table, drains and recharges, accuracy caveat, brand comparison, FAQ mirroring the PAA box); AI Overview source. Retained when the FAQ was added, making the sample four pages by disclosed enlargement."
+      }
+    ]
+  }
+}
