@@ -767,7 +767,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border.subtle,
     overflow: 'hidden',
     marginBottom: spacing[4],
-    height: 52,
+    // minHeight, not height: the toggle must grow with scaled text instead of
+    // clipping it at large Dynamic Type sizes.
+    minHeight: 52,
   },
   toggleBtn: {
     flex: 1,

@@ -1174,7 +1174,7 @@ const styles = StyleSheet.create({
   scoreNumber: {
     fontSize: fontSize['5xl'],
     fontWeight: fontWeight.bold,
-    lineHeight: 64,
+    // No fixed lineHeight: it clipped the number at large Dynamic Type sizes.
   },
   scoreLabel: {
     color: colors.text.secondary,
