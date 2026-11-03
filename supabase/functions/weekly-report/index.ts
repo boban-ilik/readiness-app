@@ -22,6 +22,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parseReport } from '../_shared/report.ts';
 import { gate } from '../_shared/entitlement.ts';
+import { postClaude, CLAUDE_HAIKU } from '../_shared/anthropic.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL') ?? '';
@@ -168,20 +169,12 @@ Deno.serve(async (req: Request) => {
     // Structured output makes the reply schema-valid JSON. Every app version
     // shares this function, so if that request shape is ever rejected (400)
     // ask again as plain text and rely on the tolerant parser below.
-    const callClaude = (structured: boolean) => fetch('https://api.anthropic.com/v1/messages', {
-      method:  'POST',
-      headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model:      'claude-haiku-4-5-20251001',
-        max_tokens: 400,
-        messages:   [{ role: 'user', content: prompt }],
-        ...(structured ? { output_config: { format: { type: 'json_schema', schema: REPORT_SCHEMA } } } : {}),
-      }),
-    });
+    const callClaude = (structured: boolean) => postClaude({
+      model:      CLAUDE_HAIKU,
+      max_tokens: 400,
+      messages:   [{ role: 'user', content: prompt }],
+      ...(structured ? { output_config: { format: { type: 'json_schema', schema: REPORT_SCHEMA } } } : {}),
+    }, ANTHROPIC_API_KEY);
 
     let claudeRes = await callClaude(true);
     if (claudeRes.status === 400) {

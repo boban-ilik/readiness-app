@@ -31,6 +31,7 @@ import { sanitiseIllness, illnessLines, ILLNESS_RULE, type IllnessInput } from '
 import { sanitiseWater, waterLines, WATER_RULE, type WaterInput } from '../_shared/water.ts';
 import { sanitiseReadingCheck, readingCheckLines, READING_CHECK_RULE, type ReadingCheckInput } from '../_shared/readingCheck.ts';
 import { trainingCallLine, baselineNote, TRAINING_RULE } from '../_shared/coaching.ts';
+import { postClaude, CLAUDE_SONNET, CLAUDE_HAIKU } from '../_shared/anthropic.ts';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin':  '*',
@@ -442,31 +443,23 @@ serve(async (req: Request) => {
     // does think. Haiku 4.5 stays as the fallback with its old request shape
     // (it takes no effort setting), so the coach keeps answering if Sonnet
     // rejects the request or declines to answer.
-    const SONNET = 'claude-sonnet-5-5';
-    const HAIKU  = 'claude-haiku-4-5-20251001';
+    const SONNET = CLAUDE_SONNET;
+    const HAIKU  = CLAUDE_HAIKU;
     const format = { type: 'json_schema', schema: RESPONSE_SCHEMA };
 
-    const callClaude = (model: string, structured: boolean) => fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        // Haiku: answer (2-4 sentences) plus the JSON wrapper and up to 3 facts.
-        // Sonnet: the same plus any thinking, which counts toward max_tokens.
-        max_tokens: model === SONNET ? 4000 : 700,
-        system:     SYSTEM_PROMPT,
-        messages,
-        // Structured output: the answer and any new facts come back as one
-        // schema-valid JSON object instead of a text format we'd have to parse.
-        ...(model === SONNET
-          ? { output_config: { effort: 'low', ...(structured ? { format } : {}) } }
-          : structured ? { output_config: { format } } : {}),
-      }),
-    });
+    const callClaude = (model: string, structured: boolean) => postClaude({
+      model,
+      // Haiku: answer (2-4 sentences) plus the JSON wrapper and up to 3 facts.
+      // Sonnet: the same plus any thinking, which counts toward max_tokens.
+      max_tokens: model === SONNET ? 4000 : 700,
+      system:     SYSTEM_PROMPT,
+      messages,
+      // Structured output: the answer and any new facts come back as one
+      // schema-valid JSON object instead of a text format we'd have to parse.
+      ...(model === SONNET
+        ? { output_config: { effort: 'low', ...(structured ? { format } : {}) } }
+        : structured ? { output_config: { format } } : {}),
+    }, apiKey);
 
     // Every app version shares this function, so a rejected request shape must
     // never take the coach down: on a 400, ask again as plain text (the answer

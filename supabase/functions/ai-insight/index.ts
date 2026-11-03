@@ -28,6 +28,7 @@
 
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import { gate } from '../_shared/entitlement.ts';
+import { postClaude, CLAUDE_HAIKU } from '../_shared/anthropic.ts';
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 // Expo apps run on localhost in dev and as native apps in production.
@@ -70,9 +71,6 @@ interface AiInsight {
 }
 
 // ─── Claude config ────────────────────────────────────────────────────────────
-
-const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
-const CLAUDE_MODEL   = 'claude-haiku-4-5-20251001';
 
 const SYSTEM_PROMPT = `You are a concise, science-literate health coach embedded in a readiness app.
 
@@ -236,20 +234,12 @@ serve(async (req: Request) => {
     }
 
     // ── Call Claude ─────────────────────────────────────────────────────────
-    const claudeRes = await fetch(CLAUDE_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model:      CLAUDE_MODEL,
-        max_tokens: 250,
-        system:     SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: buildUserPrompt(input) }],
-      }),
-    });
+    const claudeRes = await postClaude({
+      model:      CLAUDE_HAIKU,
+      max_tokens: 250,
+      system:     SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: buildUserPrompt(input) }],
+    }, apiKey);
 
     if (!claudeRes.ok) {
       const errText = await claudeRes.text().catch(() => '');

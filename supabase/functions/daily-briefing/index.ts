@@ -22,6 +22,7 @@ import { sanitiseIllness, illnessLines, ILLNESS_RULE, type IllnessInput } from '
 import { sanitiseWater, waterLines, WATER_RULE, type WaterInput } from '../_shared/water.ts';
 import { sanitiseReadingCheck, readingCheckLines, READING_CHECK_RULE, type ReadingCheckInput } from '../_shared/readingCheck.ts';
 import { trainingCallLine, baselineNote, TRAINING_RULE } from '../_shared/coaching.ts';
+import { postClaude, CLAUDE_HAIKU } from '../_shared/anthropic.ts';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin':  '*',
@@ -390,20 +391,12 @@ serve(async (req: Request) => {
       });
     }
 
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model:      'claude-haiku-4-5-20251001',
-        max_tokens: 450,   // 1.0.4: room for the three follow-up questions
-        system:     SYSTEM_PROMPT,
-        messages:   [{ role: 'user', content: buildPrompt(input) }],
-      }),
-    });
+    const claudeRes = await postClaude({
+      model:      CLAUDE_HAIKU,
+      max_tokens: 450,   // 1.0.4: room for the three follow-up questions
+      system:     SYSTEM_PROMPT,
+      messages:   [{ role: 'user', content: buildPrompt(input) }],
+    }, apiKey);
 
     if (!claudeRes.ok) {
       const err = await claudeRes.text().catch(() => '');
