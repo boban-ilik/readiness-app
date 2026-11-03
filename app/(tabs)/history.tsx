@@ -40,6 +40,7 @@ import {
 } from '@constants/theme';
 import { formatDuration, localDateStr } from '@utils/index';
 import { buildCalendarGrid, shortDate } from '@utils/historyCalendar';
+import { buildPoints, type MetricConfig } from '@utils/historyChart';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -47,17 +48,6 @@ type RangeMode  = '7d' | '28d' | 'cal';
 type MetricMode = 'score' | 'hrv' | 'sleep' | 'rhr';
 
 // ─── Metric configuration ─────────────────────────────────────────────────────
-
-interface MetricConfig {
-  label:     string;
-  unit:      string;
-  color:     string;
-  getValue:  (d: DayHistory) => number | null;
-  gridLines: number[];
-  yMin:      number;
-  yMax:      number;
-  format:    (v: number) => string;
-}
 
 const METRIC_CONFIG: Record<MetricMode, MetricConfig> = {
   score: {
@@ -103,38 +93,6 @@ const METRIC_CONFIG: Record<MetricMode, MetricConfig> = {
 };
 
 // ─── SVG Trend Chart ──────────────────────────────────────────────────────────
-
-interface ChartPt {
-  x:        number;
-  y:        number | null;
-  score:    number | null;
-  dayLabel: string;
-  isToday:  boolean;
-}
-
-function buildPoints(
-  data:        DayHistory[],
-  plotWidth:   number,
-  plotHeight:  number,
-  padTop:      number,
-  todayStr:    string,
-  cfg:         MetricConfig,
-  padX:        number,
-): ChartPt[] {
-  const n = data.length;
-  const range = cfg.yMax - cfg.yMin;
-  return data.map((d, i) => {
-    const raw = cfg.getValue(d);
-    const clamped = raw !== null ? Math.max(cfg.yMin, Math.min(cfg.yMax, raw)) : null;
-    return {
-      x:        padX + (n <= 1 ? plotWidth / 2 : (i / (n - 1)) * plotWidth),
-      y:        clamped !== null ? padTop + (1 - (clamped - cfg.yMin) / range) * plotHeight : null,
-      score:    raw,
-      dayLabel: d.dayLabel,
-      isToday:  d.date === todayStr,
-    };
-  });
-}
 
 function TrendChart({
   data,
