@@ -54,7 +54,7 @@ const METRIC_CONFIG: Record<MetricMode, MetricConfig> = {
   score: {
     label:     'READINESS',
     unit:      'pts',
-    color:     '#F5A623',   // amber
+    color:     colors.amber[400],
     getValue:  d => d.score,
     gridLines: [25, 50, 75],
     yMin:      0,
