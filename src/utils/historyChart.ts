@@ -4,7 +4,7 @@
  * Kept out of the screen so the point/scale math is unit-testable.
  */
 
-import type { DayHistory } from '@hooks/useHistoryData';
+import type { DayHistory } from '@/types/index';
 
 export interface MetricConfig {
   label:     string;

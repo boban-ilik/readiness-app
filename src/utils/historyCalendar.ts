@@ -5,7 +5,7 @@
  */
 
 import { localDateStr } from '@utils/index';
-import type { DayHistory } from '@hooks/useHistoryData';
+import type { DayHistory } from '@/types/index';
 
 export interface CalendarCell {
   date:      string;       // YYYY-MM-DD

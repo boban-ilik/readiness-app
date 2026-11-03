@@ -39,6 +39,18 @@ export interface HealthData {
   exerciseMinutes: number | null; // Apple Exercise ring minutes yesterday (brisk movement)
 }
 
+/** One day of History data as the screen and its chart/calendar utils render it. */
+export interface DayHistory {
+  date:            string;         // YYYY-MM-DD
+  dayLabel:        string;         // 'Mon', 'Tue', ...
+  score:           number | null;  // 0–100 computed readiness
+  components:      { recovery: number; sleep: number; stress: number } | null;
+  rhr:             number | null;  // bpm
+  hrv:             number | null;  // ms (SDNN) — only available from Supabase enrichment
+  sleepMinutes:    number | null;
+  sleepEfficiency: number | null;
+}
+
 // ─── User ────────────────────────────────────────────────────────────────────
 
 export interface UserProfile {

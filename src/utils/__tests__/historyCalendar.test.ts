@@ -1,5 +1,5 @@
 import { buildCalendarGrid, shortDate, type CalendarCell } from '../historyCalendar';
-import type { DayHistory } from '@hooks/useHistoryData';
+import type { DayHistory } from '@/types/index';
 
 function day(date: string, score: number | null = 70): DayHistory {
   return {

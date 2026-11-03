@@ -20,7 +20,8 @@ import Svg, {
   LinearGradient,
   Stop,
 } from 'react-native-svg';
-import { useHistoryData, type DayHistory } from '@hooks/useHistoryData';
+import { useHistoryData } from '@hooks/useHistoryData';
+import type { DayHistory } from '@/types/index';
 import { useStreak } from '@hooks/useStreak';
 import { useSubscription } from '@contexts/SubscriptionContext';
 import { ProGate } from '@components/common/ProGate';

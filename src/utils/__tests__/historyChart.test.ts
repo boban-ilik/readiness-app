@@ -1,5 +1,5 @@
 import { buildPoints, type MetricConfig } from '../historyChart';
-import type { DayHistory } from '@hooks/useHistoryData';
+import type { DayHistory } from '@/types/index';
 
 function day(date: string, score: number | null): DayHistory {
   return {

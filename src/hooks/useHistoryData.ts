@@ -10,20 +10,10 @@ import { calculateReadiness } from '@utils/readiness';
 import { localDateStr } from '@utils/index';
 import { supabase } from '@services/supabase';
 import { fetchHistoryFromSupabase } from '@services/scoreSync';
-import type { HealthData } from '@/types/index';
+import type { HealthData, DayHistory } from '@/types/index';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export interface DayHistory {
-  date:            string;         // YYYY-MM-DD
-  dayLabel:        string;         // 'Mon', 'Tue', ...
-  score:           number | null;  // 0–100 computed readiness
-  components:      { recovery: number; sleep: number; stress: number } | null;
-  rhr:             number | null;  // bpm
-  hrv:             number | null;  // ms (SDNN) — only available from Supabase enrichment
-  sleepMinutes:    number | null;
-  sleepEfficiency: number | null;
-}
+// Re-exported so existing importers of `DayHistory` from this hook keep working.
+export type { DayHistory };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
