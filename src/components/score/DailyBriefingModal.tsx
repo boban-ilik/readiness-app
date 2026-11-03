@@ -382,7 +382,7 @@ export default function DailyBriefingModal({
                     generated. Below it, the notice read as if it covered the
                     protocol too. */}
                 <Text style={styles.disclaimer}>
-                  AI-generated · Based on your biometrics and personal baselines
+                  AI-generated · Based on your biometrics and personal baselines · Not medical advice
                 </Text>
 
                 {/* ── Recovery Protocol (low score only) ── */}

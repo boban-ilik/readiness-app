@@ -1188,7 +1188,7 @@ export default function ProfileScreen() {
           {garmin.isConnected ? (
             <RowBase
               label="Garmin Connect"
-              sublabel="Connected. HRV, resting heart rate, sleep and stress come from Garmin."
+              sublabel="Connected. HRV, resting heart rate, sleep and stress are synced from Garmin's cloud."
               right={
                 <TouchableOpacity
                   onPress={() => Alert.alert(
@@ -1211,7 +1211,7 @@ export default function ProfileScreen() {
           ) : (
             <RowBase
               label="Garmin Connect"
-              sublabel="Read HRV, sleep and resting heart rate straight from Garmin"
+              sublabel="Sync HRV, sleep and resting heart rate via Garmin's cloud Health API"
               onPress={() => router.push('/garmin-connect')}
               right={
                 <View style={styles.stravaConnectPill}>

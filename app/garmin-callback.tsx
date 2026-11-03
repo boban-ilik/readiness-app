@@ -52,7 +52,7 @@ export default function GarminCallbackScreen() {
         const conn = failure ? null : await refreshGarminConnection();
         if (conn) {
           track('garmin_connected');
-          Alert.alert('Garmin connected', "From the next sync, Readiness reads your overnight HRV, resting heart rate, sleep and stress straight from Garmin.", [
+          Alert.alert('Garmin linked', "From the next sync, Readiness pulls your overnight HRV, resting heart rate, sleep and stress from Garmin's cloud.", [
             { text: 'OK', onPress: () => router.replace('/(tabs)') },
           ]);
           return;
@@ -67,7 +67,7 @@ export default function GarminCallbackScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg.primary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
       <ActivityIndicator color={colors.amber[400]} size="large" />
-      <Text style={{ color: colors.text.primary, fontSize: 18, fontWeight: '600', marginTop: 16 }}>Connecting Garmin</Text>
+      <Text style={{ color: colors.text.primary, fontSize: 18, fontWeight: '600', marginTop: 16 }}>Linking Garmin account</Text>
       <Text style={{ color: colors.text.secondary, fontSize: 16, marginTop: 8, textAlign: 'center' }}>Finishing the secure callback...</Text>
     </View>
   );

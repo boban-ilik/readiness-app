@@ -40,10 +40,10 @@ export default function GarminConnectScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.kicker}>CONNECT GARMIN</Text>
-        <Text style={styles.title}>Your Garmin data, straight from Garmin</Text>
+        <Text style={styles.kicker}>LINK GARMIN ACCOUNT</Text>
+        <Text style={styles.title}>Sync your Garmin data</Text>
         <Text style={styles.lede}>
-          Garmin Connect doesn't share HRV with Apple Health. Connecting your Garmin account lets Readiness read it directly, so your score needs nothing typed in.
+          Garmin Connect doesn't share HRV with Apple Health. Linking your Garmin account syncs it to Readiness through Garmin's cloud Health API — an account sync, not a hardware connection, and nothing typed in by hand.
         </Text>
 
         <Text style={styles.heading}>What Readiness reads</Text>
@@ -64,8 +64,13 @@ export default function GarminConnectScreen() {
           Disconnect any time in Profile. That tells Garmin to stop sending and deletes every Garmin record Readiness holds. You can also revoke Readiness from your Garmin Connect account.
         </Text>
 
+        <Text style={styles.heading}>Not a medical device</Text>
+        <Text style={styles.body}>
+          Garmin is a consumer fitness device, not medical hardware. Readiness is a general wellness and fitness app, not a medical device. It does not diagnose, treat, cure or prevent any disease, and it is not a substitute for medical advice.
+        </Text>
+
         <TouchableOpacity style={[styles.button, busy && { opacity: 0.6 }]} onPress={connect} disabled={busy} activeOpacity={0.85} accessibilityRole="button">
-          <Text style={styles.buttonText}>I agree, connect Garmin</Text>
+          <Text style={styles.buttonText}>I agree, link Garmin account</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.back()} accessibilityRole="button">
           <Text style={styles.cancel}>Not now</Text>

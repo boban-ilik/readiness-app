@@ -139,9 +139,9 @@ export default function SourcesScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.intro}>
-          Readiness is a general wellness and fitness app. It does not diagnose or treat any
-          condition, and it is not a substitute for medical advice. Below is where the health
-          information in the app comes from.
+          Readiness is a general wellness and fitness app. It is not a medical device and does
+          not diagnose, treat, cure or prevent any disease, and it is not a substitute for
+          medical advice. Below is where the health information in the app comes from.
         </Text>
 
         {SECTIONS.map(section => (

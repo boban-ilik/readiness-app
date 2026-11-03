@@ -420,6 +420,9 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
           )}
         </ScrollView>
 
+        <Text style={{ color: colors.text.tertiary, fontSize: 12, textAlign: 'center', marginTop: 8, paddingHorizontal: spacing[4] }}>
+          Training guidance, not medical advice. If something worries you, speak to a doctor.
+        </Text>
         <View style={[styles.composerWrap, { paddingBottom: composerBottom }]}>
           <View style={styles.composer}>
             <TextInput
