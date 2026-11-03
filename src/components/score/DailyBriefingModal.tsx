@@ -312,11 +312,22 @@ export default function DailyBriefingModal({
             <View style={styles.headerActions}>
               {/* Regenerate is metered; the free weekly briefing is one call. */}
               {isPro && (
-                <TouchableOpacity style={styles.iconBtn} onPress={() => load(true)} disabled={isLoading}>
+                <TouchableOpacity
+                  style={styles.iconBtn}
+                  onPress={() => load(true)}
+                  disabled={isLoading}
+                  accessibilityRole="button"
+                  accessibilityLabel="Regenerate briefing"
+                >
                   <Text style={styles.iconBtnText}>↻</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity style={styles.iconBtn} onPress={onClose}>
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={onClose}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+              >
                 <Text style={styles.iconBtnText}>✕</Text>
               </TouchableOpacity>
             </View>

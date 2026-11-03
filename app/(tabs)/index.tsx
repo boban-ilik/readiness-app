@@ -612,6 +612,8 @@ export default function HomeScreen() {
                 onPress={handleShare}
                 disabled={isSharing}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Share today's score"
               >
                 <Text style={styles.shareBtnIcon}>⬆</Text>
               </TouchableOpacity>
