@@ -50,6 +50,10 @@ import {
   PROFILE_GOAL_KEY, PROFILE_SEX_KEY,
   NOTIF_ENABLED_KEY, NOTIF_HOUR_KEY, NOTIF_MINUTE_KEY,
 } from '@services/storageKeys';
+import {
+  DEVICES, DEVICE_NOTE, FREQ_OPTIONS, GOAL_OPTIONS, SEX_OPTIONS,
+  type DeviceType, type TrainingFrequency, type TrainingGoal, type BiologicalSex,
+} from '@constants/onboarding';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -57,11 +61,6 @@ const DEFAULT_DIGEST_HOUR = 8;
 
 const TOTAL_STEPS = 5;  // steps 0–4 show progress dots; step 5 = auto setup
 const STEP_NAMES = ['welcome', 'how_it_works', 'device', 'training_profile', 'permissions', 'setup'];
-
-type DeviceType       = 'garmin' | 'apple_watch' | 'both' | 'other' | 'none';
-type TrainingFrequency = 'light' | 'moderate' | 'high';
-type TrainingGoal      = 'performance' | 'recovery' | 'weight_loss' | 'general_health';
-type BiologicalSex     = 'male' | 'female' | 'prefer_not_to_say';
 
 function pause(ms: number) {
   return new Promise<void>(r => setTimeout(r, ms));
@@ -220,21 +219,6 @@ function StepHowItWorks({ onNext, onBack }: { onNext: () => void; onBack: () => 
 
 // ─── Step 2: Device selection ─────────────────────────────────────────────────
 
-const DEVICES: { key: DeviceType; label: string; icon: string }[] = [
-  { key: 'garmin',      label: 'Garmin',              icon: '⌚' },
-  { key: 'apple_watch', label: 'Apple Watch',         icon: '🍎' },
-  { key: 'both',        label: 'Both',                icon: '🔁' },
-  { key: 'other',       label: 'Other watch or ring', icon: '💍' },
-  { key: 'none',        label: 'No watch',            icon: '📱' },
-];
-
-// Said before Health access is asked, so nobody without a watch finds out
-// from an empty score on day one.
-const DEVICE_NOTE: Partial<Record<DeviceType, string>> = {
-  other: 'Readiness works with any watch or ring whose app shares heart rate, HRV and sleep with Apple Health. Turn that sharing on in its app.',
-  none:  'Most of the score comes from overnight heart data, which needs a watch. Without one your score will be limited: you can type in an HRV reading each morning, and sleep counts if an app writes it to Apple Health.',
-};
-
 function StepDevice({
   device,
   setDevice,
@@ -314,35 +298,6 @@ function StepDevice({
 }
 
 // ─── Step 3: Training profile (frequency + goal) ──────────────────────────────
-
-const FREQ_OPTIONS: {
-  key:   TrainingFrequency;
-  icon:  string;
-  label: string;
-  sub:   string;
-}[] = [
-  { key: 'light',    icon: '🚶', label: '2–3 days / week', sub: 'I exercise occasionally' },
-  { key: 'moderate', icon: '🏃', label: '4–5 days / week', sub: 'I train consistently' },
-  { key: 'high',     icon: '⚡', label: '6+ days / week',  sub: "I'm a high-volume athlete" },
-];
-
-const GOAL_OPTIONS: {
-  key:   TrainingGoal;
-  icon:  string;
-  label: string;
-  sub:   string;
-}[] = [
-  { key: 'performance',    icon: '🏆', label: 'Peak Performance',   sub: 'Push harder, train smarter' },
-  { key: 'recovery',       icon: '🔄', label: 'Optimise Recovery',  sub: 'Avoid burnout & overtraining' },
-  { key: 'weight_loss',    icon: '⚖️', label: 'Lose Weight',        sub: 'Balance training & body comp' },
-  { key: 'general_health', icon: '💪', label: 'General Health',     sub: 'Stay active, feel great' },
-];
-
-const SEX_OPTIONS: { key: BiologicalSex; label: string }[] = [
-  { key: 'female',            label: 'Female' },
-  { key: 'male',              label: 'Male' },
-  { key: 'prefer_not_to_say', label: 'Prefer not to say' },
-];
 
 function StepTrainingProfile({
   freq,
