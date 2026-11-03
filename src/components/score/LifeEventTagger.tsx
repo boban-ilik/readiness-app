@@ -124,7 +124,11 @@ export default function LifeEventTagger({ events, onTagged, onSickTagged, onSick
             {/* Header */}
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>What's affecting you today?</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+              >
                 <Text style={styles.sheetClose}>✕</Text>
               </TouchableOpacity>
             </View>

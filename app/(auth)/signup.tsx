@@ -94,6 +94,8 @@ export default function SignupScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
+              textContentType="emailAddress"
+              accessibilityLabel="Email"
               returnKeyType="next"
               keyboardAppearance="dark"
             />
@@ -107,6 +109,8 @@ export default function SignupScreen() {
               placeholderTextColor={colors.text.tertiary}
               value={password}
               onChangeText={setPassword}
+              textContentType="newPassword"
+              accessibilityLabel="New password"
               onFocus={() => setFocusedField('password')}
               onBlur={() => setFocusedField(null)}
               returnKeyType="next"
@@ -122,6 +126,8 @@ export default function SignupScreen() {
               placeholderTextColor={colors.text.tertiary}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
+              textContentType="newPassword"
+              accessibilityLabel="Confirm password"
               onFocus={() => setFocusedField('confirm')}
               onBlur={() => setFocusedField(null)}
               returnKeyType="done"

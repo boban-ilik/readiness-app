@@ -181,6 +181,8 @@ function BillingToggle({
             style={[styles.toggleBtn, selected === cycle && styles.toggleBtnActive]}
             onPress={() => onSelect(cycle)}
             activeOpacity={0.75}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: selected === cycle }}
           >
             <Text style={[styles.toggleLabel, selected === cycle && styles.toggleLabelActive]}>
               {CYCLE_LABELS[cycle]}
@@ -488,6 +490,8 @@ export default function PaywallScreen() {
         style={styles.closeBtn}
         onPress={() => router.back()}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        accessibilityRole="button"
+        accessibilityLabel="Close"
       >
         <Text style={styles.closeBtnText}>✕</Text>
       </TouchableOpacity>

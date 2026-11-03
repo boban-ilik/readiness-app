@@ -547,6 +547,8 @@ function CalendarHeatmap({
           disabled={!canGoPrev}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Previous month"
         >
           <Text style={[styles.calNavArrow, !canGoPrev && styles.calNavArrowDisabled]}>‹</Text>
         </TouchableOpacity>
@@ -556,6 +558,8 @@ function CalendarHeatmap({
           disabled={!canGoNext}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Next month"
         >
           <Text style={[styles.calNavArrow, !canGoNext && styles.calNavArrowDisabled]}>›</Text>
         </TouchableOpacity>
@@ -592,6 +596,9 @@ function CalendarHeatmap({
                 key={ci}
                 onPress={() => setSelectedDate(isSelected ? null : cell.date)}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`${shortDate(cell.date)}${cell.isToday ? ', today' : ''}${score !== null ? `, readiness ${score}` : ''}`}
+                accessibilityState={{ selected: isSelected }}
                 style={[
                   styles.calCell,
                   {

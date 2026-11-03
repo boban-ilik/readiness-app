@@ -63,6 +63,8 @@ export default function LoginScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
+              textContentType="emailAddress"
+              accessibilityLabel="Email"
               returnKeyType="next"
               keyboardAppearance="dark"
             />
@@ -76,6 +78,8 @@ export default function LoginScreen() {
               placeholderTextColor={colors.text.tertiary}
               value={password}
               onChangeText={setPassword}
+              textContentType="password"
+              accessibilityLabel="Password"
               onFocus={() => setPasswordFocused(true)}
               onBlur={() => setPasswordFocused(false)}
               returnKeyType="done"
