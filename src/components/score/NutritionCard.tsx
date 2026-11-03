@@ -45,7 +45,7 @@ interface NutritionCardProps {
 // ─── Small sub-components ─────────────────────────────────────────────────────
 
 function SectionLabel({ text }: { text: string }) {
-  return <Text style={styles.sectionLabel}>{text}</Text>;
+  return <Text style={styles.sectionLabel} accessibilityRole="header">{text}</Text>;
 }
 
 function BulletRow({ text }: { text: string }) {

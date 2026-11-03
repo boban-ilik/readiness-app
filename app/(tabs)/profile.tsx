@@ -302,7 +302,7 @@ function CoachMemorySection() {
 }
 
 function SectionLabel({ title }: { title: string }) {
-  return <Text style={styles.sectionLabel}>{title}</Text>;
+  return <Text style={styles.sectionLabel} accessibilityRole="header">{title}</Text>;
 }
 
 function SettingsCard({ children }: { children: React.ReactNode }) {

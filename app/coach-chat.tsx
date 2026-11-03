@@ -9,6 +9,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  AccessibilityInfo,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -257,6 +258,8 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
       const updatedHistory: ChatMessage[] = [...nextHistory, assistantMessage];
       setHistory(updatedHistory);
       saveChatHistory(updatedHistory);
+      // Announce the coach's reply so VoiceOver users aren't left on "Thinking…".
+      AccessibilityInfo.announceForAccessibility(reply.answer);
 
       if (reply.freeRemaining !== null) {
         setFreeRemaining(reply.freeRemaining);

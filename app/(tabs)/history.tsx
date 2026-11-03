@@ -954,7 +954,7 @@ export default function HistoryScreen() {
 
           {/* Patterns / correlations */}
           <View style={styles.correlationsBlock}>
-            <Text style={styles.sectionTitle}>INSIGHTS</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header">INSIGHTS</Text>
             <CorrelationsCard history={history} />
           </View>
 
@@ -966,7 +966,7 @@ export default function HistoryScreen() {
 
           {/* Daily log */}
           <View style={styles.dayList}>
-            <Text style={styles.sectionTitle}>DAILY LOG</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header">DAILY LOG</Text>
             <Text style={styles.scoreBasis}>
               Scores based on HRV, sleep and resting heart rate · coloured bars show recovery / sleep / stress
             </Text>
@@ -1018,7 +1018,7 @@ export default function HistoryScreen() {
         >
 
           <View style={styles.dayList}>
-            <Text style={styles.sectionTitle}>DAILY LOG</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header">DAILY LOG</Text>
             <Text style={styles.scoreBasis}>
               Scores based on HRV, sleep and resting heart rate · coloured bars show recovery / sleep / stress
             </Text>

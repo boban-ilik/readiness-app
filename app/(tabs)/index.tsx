@@ -750,7 +750,7 @@ export default function HomeScreen() {
             before any of the cards that react to it. */}
         {hasUsableScore && (
           <View style={styles.breakdown}>
-            <Text style={styles.sectionTitle}>BREAKDOWN</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header">BREAKDOWN</Text>
 
             <Animated.View entering={FadeInDown.delay(0).duration(400).springify()}>
               <ScoreBreakdownCard
@@ -846,7 +846,7 @@ export default function HomeScreen() {
             The recommendation and water are free; nutrition is Pro. */}
         {hasUsableScore && (
           <View style={styles.trainingSection}>
-            <Text style={styles.sectionTitle}>TODAY'S PLAN</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header">TODAY'S PLAN</Text>
             <TodayPlanCard>
               <TrainingLoadCard
                 flat
@@ -926,7 +926,7 @@ export default function HomeScreen() {
           >
             {isPro && (
               <View style={styles.trainingSection}>
-                <Text style={styles.sectionTitle}>TREND AND FORECAST</Text>
+                <Text style={styles.sectionTitle} accessibilityRole="header">TREND AND FORECAST</Text>
                 <TrendInsightCard forecast={forecast} />
                 {forecast && (
                   <ForecastStrip
@@ -942,7 +942,7 @@ export default function HomeScreen() {
             {/* Only when at least one load block has something to show. */}
             {((!workoutsLoading && workoutLoad.loadTier !== 'none') || (stravaConnected && !stravaLoading && stravaActivities.length > 0)) && (
             <View style={styles.trainingSection}>
-              <Text style={styles.sectionTitle}>TRAINING LOAD</Text>
+              <Text style={styles.sectionTitle} accessibilityRole="header">TRAINING LOAD</Text>
               <WorkoutContextBanner loadSummary={workoutLoad} isLoading={workoutsLoading} />
               <StravaLastWorkoutSection
                 isConnected={stravaConnected}
@@ -969,7 +969,7 @@ export default function HomeScreen() {
             />
 
             <View style={styles.trainingSection}>
-              <Text style={styles.sectionTitle}>WHAT'S AFFECTING YOU</Text>
+              <Text style={styles.sectionTitle} accessibilityRole="header">WHAT'S AFFECTING YOU</Text>
               <LifeEventTagger
                 events={lifeEvents}
                 onTagged={setLifeEvents}

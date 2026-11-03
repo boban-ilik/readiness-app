@@ -194,7 +194,7 @@ function StepHowItWorks({ onNext, onBack }: { onNext: () => void; onBack: () => 
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.stepTitle}>How your score is built</Text>
+      <Text style={styles.stepTitle} accessibilityRole="header">How your score is built</Text>
       <Text style={styles.stepSubtitle}>
         Three weighted components, recalculated every morning.
       </Text>
@@ -263,7 +263,7 @@ function StepDevice({
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.stepTitle}>What do you train with?</Text>
+      <Text style={styles.stepTitle} accessibilityRole="header">What do you train with?</Text>
       <Text style={styles.stepSubtitle}>
         Readiness syncs all data through Apple Health, no direct device connection needed.
       </Text>
@@ -403,12 +403,12 @@ function StepTrainingProfile({
       showsVerticalScrollIndicator={false}
     >
       {/* ── Frequency ── */}
-      <Text style={styles.stepTitle}>Your training profile</Text>
+      <Text style={styles.stepTitle} accessibilityRole="header">Your training profile</Text>
       <Text style={styles.stepSubtitle}>
         Helps calibrate your recommendations to your actual schedule and goals.
       </Text>
 
-      <Text style={styles.sectionHeading}>How often do you train?</Text>
+      <Text style={styles.sectionHeading} accessibilityRole="header">How often do you train?</Text>
       <View style={styles.freqList}>
         {FREQ_OPTIONS.map(opt => {
           const active = freq === opt.key;
@@ -439,7 +439,7 @@ function StepTrainingProfile({
       </View>
 
       {/* ── Goal ── */}
-      <Text style={[styles.sectionHeading, { marginTop: spacing[2] }]}>What's your primary goal?</Text>
+      <Text style={[styles.sectionHeading, { marginTop: spacing[2] }]} accessibilityRole="header">What's your primary goal?</Text>
       <View style={styles.goalGrid}>
         {GOAL_OPTIONS.map(opt => {
           const active = goal === opt.key;
@@ -468,7 +468,7 @@ function StepTrainingProfile({
       </View>
 
       {/* ── About you (optional) ── */}
-      <Text style={[styles.sectionHeading, { marginTop: spacing[2] }]}>About you (optional)</Text>
+      <Text style={[styles.sectionHeading, { marginTop: spacing[2] }]} accessibilityRole="header">About you (optional)</Text>
       <View style={styles.sexRow}>
         {SEX_OPTIONS.map(opt => {
           const active = sex === opt.key;
@@ -557,7 +557,7 @@ function StepPermissions({
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.stepTitle}>Connect Apple Health</Text>
+      <Text style={styles.stepTitle} accessibilityRole="header">Connect Apple Health</Text>
       <Text style={styles.stepSubtitle}>
         Readiness reads three types of data to calculate your score, nothing else.
       </Text>

@@ -146,7 +146,7 @@ export default function SourcesScreen() {
 
         {SECTIONS.map(section => (
           <View key={section.heading} style={styles.section}>
-            <Text style={styles.sectionHeading}>{section.heading}</Text>
+            <Text style={styles.sectionHeading} accessibilityRole="header">{section.heading}</Text>
             <Text style={styles.claim}>{section.claim}</Text>
             {section.sources.map(source => (
               <SourceLink key={source.url} source={source} />
@@ -155,7 +155,7 @@ export default function SourcesScreen() {
         ))}
 
         <View style={styles.section}>
-          <Text style={styles.sectionHeading}>What we present as rules of thumb</Text>
+          <Text style={styles.sectionHeading} accessibilityRole="header">What we present as rules of thumb</Text>
           <Text style={styles.claim}>
             Some guidance in the app is convention rather than a research finding. We would
             rather say so than dress it up.
@@ -169,7 +169,7 @@ export default function SourcesScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionHeading}>Your own numbers</Text>
+          <Text style={styles.sectionHeading} accessibilityRole="header">Your own numbers</Text>
           <Text style={styles.claim}>
             When Readiness says your heart rate variability is down 15 ms, that is your data
             measured by your device, not a claim about people in general. Your score is
