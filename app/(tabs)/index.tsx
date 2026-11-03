@@ -38,6 +38,7 @@ import { useRecentWorkouts } from '@hooks/useRecentWorkouts';
 import { useStravaActivities } from '@hooks/useStravaActivities';
 import { useSubscription } from '@contexts/SubscriptionContext';
 import { useNotifications } from '@hooks/useNotifications';
+import { useTodayContextData } from '@hooks/useTodayContext';
 import { useCalibrationStatus } from '@hooks/useCalibrationStatus';
 import FirstLookModal from '@components/score/FirstLookModal';
 import NewTodayLine from '@components/score/NewTodayLine';
@@ -61,12 +62,8 @@ import {
   getGreeting, NO_DATA_COPY,
   buildRecoveryDetail, buildStressDetail, buildActivityDetail, buildSleepDetail,
 } from '@utils/todayCopy';
-import { analyzePatterns } from '@services/patternAnalysis';
-import { analyzeWorkload } from '@services/workloadAnalysis';
-import { computeForecast, applyIllnessRecovery, type ReadinessForecast } from '@services/readinessForecast';
-import { recordForecast } from '@services/forecastLog';
-import { fetchRecentEvents, tagEvent, type LifeEvent } from '@services/lifeEvents';
-import { supabase } from '@services/supabase';
+import { applyIllnessRecovery } from '@services/readinessForecast';
+import { tagEvent } from '@services/lifeEvents';
 import { NAME_KEY } from '@services/storageKeys';
 import { track, trackDaily } from '@services/analytics';
 
@@ -207,15 +204,21 @@ export default function HomeScreen() {
   const [briefingVisible, setBriefingVisible] = useState(false);
   const [isSharing,       setIsSharing]       = useState(false);
   const [todayActivity,   setTodayActivity]   = useState<TodayActivity | null>(null);
-  const [lifeEvents,      setLifeEvents]      = useState<LifeEvent[]>([]);
+  const { lifeEvents, setLifeEvents, forecast, yesterdayScore } = useTodayContextData({
+    isLoading,
+    isRefreshing,
+    score: readiness?.score,
+    isInsufficient: readiness?.dataQuality?.isInsufficient ?? false,
+    isPro,
+    onPatterns: checkAndScheduleCoachCheckin,
+    onRescheduleDigest: rescheduleDigestWithScore,
+  });
   const illness = useIllnessRecovery(`${isLoading}|${isRefreshing}|${readiness?.score ?? ''}`);
   const readingCheck = useReadingCheck(
     readiness?.healthData?.hrv ?? null,
     readiness?.healthData?.restingHeartRate ?? null,
     `${isLoading}|${isRefreshing}`,
   );
-  const [forecast,        setForecast]        = useState<ReadinessForecast | null>(null);
-  const [yesterdayScore,  setYesterdayScore]  = useState<number | null>(null);
   const shareCardRef = useRef<ComponentRef<typeof View>>(null);
 
   // ── Manual HRV handlers ────────────────────────────────────────────────────
@@ -307,77 +310,8 @@ export default function HomeScreen() {
       .catch(() => {}); // non-fatal — card degrades gracefully to yesterday-only
   }, [isLoading, loadedAt]);
 
-  // Load life events + compute 3-day forecast once data is ready.
-  // If today's HealthKit score hasn't synced yet (score=0), we fall back to the
-  // most recent historical score from Supabase so the forecast still renders.
-  useEffect(() => {
-    if (isLoading) return;
-
-    async function loadContextualData() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        // Life events + workload can run in parallel
-        const [events, workload] = await Promise.all([
-          fetchRecentEvents(7),
-          analyzeWorkload(),
-        ]);
-        setLifeEvents(events);
-
-        const patterns = await analyzePatterns(user.id);
-        // Patterns only exist here, not in the alert effect below. Dedupe
-        // (3 days) and an in-flight lock live in the hook.
-        checkAndScheduleCoachCheckin(patterns, isPro);
-
-        // Fetch yesterday's score for the delta display (non-blocking via parallel)
-        const yesterdayStr = (() => {
-          const d = new Date();
-          d.setDate(d.getDate() - 1);
-          return localDateStr(d);
-        })();
-        const { data: yesterdayRow } = await supabase
-          .from('readiness_scores')
-          .select('score')
-          .eq('user_id', user.id)
-          .eq('date', yesterdayStr)
-          .single();
-        setYesterdayScore((yesterdayRow?.score as number) ?? null);
-
-        // Use today's live score when available; fall back to the most recent
-        // DB score so the forecast renders even before HealthKit syncs today.
-        let scoreForForecast = readiness?.score ?? 0;
-        if (scoreForForecast <= 0) {
-          const { data: latestRow } = await supabase
-            .from('readiness_scores')
-            .select('score')
-            .eq('user_id', user.id)
-            .order('date', { ascending: false })
-            .limit(1)
-            .single();
-          scoreForForecast = (latestRow?.score as number) ?? 0;
-        }
-        if (scoreForForecast <= 0) return; // brand-new user — nothing to forecast from yet
-
-        if (readiness?.dataQuality?.isInsufficient) {
-          setForecast(null);
-          return;
-        }
-
-        const next = computeForecast(scoreForForecast, patterns, workload);
-        setForecast(next);
-        // Collected for everyone (the strip itself is Pro) so a future
-        // track record already has history when it ships. Then reschedule the
-        // morning notification: in the first week tomorrow's names this forecast.
-        recordForecast(next).then(() => rescheduleDigestWithScore(scoreForForecast));
-      } catch (e) {
-        console.warn('[HomeScreen] contextual data load error:', e);
-      }
-    }
-
-    loadContextualData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, isRefreshing, readiness?.score]);
+  // Contextual data (life events, patterns, yesterday's score, forecast) is
+  // loaded by useTodayContextData above.
 
   const score         = readiness?.score ?? 0;
   const hasInsufficientData = readiness?.dataQuality?.isInsufficient ?? false;
