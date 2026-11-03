@@ -31,5 +31,12 @@ public class ReadinessDataBridgeModule: Module {
       defaults.set(json, forKey: Self.storageKey)
       WidgetCenter.shared.reloadTimelines(ofKind: "ReadinessWidget")
     }
+
+    /// Clears the score so the widget shows its empty state after sign-out.
+    Function("clearScore") {
+      guard let defaults = UserDefaults(suiteName: Self.appGroupID) else { return }
+      defaults.removeObject(forKey: Self.storageKey)
+      WidgetCenter.shared.reloadTimelines(ofKind: "ReadinessWidget")
+    }
   }
 }

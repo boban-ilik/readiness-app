@@ -3,6 +3,7 @@ import { Session, User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@services/supabase';
 import { syncDataOwner, wipeUserData } from '@services/userScopedStorage';
 import { pullProfile } from '@services/profileSync';
+import { clearWidget } from '@services/widgetBridge';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -119,8 +120,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async (): Promise<void> => {
     // Wipe device-local personal data first, so the next account (or the next
-    // owner of this phone) doesn't inherit it after the session ends.
+    // owner of this phone) doesn't inherit it after the session ends. Clear
+    // the home-screen widget too, so the old user's score is gone.
     await wipeUserData().catch(() => {});
+    clearWidget();
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };
