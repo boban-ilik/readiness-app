@@ -116,7 +116,7 @@ This is the section HRV guides tend to skip, and it's where naive HRV training g
 
 **Illness and life stress move it too.** HRV responds to total load on your system. A looming deadline or an incoming cold can drop your reading with zero training involved. The reading isn't wrong; you really are less ready. But the *cause* matters for what you do next.
 
-**In highly trained endurance athletes, overtraining can hide.** As covered in Step 2: studies reviewed in the strength-and-conditioning literature found some overloaded endurance athletes showed no HRV drop, or a paradoxical rise. If you're a high-volume endurance athlete, a reassuring HRV does not overrule mounting fatigue, falling performance, and rising resting heart rate.
+**In highly trained endurance athletes, overtraining can hide.** As covered in Step 2: studies reviewed in the strength-and-conditioning literature found some overloaded endurance athletes showed no HRV drop, or a paradoxical rise. If you're a high-volume endurance athlete, a reassuring HRV does not overrule mounting fatigue, falling performance, and rising resting heart rate. Those [signs your watch can't see](https://thereadiness.app/blog/signs-of-overtraining/) are covered in our overtraining guide.
 
 **RMSSD has limits.** RMSSD mainly tracks parasympathetic activity; the *Sensors* review notes its capacity to reflect the full autonomic picture, especially when sympathetic activation dominates, is limited. Another reason the borderline rule uses secondary markers instead of treating HRV as an oracle.
 
