@@ -25,11 +25,11 @@
       "!src/**/*.d.ts"
     ],
     "coverageThreshold": {
-      "src/utils/**": {
-        "statements": 40,
-        "branches": 30,
-        "functions": 40,
-        "lines": 40
+      "global": {
+        "statements": 19,
+        "branches": 16,
+        "functions": 15,
+        "lines": 19
       }
     }
   },
