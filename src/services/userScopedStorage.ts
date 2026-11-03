@@ -12,6 +12,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clearCoachSession } from '@services/coachSession';
+import { clearStravaTokens } from '@services/strava';
 
 /** Tracks which Supabase user the locally stored data belongs to. */
 export const DATA_OWNER_KEY = '@readiness/data_owner_id';
@@ -49,11 +50,8 @@ export const USER_SCOPED_KEYS = [
   // Streaks
   '@readiness/best_streak',
 
-  // Strava OAuth — must never cross accounts
-  '@readiness/strava_access_token',
-  '@readiness/strava_refresh_token',
-  '@readiness/strava_expires_at',
-  '@readiness/strava_athlete_name',
+  // Strava OAuth — must never cross accounts. The access/refresh tokens live
+  // in SecureStore (see services/strava.ts) and are cleared via clearStravaTokens.
   '@readiness/strava_oauth_state',
 
   // Garmin connection mirror (GARMIN_CONNECTED_KEY in services/garmin.ts):
@@ -137,6 +135,9 @@ async function clearUserScopedData(): Promise<void> {
   const all     = await AsyncStorage.getAllKeys();
   const dynamic = all.filter(k => USER_SCOPED_PREFIXES.some(p => k.startsWith(p)));
   await AsyncStorage.multiRemove([...USER_SCOPED_KEYS, ...dynamic]);
+  // SecureStore is a separate store from AsyncStorage, so the Strava tokens
+  // must be cleared explicitly here too.
+  await clearStravaTokens().catch(() => {});
   // The coach session is a module-level singleton, not storage, and the
   // Coach tab reads it first, so it has to be dropped here too.
   clearCoachSession();
@@ -165,4 +166,14 @@ export async function syncDataOwner(userId: string | null): Promise<boolean> {
 
   await AsyncStorage.setItem(DATA_OWNER_KEY, userId);
   return !isFirstRun;
+}
+
+/**
+ * Clear every piece of device-local personal data and forget the owner, for
+ * an explicit sign-out. Unlike syncDataOwner (which only wipes on the next
+ * account switch), this leaves the phone empty the moment the user signs out.
+ */
+export async function wipeUserData(): Promise<void> {
+  await clearUserScopedData();
+  await AsyncStorage.removeItem(DATA_OWNER_KEY).catch(() => {});
 }

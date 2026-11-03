@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@services/supabase';
-import { syncDataOwner } from '@services/userScopedStorage';
+import { syncDataOwner, wipeUserData } from '@services/userScopedStorage';
 import { pullProfile } from '@services/profileSync';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -118,6 +118,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async (): Promise<void> => {
+    // Wipe device-local personal data first, so the next account (or the next
+    // owner of this phone) doesn't inherit it after the session ends.
+    await wipeUserData().catch(() => {});
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };

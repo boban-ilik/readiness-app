@@ -91,12 +91,12 @@ Deno.serve(async (req: Request) => {
     // ── Fetch last 7 days ─────────────────────────────────────────────────────
     // The client sends its local today, so the window lines up with the dates
     // the app writes (localDateStr), not the server's UTC clock.
-    let today = '';
+    let clientToday = '';
     try {
       const body = await req.json();
-      if (typeof body?.today === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.today)) today = body.today;
+      if (typeof body?.today === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.today)) clientToday = body.today;
     } catch { /* no body or not JSON — fall back to UTC */ }
-    const fromDate = daysBefore(today || new Date().toISOString().split('T')[0], 6);
+    const fromDate = daysBefore(clientToday || new Date().toISOString().split('T')[0], 6);
 
     const { data: rows, error: rowsError } = await userSupabase
       .from('readiness_scores')
