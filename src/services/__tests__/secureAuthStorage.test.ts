@@ -7,10 +7,20 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn(),
 }));
 
+const mockLegacy = new Map<string, string>();
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  __esModule: true,
+  default: {
+    getItem: jest.fn(async (k: string) => mockLegacy.get(k) ?? null),
+    removeItem: jest.fn(async (k: string) => { mockLegacy.delete(k); }),
+  },
+}));
+
 const store = new Map<string, string>();
 
 beforeEach(() => {
   store.clear();
+  mockLegacy.clear();
   (SecureStore.setItemAsync as jest.Mock).mockImplementation(async (k: string, v: string) => { store.set(k, v); });
   (SecureStore.getItemAsync as jest.Mock).mockImplementation(async (k: string) => store.get(k) ?? null);
   (SecureStore.deleteItemAsync as jest.Mock).mockImplementation(async (k: string) => { store.delete(k); });
@@ -48,5 +58,29 @@ describe('secureAuthStorage (chunked Keychain adapter)', () => {
 
   it('returns null for a missing key', async () => {
     expect(await secureAuthStorage.getItem('missing')).toBeNull();
+  });
+
+  describe('migration from the AsyncStorage adapter (1.2.1 and earlier)', () => {
+    const KEY = 'sb-vgvrmhqkcqdimgwzbbhc-auth-token';
+
+    it('moves a legacy session into the Keychain and deletes the plaintext copy', async () => {
+      const session = JSON.stringify({ access_token: 'a'.repeat(3000), refresh_token: 'r' });
+      mockLegacy.set(KEY, session);
+      expect(await secureAuthStorage.getItem(KEY)).toBe(session);
+      expect(mockLegacy.has(KEY)).toBe(false);
+      expect(store.has(KEY + '::__count')).toBe(true);
+      expect(await secureAuthStorage.getItem(KEY)).toBe(session); // now served from the Keychain
+    });
+
+    it('returns null when neither store has the key', async () => {
+      expect(await secureAuthStorage.getItem(KEY)).toBeNull();
+    });
+
+    it('keeps the legacy copy if the Keychain write fails', async () => {
+      mockLegacy.set(KEY, 'session');
+      (SecureStore.setItemAsync as jest.Mock).mockRejectedValueOnce(new Error('keychain locked'));
+      expect(await secureAuthStorage.getItem(KEY)).toBe('session');
+      expect(mockLegacy.has(KEY)).toBe(true);
+    });
   });
 });

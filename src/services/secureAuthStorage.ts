@@ -11,6 +11,7 @@
  */
 
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CHUNK_SIZE = 1800; // chars — under the 2048-byte cap, with margin
 
@@ -31,6 +32,32 @@ async function getItem(key: string): Promise<string | null> {
   );
   if (parts.some(p => p === null)) return null; // incomplete write
   return parts.join('');
+}
+
+/**
+ * One-time migration from the AsyncStorage adapter used up to 1.2.1. Before
+ * this, the session lived in AsyncStorage under the same key supabase-js
+ * asks for here. Without this step every existing user is signed out on the
+ * first launch after updating, and the plaintext session stays on disk.
+ * The legacy value is moved into the Keychain and deleted from AsyncStorage.
+ */
+async function migrateLegacy(key: string): Promise<string | null> {
+  const legacy = await AsyncStorage.getItem(key).catch(() => null);
+  if (legacy === null) return null;
+  try {
+    await setItem(key, legacy);
+    await AsyncStorage.removeItem(key);
+  } catch {
+    // Keychain write failed: leave the legacy copy for the next attempt.
+    return legacy;
+  }
+  return legacy;
+}
+
+async function getItemMigrating(key: string): Promise<string | null> {
+  const current = await getItem(key);
+  if (current !== null) return current;
+  return migrateLegacy(key);
 }
 
 async function setItem(key: string, value: string): Promise<void> {
@@ -61,4 +88,4 @@ async function removeItem(key: string): Promise<void> {
   await SecureStore.deleteItemAsync(countKey(key)).catch(() => {});
 }
 
-export const secureAuthStorage = { getItem, setItem, removeItem };
+export const secureAuthStorage = { getItem: getItemMigrating, setItem, removeItem };
