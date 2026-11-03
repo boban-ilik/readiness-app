@@ -51,17 +51,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Always catch — if the token refresh network call fails (e.g. momentary
     // offline) we just treat it as signed-out rather than crashing the app.
     supabase.auth.getSession()
-      .then(async ({ data: { session } }) => {
+      .then(({ data: { session } }) => {
         if (cancelled) return;
         clearTimeout(loadingTimeout);
-        // Wipe device-local personal data if it belongs to another account,
-        // then restore this account's profile if the device has none.
-        await syncDataOwner(session?.user?.id ?? null).catch(() => {});
-        if (session?.user) await pullProfile().catch(() => {});
-        if (cancelled) return;
+        // Reveal the app as soon as the session is known. The ownership wipe
+        // and profile restore run in the background so cold start never waits
+        // on the network; the auth listener below re-syncs on sign-in/switch.
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
+        syncDataOwner(session?.user?.id ?? null)
+          .then(() => (session?.user ? pullProfile() : null))
+          .catch(() => {});
       })
       .catch((err) => {
         // Log in all builds — this is a silent killer in production

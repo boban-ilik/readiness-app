@@ -24,6 +24,7 @@ import {
 import { useRef, useEffect } from 'react';
 import type { HealthData } from '../../types/index';
 import { buildBreakdownDetail, recoveryStatus, type MetricRow } from '@utils/breakdown';
+import { startSkeletonPulse } from '@utils/motion';
 import { useAIInsight }                          from '@hooks/useAIInsight';
 import { useMetricHistory }                      from '@hooks/useMetricHistory';
 import MetricSparkline                           from '@components/score/MetricSparkline';
@@ -90,7 +91,7 @@ function scoreLabel(score: number): string {
 function SectionHeader({ title, aiActive }: { title: string; aiActive?: boolean }) {
   return (
     <View style={styles.sectionHeaderRow}>
-      <Text style={styles.sectionHeader}>{title}</Text>
+      <Text style={styles.sectionHeader} accessibilityRole="header">{title}</Text>
       {aiActive && (
         <View style={styles.aiBadge}>
           <Text style={styles.aiBadgeText}>✨ AI</Text>
@@ -208,7 +209,7 @@ export default function BreakdownModal({
 
   // ── Skeleton pulse animation ───────────────────────────────────────────────
   const pulseAnim = useRef(new Animated.Value(0.35)).current;
-  const pulseLoop = useRef<Animated.CompositeAnimation | null>(null);
+  const pulseLoop = useRef<(() => void) | null>(null);
 
   // ── AI insight (Pro only) ─────────────────────────────────────────────────
   // Must be called before any conditional returns (Rules of Hooks).
@@ -228,18 +229,15 @@ export default function BreakdownModal({
   useEffect(() => {
     if (aiLoading) {
       pulseAnim.setValue(0.35);
-      pulseLoop.current = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 0.7,  duration: 700, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 0.35, duration: 700, useNativeDriver: true }),
-        ]),
-      );
-      pulseLoop.current.start();
+      // Respect reduced motion: the helper leaves the static 0.35 opacity
+      // when the OS setting is on.
+      pulseLoop.current = startSkeletonPulse(pulseAnim, 0.35, 0.7, 700);
     } else {
-      pulseLoop.current?.stop();
+      pulseLoop.current?.();
+      pulseLoop.current = null;
       Animated.timing(pulseAnim, { toValue: 1, duration: 150, useNativeDriver: true }).start();
     }
-    return () => { pulseLoop.current?.stop(); };
+    return () => { pulseLoop.current?.(); };
   }, [aiLoading, pulseAnim]);
 
   // ── 30-day metric history (for sparkline) — not shown for activity ────────

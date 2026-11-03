@@ -26,6 +26,7 @@ import { analyzeWorkload, type WorkloadResult } from '@services/workloadAnalysis
 import { fetchRecentEvents, type LifeEvent } from '@services/lifeEvents';
 import { setCoachSession } from '@services/coachSession';
 import { track } from '@services/analytics';
+import { startSkeletonPulse } from '@utils/motion';
 import { useSubscription } from '@contexts/SubscriptionContext';
 import type { ReadinessResult } from '@utils/readiness';
 import type { HealthData } from '@/types/index';
@@ -93,16 +94,7 @@ function getRecoveryProtocol(
 
 function SkeletonLine({ width = '100%' as const }: { width?: `${number}%` | number }) {
   const anim = useRef(new Animated.Value(0.3)).current;
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(anim, { toValue: 0.7, duration: 700, useNativeDriver: true }),
-        Animated.timing(anim, { toValue: 0.3, duration: 700, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, []);
+  useEffect(() => startSkeletonPulse(anim, 0.3, 0.7, 700), [anim]);
   return <Animated.View style={[styles.skeletonLine, { width, opacity: anim }]} />;
 }
 
@@ -316,6 +308,7 @@ export default function DailyBriefingModal({
                   style={styles.iconBtn}
                   onPress={() => load(true)}
                   disabled={isLoading}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   accessibilityRole="button"
                   accessibilityLabel="Regenerate briefing"
                 >
@@ -325,6 +318,7 @@ export default function DailyBriefingModal({
               <TouchableOpacity
                 style={styles.iconBtn}
                 onPress={onClose}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 accessibilityRole="button"
                 accessibilityLabel="Close"
               >

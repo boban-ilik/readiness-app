@@ -126,7 +126,10 @@ export default function MetricSparkline({
   const avgLabelY = avgY - 3;
 
   return (
-    <View>
+    <View
+      accessible
+      accessibilityLabel={`Trend over ${n} days: today ${Math.round(today.value)}, average ${Math.round(avg)}, ranging from ${Math.round(valid[0].value)} to ${Math.round(today.value)}.`}
+    >
       <Svg width={chartWidth} height={TOTAL_H}>
 
         {/* ── Fill area ── */}

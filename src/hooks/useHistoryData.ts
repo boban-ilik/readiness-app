@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { Platform } from 'react-native';
 import {
@@ -94,6 +94,9 @@ function buildMockHistory(days: number): DayHistory[] {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
+/** Skip a refetch when the same range was loaded this recently. */
+const FRESH_MS = 60_000;
+
 /**
  * @param days  How many calendar days to load.  7 = default, 28 = Pro extended.
  */
@@ -106,17 +109,29 @@ export function useHistoryData(days: 7 | 28 | 30 = 7): {
   const [isLoading, setIsLoading] = useState(true);
   const [error,     setError]     = useState<string | null>(null);
 
+  // Keep existing rows on screen during a refetch, and skip refetching when
+  // the same range was just loaded — switching tabs shouldn't blank History
+  // and re-run three HealthKit queries plus a Supabase fetch every time.
+  const hasDataRef    = useRef(false);
+  const lastLoadedRef = useRef<{ at: number; days: number }>({ at: 0, days: 0 });
+
   // Refetch on focus, not once per mount. Tab screens stay mounted, so keying
   // this to [days] alone meant History kept showing whatever it computed when
   // the app launched: Today read 63 from live data including a manual HRV
   // entry, while History still showed the 66 it had calculated at startup.
   useFocusEffect(useCallback(() => {
+    // Freshly loaded this range? Skip the refetch; the tab switch shouldn't
+    // blank the screen and re-query everything.
+    const fresh = Date.now() - lastLoadedRef.current.at < FRESH_MS
+      && lastLoadedRef.current.days === days;
+    if (fresh) return;
+
     let cancelled = false;
 
     async function load() {
-      // Switching 7 to 28 days re-runs this; without a reset the old
-      // error or a stale "loaded" state showed over the new range.
-      setIsLoading(true);
+      // Only show the full-screen spinner on the first load; refetches keep
+      // the existing rows on screen and update them in place.
+      if (!hasDataRef.current) setIsLoading(true);
       setError(null);
       try {
         // ── Mock path (Expo Go / web) ──────────────────────────────────────
@@ -128,6 +143,8 @@ export function useHistoryData(days: 7 | 28 | 30 = 7): {
         if (Platform.OS !== 'ios' || !isHealthKitAvailable()) {
           if (!cancelled) {
             setHistory(buildMockHistory(days));
+            hasDataRef.current = true;
+            lastLoadedRef.current = { at: Date.now(), days };
             setIsLoading(false);
           }
           return;
@@ -228,6 +245,8 @@ export function useHistoryData(days: 7 | 28 | 30 = 7): {
 
         if (!cancelled) {
           setHistory(result);
+          hasDataRef.current = true;
+          lastLoadedRef.current = { at: Date.now(), days };
           setIsLoading(false);
         }
       } catch (err: any) {

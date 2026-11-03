@@ -22,6 +22,7 @@
  */
 
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { isInTrial } from './trial.ts';
 
 export type Tier = 'trial' | 'pro' | 'free' | 'unverified';
 export type AiFn = 'daily-briefing' | 'coach-chat' | 'weekly-report' | 'ai-insight';
@@ -44,7 +45,6 @@ export type GateResult =
       /** The ai_calls row this call was counted as, for refundCall; null when the insert failed. */ callId: number | null }
   | { ok: false; response: Response };
 
-const TRIAL_MS       = 7 * 24 * 60 * 60 * 1000;
 const RC_TIMEOUT_MS  = 4_000;
 const MAX_BODY_BYTES = 16_384;
 
@@ -110,7 +110,7 @@ async function revenueCatIsPro(userId: string): Promise<boolean | null> {
 
 export async function resolveTier(user: AuthedUser): Promise<Tier> {
   const created = user.created_at ? Date.parse(user.created_at) : NaN;
-  if (!isNaN(created) && Date.now() < created + TRIAL_MS) return 'trial';
+  if (isInTrial(created, Date.now())) return 'trial';
 
   const pro = await revenueCatIsPro(user.id);
   if (pro === null) return 'unverified';
