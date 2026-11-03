@@ -93,3 +93,13 @@ Also: rebuilt on a newer foundation for current iOS, and today's activity update
 - Build 79 rejected under 1.4.1 Physical Harm: the reviewer read the Garmin link as "connects to external medical hardware" and asked for regulatory documents, region limits or a jurisdiction statement, and a medical disclaimer in the description.
 - Done with Boban's approval: medical disclaimer appended to the description (before the EULA line); reply sent in App Store Connect at 11:57 local explaining the app reads consumer wearable data through HealthKit and Garmin's Health API, connects to no hardware, and makes no medical claim; version resubmitted with the same build 79 via Update Review then Resubmit.
 - If Apple holds the hardware reading: options are an App Review appointment (Tuesdays and Thursdays) or an appeal; no documents of the kind requested exist for consumer wearables.
+
+## Fourth submission: build 80 (3 November 2026)
+
+- Build 79 rejected again under 1.4.1 on 3 November with the identical notice and no engagement with the reply.
+- Merged PR #6 (Garmin worded as a cloud account sync, wellness disclaimers in the app) and PR #5 (accessibility: icon-button labels, selection state, tertiary contrast) into claude/garmin (b29ff81). Jest 215 tests, tsc and eslint clean.
+- Build 80 built locally, uploaded, VALID, attached to 1.2.1.
+- Description: the GENERAL WELLNESS, NOT MEDICAL ADVICE block from docs/APP_STORE_LISTING.md replaces the earlier disclaimer paragraph. Review notes: the ABOUT GARMIN (NOT MEDICAL HARDWARE) paragraph replaces NEW IN 1.2; notes trimmed to 3,960 characters to fit Apple's 4,000 limit.
+- Reply sent 12:52 local (message 7). Resubmitted via Update Review then Resubmit to App Review.
+- Recommended in parallel: an App Review appointment (Tuesdays and Thursdays, "Meet with Apple" link in the rejection) or an App Review Board appeal; and, if build 80 bounces, shipping 1.2.1 with the Garmin link behind a flag and fighting the classification separately.
+- Incident: while updating the notes by script, the API echo matched "detail" and printed the full notes, demo password included, into the session transcript once. Changing the demo password is Boban's call.
