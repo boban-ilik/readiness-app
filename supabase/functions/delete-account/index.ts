@@ -81,6 +81,17 @@ Deno.serve(async (req: Request) => {
       // Non-fatal — still proceed to delete the auth account
     }
 
+    // 1.5. Delete the RevenueCat subscriber (purchase record) so a deleted
+    //      account cannot be linked back to its subscriptions. The app uses
+    //      the Supabase user id as the RevenueCat app_user_id.
+    const rcKey = Deno.env.get('REVENUECAT_SECRET_KEY') ?? '';
+    if (rcKey) {
+      await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(userId)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${rcKey}` },
+      }).catch(e => console.warn('[delete-account] RevenueCat deletion failed (non-fatal):', e?.message ?? e));
+    }
+
     // 2. Delete the auth user (this is the irreversible step)
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(userId);
     if (deleteError) throw deleteError;
@@ -88,8 +99,9 @@ Deno.serve(async (req: Request) => {
     return json({ success: true });
 
   } catch (err: any) {
-    console.error('[delete-account] error:', err.message);
-    return json({ error: err.message ?? 'Internal server error' }, 500);
+    console.error('[delete-account] error:', err?.message ?? err);
+    // Never leak internal error details (table names, key state) to the client.
+    return json({ error: 'Account deletion failed. Please try again.' }, 500);
   }
 });
 

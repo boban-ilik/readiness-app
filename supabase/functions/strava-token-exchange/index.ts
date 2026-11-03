@@ -4,9 +4,10 @@
  * Server-side proxy for Strava OAuth token operations so the client secret
  * never ships inside the mobile app binary.
  *
- * Supports two grant types:
+ * Supports three grant types:
  *   1. authorization_code  — initial OAuth code → token exchange
  *   2. refresh_token       — refresh an expired access token
+ *   3. deauthorize         — revoke the user's Strava authorization
  *
  * ── Secrets (set once via Supabase dashboard or CLI) ─────────────────────────
  *   supabase secrets set STRAVA_CLIENT_ID=211386
@@ -80,8 +81,32 @@ serve(async (req: Request) => {
   }
 
   const { grant_type } = body;
-  if (grant_type !== 'authorization_code' && grant_type !== 'refresh_token') {
-    return json({ error: 'grant_type must be authorization_code or refresh_token' }, 400);
+  if (grant_type !== 'authorization_code' && grant_type !== 'refresh_token' && grant_type !== 'deauthorize') {
+    return json({ error: 'grant_type must be authorization_code, refresh_token or deauthorize' }, 400);
+  }
+
+  // ── Deauthorize (revoke the user's Strava authorization) ───────────────────
+  // Strava's deauthorize endpoint only needs the access token — no client
+  // secret — so this runs before the secret is read.
+  if (grant_type === 'deauthorize') {
+    const { access_token } = body;
+    if (!access_token) return json({ error: 'access_token is required for deauthorize' }, 400);
+    try {
+      const res = await fetch('https://www.strava.com/oauth/deauthorize', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body:    new URLSearchParams({ access_token }).toString(),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        console.error('[strava-token-exchange] deauthorize failed:', res.status, data);
+        return json({ error: 'Strava deauthorization failed' }, res.status);
+      }
+      return json({ success: true });
+    } catch (err) {
+      console.error('[strava-token-exchange] deauthorize fetch error:', err);
+      return json({ error: 'Failed to reach Strava' }, 500);
+    }
   }
 
   // ── Read secrets from environment ───────────────────────────────────────────

@@ -305,7 +305,17 @@ export async function getStravaToken(): Promise<StravaToken | null> {
 }
 
 export async function disconnectStrava(): Promise<void> {
+  // Best-effort: revoke the authorization on Strava's side first, then clear
+  // the local tokens either way. An expired token just makes the revoke a no-op.
+  await deauthorizeStrava().catch(() => {});
   await clearStravaTokens();
+}
+
+/** Revoke the user's Strava authorization via the server-side proxy. */
+async function deauthorizeStrava(): Promise<void> {
+  const token = await getStravaToken();
+  if (!token?.accessToken) return;
+  await stravaTokenViaEdgeFunction({ grant_type: 'deauthorize', access_token: token.accessToken });
 }
 
 /** Returns a valid access token, refreshing if expired. */
