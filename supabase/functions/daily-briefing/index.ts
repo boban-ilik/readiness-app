@@ -87,6 +87,9 @@ interface DailyBriefingInput {
   healthData:   HealthData;
   rhrBaseline:  number;
   hrvBaseline:  number;
+  /** Whether each baseline is personal (7+ days of the user's own data). */
+  rhrBaselinePersonal?: boolean;
+  hrvBaselinePersonal?: boolean;
   /** Longitudinal patterns detected from 30 days of history. May be empty. */
   patterns:     PatternInsight[];
   /** Yesterday's training load from HealthKit workouts. Null if no workouts. */
@@ -179,11 +182,11 @@ function buildPrompt(input: DailyBriefingInput): string {
 
   if (h.hrv !== null) {
     const d = Math.round(h.hrv - hrvBaseline);
-    lines.push(`  Heart rate variability: ${h.hrv} ms  (${baselineNote('hrv', hrvBaseline)}; delta: ${d >= 0 ? '+' : ''}${d} ms)`);
+    lines.push(`  Heart rate variability: ${h.hrv} ms  (${baselineNote('hrv', hrvBaseline, input.hrvBaselinePersonal)}; delta: ${d >= 0 ? '+' : ''}${d} ms)`);
   }
   if (h.restingHeartRate !== null) {
     const d = Math.round(h.restingHeartRate - rhrBaseline);
-    lines.push(`  Resting heart rate: ${h.restingHeartRate} bpm  (${baselineNote('rhr', rhrBaseline)}; delta: ${d >= 0 ? '+' : ''}${d} bpm)`);
+    lines.push(`  Resting heart rate: ${h.restingHeartRate} bpm  (${baselineNote('rhr', rhrBaseline, input.rhrBaselinePersonal)}; delta: ${d >= 0 ? '+' : ''}${d} bpm)`);
   }
   if (h.sleepDuration !== null) {
     const hrs = (h.sleepDuration / 60).toFixed(1);

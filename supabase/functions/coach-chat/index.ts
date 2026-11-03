@@ -93,6 +93,9 @@ interface CoachChatInput {
   healthData:   HealthData;
   rhrBaseline:  number;
   hrvBaseline:  number;
+  /** Whether each baseline is personal (7+ days of the user's own data). */
+  rhrBaselinePersonal?: boolean;
+  hrvBaselinePersonal?: boolean;
   patterns:     PatternInsight[];
   workload:     WorkloadResult | null;
   lifeEvents:   LifeEvent[];       // recent tagged events (last 7 days)
@@ -244,11 +247,11 @@ function buildContext(input: CoachChatInput): string {
 
   if (h.hrv !== null) {
     const d = Math.round(h.hrv - hrvBaseline);
-    lines.push(`  HRV: ${h.hrv}ms (${baselineNote('hrv', hrvBaseline)}; delta: ${d >= 0 ? '+' : ''}${d}ms)`);
+    lines.push(`  HRV: ${h.hrv}ms (${baselineNote('hrv', hrvBaseline, input.hrvBaselinePersonal)}; delta: ${d >= 0 ? '+' : ''}${d}ms)`);
   }
   if (h.restingHeartRate !== null) {
     const d = Math.round(h.restingHeartRate - rhrBaseline);
-    lines.push(`  RHR: ${h.restingHeartRate}bpm (${baselineNote('rhr', rhrBaseline)}; delta: ${d >= 0 ? '+' : ''}${d}bpm)`);
+    lines.push(`  RHR: ${h.restingHeartRate}bpm (${baselineNote('rhr', rhrBaseline, input.rhrBaselinePersonal)}; delta: ${d >= 0 ? '+' : ''}${d}bpm)`);
   }
   if (h.sleepDuration !== null) lines.push(`  Sleep: ${(h.sleepDuration / 60).toFixed(1)}h`);
   if (h.deepSleep !== null)     lines.push(`  Deep sleep: ${h.deepSleep}min`);
