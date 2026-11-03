@@ -23,12 +23,7 @@ import { sanitiseWater, waterLines, WATER_RULE, type WaterInput } from '../_shar
 import { sanitiseReadingCheck, readingCheckLines, READING_CHECK_RULE, type ReadingCheckInput } from '../_shared/readingCheck.ts';
 import { trainingCallLine, baselineNote, TRAINING_RULE } from '../_shared/coaching.ts';
 import { postClaude, CLAUDE_HAIKU } from '../_shared/anthropic.ts';
-
-const CORS_HEADERS: Record<string, string> = {
-  'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { CORS_HEADERS } from '../_shared/cors.ts';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

@@ -19,11 +19,7 @@
 
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { CORS_HEADERS } from '../_shared/cors.ts';
 
 // @ts-ignore — Deno global
 Deno.serve(async (req: Request) => {

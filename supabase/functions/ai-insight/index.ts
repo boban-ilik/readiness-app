@@ -29,16 +29,7 @@
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import { gate } from '../_shared/entitlement.ts';
 import { postClaude, CLAUDE_HAIKU } from '../_shared/anthropic.ts';
-
-// ─── CORS ─────────────────────────────────────────────────────────────────────
-// Expo apps run on localhost in dev and as native apps in production.
-// We allow all origins here — the Supabase anon key provides the access control.
-
-const CORS_HEADERS: Record<string, string> = {
-  'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { CORS_HEADERS } from '../_shared/cors.ts';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
