@@ -15,6 +15,7 @@ import { Platform } from 'react-native';
 import { summariseTodayHRV, dailyOvernightHRV, OVERNIGHT_START_HOUR, type HRVSample } from '@utils/hrvSamples';
 import { sleepByDay, todaysSleep, NAP_END_HOUR, type SleepSummary, type SleepSampleLike } from '@utils/sleepSamples';
 import { noDataReason, type NoDataReason } from '@utils/noData';
+import { localDateStr } from '@utils/index';
 import type { HealthData } from '@/types/index';
 
 // react-native-health is only available on iOS native builds.
@@ -251,14 +252,6 @@ export async function fetchHRVHistory(days = 30): Promise<number[]> {
 }
 
 // ─── History fetchers ─────────────────────────────────────────────────────────
-
-/** Local YYYY-MM-DD string (timezone-aware) */
-function localDateStr(d: Date): string {
-  const y  = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, '0');
-  const da = String(d.getDate()).padStart(2, '0');
-  return `${y}-${mo}-${da}`;
-}
 
 /**
  * Returns daily RHR values for the last N days, keyed by local date (YYYY-MM-DD).

@@ -38,7 +38,7 @@ import {
   getScoreColor,
   getScoreLabel,
 } from '@constants/theme';
-import { formatDuration } from '@utils/index';
+import { formatDuration, localDateStr } from '@utils/index';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -109,13 +109,6 @@ interface CalendarCell {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function localDateStr(d: Date): string {
-  const y  = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, '0');
-  const da = String(d.getDate()).padStart(2, '0');
-  return `${y}-${mo}-${da}`;
-}
 
 /** Builds a Monday-aligned calendar grid for the given month. Null = padding cell. */
 function buildCalendarGrid(

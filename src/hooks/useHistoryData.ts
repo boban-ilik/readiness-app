@@ -7,6 +7,7 @@ import {
 import { getRHRByDay, getHRVByDay, getSleepByDay } from '@services/healthSource';
 import { getPersonalRHRBaseline, getPersonalHRVBaseline } from '@hooks/useHealthData';
 import { calculateReadiness } from '@utils/readiness';
+import { localDateStr } from '@utils/index';
 import { supabase } from '@services/supabase';
 import { fetchHistoryFromSupabase } from '@services/scoreSync';
 import type { HealthData } from '@/types/index';
@@ -25,13 +26,6 @@ export interface DayHistory {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function localDateStr(d: Date): string {
-  const y  = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, '0');
-  const da = String(d.getDate()).padStart(2, '0');
-  return `${y}-${mo}-${da}`;
-}
 
 /** Returns the last N calendar dates (oldest → newest). */
 function buildDateRange(days: number): string[] {
