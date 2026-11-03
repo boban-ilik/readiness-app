@@ -52,7 +52,7 @@ import { useCycleTracking } from '@hooks/useCycleTracking';
 import { useOvertrainingWarning } from '@hooks/useOvertrainingWarning';
 import { useIllnessRecovery } from '@hooks/useIllnessRecovery';
 import { cancelIllnessEpisodeStartedOn } from '@services/illnessEpisode';
-import { PROFILE_SEX_KEY } from '@services/userProfile';
+import { PROFILE_SEX_KEY } from '@services/storageKeys';
 import { formatDisplayDate, localDateStr } from '@utils/index';
 import { computeActivityScore } from '@utils/breakdown';
 import { fetchTodayActivity, diagnoseNoData, type TodayActivity } from '@services/healthkit';
@@ -67,7 +67,7 @@ import { computeForecast, applyIllnessRecovery, type ReadinessForecast } from '@
 import { recordForecast } from '@services/forecastLog';
 import { fetchRecentEvents, tagEvent, type LifeEvent } from '@services/lifeEvents';
 import { supabase } from '@services/supabase';
-import { NAME_KEY } from '../onboarding';
+import { NAME_KEY } from '@services/storageKeys';
 import { track, trackDaily } from '@services/analytics';
 
 const PRO_BANNER_DISMISSED_KEY = '@readiness/pro_banner_dismissed_day';

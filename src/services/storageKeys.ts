@@ -14,6 +14,25 @@
 /** Tracks which Supabase user the locally stored data belongs to. */
 export const DATA_OWNER_KEY = '@readiness/data_owner_id';
 
+// ─── Named profile / onboarding keys ─────────────────────────────────────────
+// These are imported by the startup sync, the profile service and the screens.
+// Defining them here (rather than in onboarding.tsx) keeps services from
+// importing a screen and stops the literals drifting apart.
+export const ONBOARDING_KEY     = '@readiness/onboarding_complete';
+export const DEVICE_KEY         = '@readiness/device_type';
+export const NAME_KEY           = '@readiness/user_name';
+export const FREQ_KEY           = '@readiness/training_frequency';
+export const JOINED_AT_KEY      = '@readiness/joined_at';
+export const PROFILE_AGE_KEY    = '@readiness/profile_age';
+export const PROFILE_SEX_KEY    = '@readiness/profile_sex';
+export const PROFILE_GOAL_KEY   = '@readiness/profile_goal';
+export const PROFILE_HEIGHT_KEY = '@readiness/profile_height_cm';
+export const PROFILE_WEIGHT_KEY = '@readiness/profile_weight_kg';
+export const PROFILE_PHOTO_KEY  = '@readiness/profile_photo_uri';
+export const NOTIF_ENABLED_KEY  = '@readiness/notif_digest_enabled';
+export const NOTIF_HOUR_KEY     = '@readiness/notif_digest_hour';
+export const NOTIF_MINUTE_KEY   = '@readiness/notif_digest_minute';
+
 /**
  * Every key holding data about a specific person. Anything genuinely global
  * (dev flags, app-level preferences) is deliberately excluded.

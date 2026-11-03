@@ -1,4 +1,8 @@
-import { USER_SCOPED_KEYS, USER_SCOPED_PREFIXES, DATA_OWNER_KEY } from '../storageKeys';
+import {
+  USER_SCOPED_KEYS, USER_SCOPED_PREFIXES, DATA_OWNER_KEY,
+  NAME_KEY, FREQ_KEY, JOINED_AT_KEY, ONBOARDING_KEY, DEVICE_KEY,
+  PROFILE_SEX_KEY, PROFILE_PHOTO_KEY,
+} from '../storageKeys';
 import { GARMIN_CONNECTED_KEY } from '../garmin';
 import { STRAVA_OAUTH_STATE_KEY } from '../strava';
 
@@ -45,5 +49,11 @@ describe('user-scoped storage keys', () => {
 
   it('keeps the data-owner key outside the wipe (it is removed separately)', () => {
     expect(USER_SCOPED_KEYS).not.toContain(DATA_OWNER_KEY);
+  });
+
+  it('wipes the named profile/onboarding keys too (single source, no drift)', () => {
+    for (const k of [NAME_KEY, FREQ_KEY, JOINED_AT_KEY, ONBOARDING_KEY, DEVICE_KEY, PROFILE_SEX_KEY, PROFILE_PHOTO_KEY]) {
+      expect(USER_SCOPED_KEYS).toContain(k);
+    }
   });
 });

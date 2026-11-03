@@ -9,15 +9,14 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NAME_KEY, FREQ_KEY } from '../../app/onboarding';
+import {
+  NAME_KEY, FREQ_KEY,
+  PROFILE_AGE_KEY, PROFILE_SEX_KEY, PROFILE_HEIGHT_KEY, PROFILE_WEIGHT_KEY, PROFILE_GOAL_KEY,
+} from '@services/storageKeys';
 
-// ─── Storage keys (mirrored from profile.tsx) ─────────────────────────────────
-
-export const PROFILE_AGE_KEY    = '@readiness/profile_age';
-export const PROFILE_SEX_KEY    = '@readiness/profile_sex';
-export const PROFILE_HEIGHT_KEY = '@readiness/profile_height_cm';
-export const PROFILE_WEIGHT_KEY = '@readiness/profile_weight_kg';
-export const PROFILE_GOAL_KEY   = '@readiness/profile_goal';
+// Re-exported so existing callers (the Today screen imports PROFILE_SEX_KEY)
+// keep working. The keys themselves live in storageKeys.ts.
+export { PROFILE_AGE_KEY, PROFILE_SEX_KEY, PROFILE_HEIGHT_KEY, PROFILE_WEIGHT_KEY, PROFILE_GOAL_KEY };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

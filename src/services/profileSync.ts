@@ -13,19 +13,10 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@services/supabase';
-
-// Keys are duplicated rather than imported to avoid a circular dependency
-// between onboarding.tsx, userProfile.ts, and this module.
-const NAME_KEY          = '@readiness/user_name';
-const FREQ_KEY          = '@readiness/training_frequency';
-const DEVICE_KEY        = '@readiness/device_type';
-const JOINED_AT_KEY     = '@readiness/joined_at';
-const ONBOARDING_KEY    = '@readiness/onboarding_complete';
-const PROFILE_AGE_KEY   = '@readiness/profile_age';
-const PROFILE_SEX_KEY   = '@readiness/profile_sex';
-const PROFILE_GOAL_KEY  = '@readiness/profile_goal';
-const PROFILE_HEIGHT_KEY = '@readiness/profile_height_cm';
-const PROFILE_WEIGHT_KEY = '@readiness/profile_weight_kg';
+import {
+  NAME_KEY, FREQ_KEY, DEVICE_KEY, JOINED_AT_KEY, ONBOARDING_KEY,
+  PROFILE_AGE_KEY, PROFILE_SEX_KEY, PROFILE_GOAL_KEY, PROFILE_HEIGHT_KEY, PROFILE_WEIGHT_KEY,
+} from './storageKeys';
 
 interface ProfileRow {
   name:               string | null;

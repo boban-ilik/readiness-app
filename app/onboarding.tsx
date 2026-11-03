@@ -45,22 +45,14 @@ import {
   getScoreColor,
   getScoreLabel,
 } from '@constants/theme';
+import {
+  ONBOARDING_KEY, DEVICE_KEY, NAME_KEY, FREQ_KEY, JOINED_AT_KEY,
+  PROFILE_GOAL_KEY, PROFILE_SEX_KEY,
+  NOTIF_ENABLED_KEY, NOTIF_HOUR_KEY, NOTIF_MINUTE_KEY,
+} from '@services/storageKeys';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-export const ONBOARDING_KEY = '@readiness/onboarding_complete';
-const DEVICE_KEY           = '@readiness/device_type';
-export const NAME_KEY      = '@readiness/user_name';
-export const FREQ_KEY      = '@readiness/training_frequency';
-export const JOINED_AT_KEY = '@readiness/joined_at';
-
-// Profile keys (mirrored from src/services/userProfile.ts — kept here to avoid
-// circular imports between onboarding.tsx and userProfile.ts)
-const PROFILE_GOAL_KEY   = '@readiness/profile_goal';
-const PROFILE_SEX_KEY    = '@readiness/profile_sex';
-const NOTIF_ENABLED_KEY  = '@readiness/notif_digest_enabled';
-const NOTIF_HOUR_KEY     = '@readiness/notif_digest_hour';
-const NOTIF_MINUTE_KEY   = '@readiness/notif_digest_minute';
 const DEFAULT_DIGEST_HOUR = 8;
 
 const TOTAL_STEPS = 5;  // steps 0–4 show progress dots; step 5 = auto setup

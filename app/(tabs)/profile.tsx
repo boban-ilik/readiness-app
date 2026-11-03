@@ -22,7 +22,15 @@ import { useStravaActivities }       from '@hooks/useStravaActivities';
 import { useGarminConnection }       from '@hooks/useGarminConnection';
 import { ProGate }                   from '@components/common/ProGate';
 import { Ionicons }                  from '@expo/vector-icons';
-import { NAME_KEY, FREQ_KEY, JOINED_AT_KEY, ONBOARDING_KEY } from '../onboarding';
+import {
+  NAME_KEY, FREQ_KEY, JOINED_AT_KEY, ONBOARDING_KEY,
+  PROFILE_PHOTO_KEY as PHOTO_KEY,
+  PROFILE_AGE_KEY as AGE_KEY,
+  PROFILE_SEX_KEY as SEX_KEY,
+  PROFILE_HEIGHT_KEY as HEIGHT_KEY,
+  PROFILE_WEIGHT_KEY as WEIGHT_KEY,
+  PROFILE_GOAL_KEY as GOAL_KEY,
+} from '@services/storageKeys';
 import { FIRST_LOOK_SEEN_KEY } from '@services/firstLook';
 import { pushProfile }               from '@services/profileSync';
 
@@ -99,16 +107,9 @@ async function persistPhoto(
 
 // ─── AsyncStorage keys ────────────────────────────────────────────────────────
 
-const PHOTO_KEY  = '@readiness/profile_photo_uri';
-const AGE_KEY    = '@readiness/profile_age';
-const SEX_KEY    = '@readiness/profile_sex';
-const HEIGHT_KEY = '@readiness/profile_height_cm';
-const WEIGHT_KEY = '@readiness/profile_weight_kg';
-
 // Was support@readinessapp.com, a domain that is not ours and has no mail
 // records, so every in-app report bounced. Forwarded by Cloudflare Email Routing.
 const SUPPORT_EMAIL = 'support@thereadiness.app';
-const GOAL_KEY   = '@readiness/profile_goal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

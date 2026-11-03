@@ -20,7 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getNutritionRecommendation } from '@utils/nutrition';
 import { isWaterAvailable, loadWaterPrefs } from '@services/water';
 import { formatWater } from '@utils/water';
-import { PROFILE_WEIGHT_KEY } from '@services/userProfile';
+import { PROFILE_WEIGHT_KEY } from '@services/storageKeys';
 import type { ReadinessResult } from '@utils/readiness';
 import type { HealthData }      from '@/types/index';
 import {
