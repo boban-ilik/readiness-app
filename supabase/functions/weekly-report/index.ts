@@ -43,6 +43,12 @@ function dayLabel(dateStr: string): string {
   return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' });
 }
 
+/** N days before a YYYY-MM-DD string, staying on the calendar (UTC-safe). */
+function daysBefore(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d - days)).toISOString().split('T')[0];
+}
+
 function trend(scores: number[]): 'improving' | 'declining' | 'stable' {
   if (scores.length < 3) return 'stable';
   const half   = Math.floor(scores.length / 2);
@@ -83,9 +89,14 @@ Deno.serve(async (req: Request) => {
     if (!gated.ok) return gated.response;
 
     // ── Fetch last 7 days ─────────────────────────────────────────────────────
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-    const fromDate = sevenDaysAgo.toISOString().split('T')[0];
+    // The client sends its local today, so the window lines up with the dates
+    // the app writes (localDateStr), not the server's UTC clock.
+    let today = '';
+    try {
+      const body = await req.json();
+      if (typeof body?.today === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.today)) today = body.today;
+    } catch { /* no body or not JSON — fall back to UTC */ }
+    const fromDate = daysBefore(today || new Date().toISOString().split('T')[0], 6);
 
     const { data: rows, error: rowsError } = await userSupabase
       .from('readiness_scores')
