@@ -1,5 +1,6 @@
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 import { Platform } from 'react-native';
 import { secureAuthStorage } from './secureAuthStorage';
 
@@ -28,7 +29,7 @@ const webStorage = {
 // so it must not sit in plain-text AsyncStorage. Web falls back to localStorage.
 const storage = Platform.OS === 'web' ? webStorage : secureAuthStorage;
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     storage,
     autoRefreshToken: true,
