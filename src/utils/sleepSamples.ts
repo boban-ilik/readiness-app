@@ -81,6 +81,20 @@ export function sleepByDay(samples: SleepSampleLike[], minAsleepMinutes = 60): R
   return out;
 }
 
+/**
+ * Last night's sleep for the local date of `now`, by the same rule History
+ * uses (sleepByDay): the session that ended today before 14:00, the longer
+ * one if two did. Null when no session ended today, so the score treats
+ * sleep as not measured instead of reusing an older night.
+ *
+ * Before 1.2.1 Today took the last session in its 48-hour window, so an
+ * afternoon nap replaced the night and a night that never synced fell back
+ * to the one before it.
+ */
+export function todaysSleep(samples: SleepSampleLike[], now: Date, minAsleepMinutes = 60): SleepSummary | null {
+  return sleepByDay(samples, minAsleepMinutes)[localDay(now)] ?? null;
+}
+
 const STAGE_VALUES = ['CORE', 'DEEP', 'REM', 'ASLEEP_CORE', 'ASLEEP_DEEP', 'ASLEEP_REM'];
 
 export function summariseSleepSamples(

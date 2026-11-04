@@ -67,6 +67,9 @@ ALSO INCLUDED
 YOUR PRIVACY
 Your readiness score is calculated on your device. The AI features send the relevant metrics to Anthropic's Claude to write your briefing and chat replies, and nothing more. Your data is never sold and never shared with advertisers. Our privacy policy sets out exactly what is sent and what is not.
 
+GENERAL WELLNESS, NOT MEDICAL ADVICE
+Readiness is a general wellness and fitness app, not a medical device. It does not diagnose, treat, cure or prevent any disease, and it is not a substitute for medical advice. It reads consumer fitness data from Apple Health and, optionally, from your Garmin account through Garmin's cloud Health API. It connects to no hardware and makes no medical claims. If you have a health concern, speak to a doctor.
+
 ---
 
 ### Previous draft *(kept for reference)*
@@ -207,6 +210,14 @@ still calibrating. This is expected behaviour, not an error state.
 
 The score, breakdown, forecast, history and coach chat are all fully
 functional without wearable data.
+
+ABOUT GARMIN (NOT MEDICAL HARDWARE)
+The Garmin option is an optional account link through Garmin's cloud Health
+API (the same consumer fitness data shown in Garmin Connect). It connects to
+no hardware and is not a medical-device integration: Garmin is consumer
+fitness gear, and Readiness is a general wellness app, not a medical device.
+The app is fully functional from Apple Health alone, so Garmin can be skipped
+entirely.
 
 SUBSCRIPTIONS
 Readiness Pro is offered monthly ($9.99) and annually ($69.99). The annual

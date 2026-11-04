@@ -1,0 +1,31 @@
+{
+ "provider": "ahrefs serp-overview",
+ "country": "us",
+ "captured_at": "2026-11-02",
+ "serp_update_date": "2026-09-28T12:34:12Z",
+ "keyword": "low hrv causes",
+ "volume": 300,
+ "difficulty": 0,
+ "traffic_potential": 8000,
+ "parent_topic": "how to increase hrv",
+ "note": "Ahrefs SERP snapshot is dated 2026-09-28 (about five weeks old). Weak, mixed SERP: several rows are non-US locale pages, image packs, forum threads and primary studies.",
+ "results": [
+  {"position": 1, "type": "ai_overview", "url": null, "ai_overview_sources": [
+    "https://www.polar.com/en/guide/my-hrv-is-very-low",
+    "https://www.whoop.com/us/en/thelocker/low-hrv/",
+    "https://my.clevelandclinic.org/health/symptoms/21773-heart-rate-variability-hrv",
+    "https://www.polar.com/ie-en/guide/my-hrv-is-very-low",
+    "https://www.missionhealth.org/healthy-living/blog/what-does-heart-rate-variability-tell-us-about-stress"
+  ]},
+  {"position": 2, "type": "organic", "url": "https://nurosym.com/es/pages/nurosym-reasons-why-low-hrv", "title": "Nurosym Reasons Why Low HRV", "domain_rating": 53, "traffic": 28},
+  {"position": 3, "type": "people_also_ask", "questions": ["What is a concerning low HRV?", "How do I fix my low HRV?", "What causes low HRV during sleep?", "Why has my HRV dropped?"]},
+  {"position": 4, "type": "organic", "url": "https://joincentury.app/blog/good-sleep-but-low-hrv", "title": "Good sleep but low HRV: 9 common reasons (and what to do)", "domain_rating": 6, "traffic": 18},
+  {"position": 5, "type": "organic", "url": "https://www.facebook.com/fb-answers/low-heart-rate-variability-causes/?locale=fr_FR", "title": "Low Heart Rate Variability Causes", "domain_rating": 100, "traffic": 14},
+  {"position": 6, "type": "organic", "url": "https://www.reddit.com/r/ouraring/comments/1smjjrb/why_is_my_hrv_low/", "title": "Why is my HRV low? : r/ouraring", "domain_rating": 95, "traffic": 29},
+  {"position": 7, "type": "organic", "url": "https://www.researchgate.net/publication/12338815_Low_heart_rate_variability_in_a_2-minute_rhythm_strip_predicts_risk_of_coronary_heart_disease_and_mortality_from_several_causes_the_ARIC_Study_Atherosclerosis_Risk_In_Communities", "title": "Low heart rate variability in a 2-minute rhythm strip predicts ... (ARIC)", "domain_rating": 93, "traffic": 9},
+  {"position": 8, "type": "organic", "url": "https://joincentury.app/blog/low-hrv-but-feel-fine-what-to-do", "title": "Low HRV but you feel fine: what it means (and what to do today)", "domain_rating": 6, "traffic": 51},
+  {"position": 9, "type": "image_pack", "url": null},
+  {"position": 10, "type": "organic", "url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0161648", "title": "The Atherosclerosis Risk in Communities Study | PLOS One", "domain_rating": 92, "traffic": 6},
+  {"position": 11, "type": "organic", "url": "https://www.justanswer.com/endocrinology/pt5li-overnight-hrv-baseline-used-50-s.html", "title": "Why Is My HRV Dropping? Health Concerns Explained", "domain_rating": 76, "traffic": 4}
+ ]
+}

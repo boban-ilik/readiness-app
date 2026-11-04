@@ -27,6 +27,16 @@ export async function canUseFreeBriefing(): Promise<boolean> {
   }
 }
 
+/**
+ * Whether a delivered briefing spends the free weekly one: only a briefing
+ * written now for a non-Pro user. Before 1.2.1 the week was marked used when
+ * the modal opened, so a failed fetch cost the free briefing and showed an
+ * error instead. A cached briefing was already paid for when it was written.
+ */
+export function chargesFreeBriefing(input: { isPro: boolean; fresh: boolean }): boolean {
+  return !input.isPro && input.fresh;
+}
+
 export async function markFreeBriefingUsed(): Promise<void> {
   try {
     await AsyncStorage.setItem(FREE_BRIEFING_KEY, String(Date.now()));

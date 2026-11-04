@@ -138,6 +138,10 @@ async function setCache(briefing: DailyBriefing, fingerprint: string): Promise<v
 
 // ─── Main fetch ───────────────────────────────────────────────────────────────
 
+/** `fresh` is true when the briefing was written now, false when today's
+ *  cached one was reused; only a fresh one spends the free weekly briefing. */
+export interface DailyBriefingResult { briefing: DailyBriefing; fresh: boolean }
+
 export async function fetchDailyBriefing(
   readiness:   ReadinessResult,
   healthData:  HealthData,
@@ -147,7 +151,7 @@ export async function fetchDailyBriefing(
   patterns:    PatternInsight[] = [],
   workload:    WorkloadResult | null = null,
   lifeEvents:  LifeEvent[] = [],
-): Promise<DailyBriefing> {
+): Promise<DailyBriefingResult> {
 
   // Reuse today's briefing only if it was written from the same data. A score
   // that refreshes after HealthKit catches up must take its coaching with it.
@@ -155,7 +159,7 @@ export async function fetchDailyBriefing(
   const fingerprint = `${dataFingerprint(readiness, healthData)}|ill:${await illnessCacheTag()}`;
   if (!forceRefresh) {
     const cached = await getCached(fingerprint);
-    if (cached) return cached;
+    if (cached) return { briefing: cached, fresh: false };
   }
 
   const { data: { session } } = await supabase.auth.getSession();
@@ -230,7 +234,7 @@ export async function fetchDailyBriefing(
       ? briefing.followUps.filter((q): q is string => typeof q === 'string' && q.trim().length > 0).slice(0, 3)
       : [];
     await setCache(briefing, fingerprint);
-    return briefing;
+    return { briefing, fresh: true };
 
   } finally {
     clearTimeout(timeout);

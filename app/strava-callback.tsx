@@ -2,10 +2,10 @@ import { useEffect, useRef } from 'react';
 import { ActivityIndicator, Alert, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { colors } from '@constants/theme';
-import { exchangeStravaCode } from '@services/strava';
+import { exchangeStravaCode, consumeStravaState } from '@services/strava';
 
 export default function StravaCallbackScreen() {
-  const { code, error } = useLocalSearchParams<{ code?: string; error?: string }>();
+  const { code, error, state } = useLocalSearchParams<{ code?: string; error?: string; state?: string }>();
   const hasRun = useRef(false);
 
   useEffect(() => {
@@ -13,7 +13,10 @@ export default function StravaCallbackScreen() {
     hasRun.current = true;
 
     async function run() {
-      if (error || !code || typeof code !== 'string') {
+      // A code that arrives without the state this app sent is not this
+      // app's attempt, so it is treated like a missing code.
+      const stateOk = await consumeStravaState(typeof state === 'string' ? state : undefined);
+      if (error || !code || typeof code !== 'string' || !stateOk) {
         Alert.alert('Strava connection failed', 'Missing or invalid callback from Strava.', [
           { text: 'OK', onPress: () => router.replace('/(tabs)/profile') },
         ]);
@@ -34,7 +37,7 @@ export default function StravaCallbackScreen() {
     }
 
     run();
-  }, [code, error]);
+  }, [code, error, state]);
 
   return (
     <View

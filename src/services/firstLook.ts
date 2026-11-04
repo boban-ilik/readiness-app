@@ -7,7 +7,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fetchRHRByDay } from '@services/healthkit';
+import { getRHRByDay as fetchRHRByDay } from '@services/healthSource';
 import { MIN_DAYS_FOR_RANGE } from '@utils/readingCheck';
 
 export const FIRST_LOOK_SEEN_KEY = '@readiness/first_look_seen';

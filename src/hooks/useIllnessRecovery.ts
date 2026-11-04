@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { fetchRHRByDay } from '@services/healthkit';
+import { getRHRByDay as fetchRHRByDay } from '@services/healthSource';
 import {
   loadIllnessEpisodes, evaluateActiveIllness, startIllnessEpisode, endIllnessEpisode,
   isIllnessNudgeSnoozed, snoozeIllnessNudge,

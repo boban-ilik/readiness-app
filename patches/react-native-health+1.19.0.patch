@@ -201,7 +201,7 @@ index 287399f..9ca6452 100644
      if ([@"MindfulSession" isEqualToString: key] && systemVersion >= 10.0) {
          return [HKObjectType categoryTypeForIdentifier:HKCategoryTypeIdentifierMindfulSession];
 diff --git a/node_modules/react-native-health/RCTAppleHealthKit/RCTAppleHealthKit.m b/node_modules/react-native-health/RCTAppleHealthKit/RCTAppleHealthKit.m
-index e8ddce1..333e97d 100644
+index e8ddce1..99464ec 100644
 --- a/node_modules/react-native-health/RCTAppleHealthKit/RCTAppleHealthKit.m
 +++ b/node_modules/react-native-health/RCTAppleHealthKit/RCTAppleHealthKit.m
 @@ -17,6 +17,7 @@
@@ -225,6 +225,17 @@ index e8ddce1..333e97d 100644
  RCT_EXPORT_METHOD(getInfo:(NSDictionary *)input callback:(RCTResponseSenderBlock)callback)
  {
      [self _initializeHealthStore];
+@@ -840,8 +847,8 @@ -(void)startObserving {
+ 
+ - (void)emitEventInternal:(NSNotification *)notification {
+   if (self.hasListeners) {
+-    self.callableJSModules = [RCTAppleHealthKit sharedJsModule];
+-    [self.callableJSModules setBridge:self.bridge];
++    // React Native 0.88 (bridgeless) wires callableJSModules itself; the old
++    // setBridge: call no longer exists.
+     [self sendEventWithName:notification.name
+                    body:notification.userInfo];
+   }
 diff --git a/node_modules/react-native-health/index.d.ts b/node_modules/react-native-health/index.d.ts
 index 0cf0e28..bb2094c 100644
 --- a/node_modules/react-native-health/index.d.ts

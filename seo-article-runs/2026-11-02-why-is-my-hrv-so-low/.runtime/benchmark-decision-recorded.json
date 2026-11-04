@@ -1,0 +1,66 @@
+{
+ "status": "benchmarked",
+ "rationale": "Three highest-ranking external pages whose job matches the reader task (why HRV is low, which causes, dip versus trend, when to worry) were read in full and frozen: WHOOP (#2), Polar (#3), Nurosym (#7). Cleveland Clinic (#6) and Harvard Health (#9) were inspected in full and excluded as general 'what is HRV' explainers (about 100 and 0 words respectively on why a reading is low); discussion rows (#5, #8), the video (#10) and Garmin HRV Status (#11) are not articles for this task. Passage-grounded benchmark in research.md section 3: none of the selected pages sizes any cause, distinguishes dip from trend beyond 'a day or two' / '7- to 14-day average', explains device metric differences, or tells the fit-but-low reader when low is their normal. The weaker secondary SERP (low hrv causes, Ahrefs snapshot 2026-09-28) was reviewed for cannibalization: its parent topic is 'how to increase hrv' (the sibling article), so the brief must keep this article diagnostic and link to the sibling for the raising plan.",
+ "evidence_ref": "research.md#serp-and-competitor-benchmark",
+ "ranking_evidence": {
+  "basis": "observed_serp",
+  "reference": ".runtime/serp-why-is-my-hrv-so-low-us.json (Ahrefs serp-overview, US, SERP dated 2026-11-01T23:45:58Z, captured 2026-11-02); secondary .runtime/serp-low-hrv-causes-us.json (Ahrefs, US, SERP dated 2026-09-28)",
+  "inspection_complete": true,
+  "inspected_results": [
+   {
+    "url": "https://www.whoop.com/us/en/thelocker/low-hrv/",
+    "observed_position": 2,
+    "disposition": "selected",
+    "reason": "Highest-ranking dedicated low-HRV article (signs, causes, improvement, FAQ); AI Overview source on both SERPs. Read in full via the desktop built-in browser (curl/WebFetch 403)."
+   },
+   {
+    "url": "https://www.polar.com/en/guide/my-hrv-is-very-low",
+    "observed_position": 3,
+    "disposition": "selected",
+    "reason": "Second-highest dedicated low-HRV page (why low, when to worry, six levers); AI Overview source on both SERPs; recurs from the 2026-09-25 run. Read in full via curl (200)."
+   },
+   {
+    "url": "https://www.reddit.com/r/Garmin/comments/w6r3t6/hrv_is_consistently_low/",
+    "observed_position": 5,
+    "disposition": "excluded",
+    "reason": "Position 5 is a Discussions feature holding three threads; the runtime needs one unique position per row, so the feature is recorded here under its first URL. (a) r/Garmin 'HRV is consistently low': Discussion thread, not an article. Capture blocked: curl returned the Reddit JavaScript shell (8 KB, no post text), the .json endpoint returned 403, and the built-in browser refuses reddit.com. Title only. (b) https://www.rapamycin.news/t/should-i-be-concerned-about-low-hrv-heart-rate-variability/13302/40: Forum thread (longevity forum, 53 posts, 2024-04). Read via the Discourse JSON endpoint as a lived-experience lead (E44); not an article. (c) https://www.trainerroad.com/forum/t/hrv-illness-level-low-but-not-sick/97399: Forum thread (20 posts, 2024-10 to 2024-12). Read via the Discourse JSON endpoint as a lived-experience lead (E44); not an article. All three excluded: threads, not articles."
+   },
+   {
+    "url": "https://my.clevelandclinic.org/health/symptoms/21773-heart-rate-variability-hrv",
+    "observed_position": 6,
+    "disposition": "excluded",
+    "reason": "General HRV definition page (what it is, how measured, 24-hour SDNN bands, two improvement bullets). Read in full: its only content on why a reading is low is a four-item factor list (sleep, BMI, stress/anxiety/depression, aging). Format mismatch with the diagnostic task; its relevant passages are benchmarked in research.md and its 24-hour SDNN bands are already handled on the site's good-HRV page."
+   },
+   {
+    "url": "https://nurosym.com/blogs/articles/low-hrv",
+    "observed_position": 7,
+    "disposition": "selected",
+    "reason": "Third-highest dedicated low-HRV explainer (meaning, no universal cutoff, causes, HRV during sleep, dip vs trend table, when to seek care), AI Overview source. Read in full via the desktop built-in browser (curl 429)."
+   },
+   {
+    "url": "https://www.reddit.com/r/ouraring/comments/169mzw7/why_is_my_hrv_always_super_low_1725_i_am_in_super/",
+    "observed_position": 8,
+    "disposition": "excluded",
+    "reason": "Reddit thread (with sitelinks to two r/Garmin threads), not an article; capture blocked on every route (see position 5). Title only: 'Why is my HRV always super low 17-25? I am in super...' (fit-but-low segment)."
+   },
+   {
+    "url": "https://www.health.harvard.edu/heart-health/how-relevant-is-heart-rate-variability",
+    "observed_position": 9,
+    "disposition": "excluded",
+    "reason": "Short Q&A column (about 740 words, Christopher P. Cannon MD, 2025-11-01) on what HRV is and whether to track it. Read in full: no content on why a reading is low beyond 'stressed or fatigued or who have an underlying health issue'. Format mismatch; one useful passage (no professional-society guidelines on HRV) registered as E42."
+   },
+   {
+    "url": "https://www.youtube.com/watch?v=gPnY-4qlve0",
+    "observed_position": 10,
+    "disposition": "excluded",
+    "reason": "Video (12 min 59 s, IBS Treatment Center, Dr. Stephen Wangen, uploaded 2025-11-18, 2,754 views at capture), not an article. Title/description only: argues low HRV plus low RHR can mean efficiency in strength athletes; registered as a claim lead in E43, not evidence."
+   },
+   {
+    "url": "https://www.garmin.com/en-US/garmin-technology/health-science/hrv-status/",
+    "observed_position": 11,
+    "disposition": "excluded",
+    "reason": "Outside the top ten organic rows; vendor documentation of the HRV Status feature, not an article on causes. Read in full via the built-in browser (static HTML is a JavaScript shell) and used as official documentation for Garmin conventions (E61)."
+   }
+  ]
+ }
+}

@@ -38,6 +38,8 @@ interface NutritionCardProps {
   components:  ReadinessResult['components'];
   healthData:  HealthData | null;
   hrvBaseline: number;
+  /** Render as a row inside TodayPlanCard: no card chrome of its own. */
+  flat?:       boolean;
 }
 
 // ─── Small sub-components ─────────────────────────────────────────────────────
@@ -62,6 +64,7 @@ export default function NutritionCard({
   components,
   healthData,
   hrvBaseline,
+  flat = false,
 }: NutritionCardProps) {
   const router = useRouter();
   const [weightKg, setWeightKg] = useState<number | undefined>(undefined);
@@ -90,7 +93,7 @@ export default function NutritionCard({
   const rec = getNutritionRecommendation(score, components, healthData, hrvBaseline, weightKg, waterTarget);
 
   return (
-    <View style={styles.card}>
+    <View style={flat ? styles.flat : styles.card}>
 
       {/* ── Header row ── */}
       <View style={styles.headerRow}>
@@ -221,6 +224,9 @@ const styles = StyleSheet.create({
     gap: spacing[3],
     borderWidth: 1,
     borderColor: colors.border.subtle,
+  },
+  flat: {
+    gap: spacing[3],
   },
 
   // Header

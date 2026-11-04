@@ -1,46 +1,35 @@
 -- Fixes for the Supabase security linter warnings of 2026-08-24.
 --
+-- Edited in 1.2.1 so this file runs on a fresh database: the statements that
+-- named handle_new_user, handle_updated_at and the six scaffolding tables
+-- (health_snapshots, journal_entries, notification_log, profiles,
+-- user_streaks, weekly_reports) were removed, because none of those objects
+-- is created by any migration and all were dropped in 20261029000001.
+-- Supabase tracks applied migrations by version, so editing this text does
+-- not re-run it in production.
+--
 -- Row Level Security already protects every row in these tables; everything
 -- here is defence in depth — removing discoverability and API surface that
 -- nothing legitimate uses.
 
--- ── 1. Pin search_path on the two flagged functions (lint 0011) ──────────────
--- Both bodies schema-qualify every reference (verified against
+-- ── 1. Pin search_path on the flagged function (lint 0011) ───────────────────
+-- The body schema-qualifies every reference (verified against
 -- pg_get_functiondef before writing this), so the strict empty search_path is
--- safe. handle_updated_at already has it.
-alter function public.handle_new_user() set search_path = '';
+-- safe. (handle_new_user was altered here too; it was dropped in 20261029000001.)
 alter function public.set_updated_at() set search_path = '';
 
 -- ── 2. Trigger functions are not API endpoints (lints 0028 / 0029) ───────────
--- All three exist only to be fired by triggers. Postgres checks EXECUTE when a
+-- It exists only to be fired by triggers. Postgres checks EXECUTE when a
 -- trigger is created, not when it fires, so revoking EXECUTE removes the
--- /rest/v1/rpc/* exposure without breaking the triggers.
-revoke execute on function public.handle_new_user()    from public, anon, authenticated;
-revoke execute on function public.handle_updated_at()  from public, anon, authenticated;
+-- /rest/v1/rpc/* exposure without breaking the triggers. (handle_new_user and
+-- handle_updated_at were revoked here too; both were dropped in 20261029000001.)
 revoke execute on function public.set_updated_at()     from public, anon, authenticated;
 
 -- ── 3. Nothing is queryable before sign-in (lint 0026) ───────────────────────
 -- The app has no signed-out reads: every query runs as the authenticated user
 -- under RLS, and the Edge Functions use the service role. anon needs nothing.
-revoke all on table public.health_snapshots  from anon;
-revoke all on table public.journal_entries   from anon;
+-- (The six scaffolding tables were revoked from anon here too, and section 4
+-- revoked them from authenticated; all six were dropped in 20261029000001.)
 revoke all on table public.life_events       from anon;
-revoke all on table public.notification_log  from anon;
-revoke all on table public.profiles          from anon;
 revoke all on table public.readiness_scores  from anon;
 revoke all on table public.user_profiles     from anon;
-revoke all on table public.user_streaks      from anon;
-revoke all on table public.weekly_reports    from anon;
-
--- ── 4. Dead scaffolding tables lose the API entirely (lint 0027) ─────────────
--- Zero references in the app or Edge Functions. profiles and user_streaks are
--- still written by the handle_new_user trigger on signup, which runs as the
--- function owner and is unaffected by these revokes. The three tables the app
--- actually uses (readiness_scores, user_profiles, life_events) keep their
--- authenticated grants — revoking those would break the app.
-revoke all on table public.health_snapshots  from authenticated;
-revoke all on table public.journal_entries   from authenticated;
-revoke all on table public.notification_log  from authenticated;
-revoke all on table public.profiles          from authenticated;
-revoke all on table public.user_streaks      from authenticated;
-revoke all on table public.weekly_reports    from authenticated;

@@ -22,7 +22,7 @@ export const DATA_OWNER_KEY = '@readiness/data_owner_id';
  *
  * Keep this in sync when adding new per-user storage.
  */
-const USER_SCOPED_KEYS = [
+export const USER_SCOPED_KEYS = [
   // Onboarding + profile
   '@readiness/onboarding_complete',
   '@readiness/joined_at',
@@ -54,6 +54,15 @@ const USER_SCOPED_KEYS = [
   '@readiness/strava_refresh_token',
   '@readiness/strava_expires_at',
   '@readiness/strava_athlete_name',
+  '@readiness/strava_oauth_state',
+
+  // Garmin connection mirror (GARMIN_CONNECTED_KEY in services/garmin.ts):
+  // the next account on this phone must not inherit "Garmin connected"
+  '@readiness/garmin_connected',
+
+  // Today layout memory (CollapsibleSection, ProBanner)
+  '@readiness/today_week_open',
+  '@readiness/pro_banner_dismissed_day',
 
   // Notification preferences and dedupe state
   '@readiness/notif_digest_enabled',

@@ -124,7 +124,11 @@ export default function LifeEventTagger({ events, onTagged, onSickTagged, onSick
             {/* Header */}
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>What's affecting you today?</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+              >
                 <Text style={styles.sheetClose}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -216,20 +220,22 @@ const styles = StyleSheet.create({
     alignItems:        'center',
     gap:               spacing[1],
     paddingHorizontal: spacing[3],
-    paddingVertical:   spacing[2],
+    paddingVertical:   spacing[1],
     borderRadius:      radius.full ?? 99,
     borderWidth:       1,
     borderStyle:       'dashed' as const,
     borderColor:       colors.border.subtle,
   },
   tagBtnPlus: {
-    fontSize:   fontSize.base,
+    fontSize:   fontSize.sm,
+    lineHeight: 18,
     color:      colors.text.tertiary,
     fontWeight: fontWeight.medium,
   },
   tagBtnLabel: {
-    fontSize: fontSize.xs,
-    color:    colors.text.tertiary,
+    fontSize:   fontSize.xs,
+    lineHeight: 18,
+    color:      colors.text.tertiary,
   },
 
   chip: {
@@ -242,12 +248,16 @@ const styles = StyleSheet.create({
     backgroundColor:   colors.bg.elevated,
     borderWidth:       1,
     borderColor:       colors.border.subtle,
-    maxWidth:          140,
+    // Wide enough for every label; a label that still does not fit shrinks
+    // and truncates inside the padding instead of running past the border.
+    maxWidth:          220,
   },
-  chipEmoji: { fontSize: 13 },
+  chipEmoji: { fontSize: 13, lineHeight: 18 },
   chipLabel: {
-    fontSize: fontSize.xs,
-    color:    colors.text.secondary,
+    flexShrink: 1,
+    fontSize:   fontSize.xs,
+    lineHeight: 18,
+    color:      colors.text.secondary,
   },
 
   hint: {

@@ -50,7 +50,7 @@ export const colors = {
   text: {
     primary:   '#F0F2F8',   // Near-white — headings, scores
     secondary: '#9BA3B8',   // Muted — labels, metadata
-    tertiary:  '#5A6180',   // Dimmed — placeholders, disabled
+    tertiary:  '#8A92AF',   // Dimmed — placeholders, disabled (≥4.5:1 on all surfaces)
     inverse:   '#0D0F14',   // On light backgrounds
     accent:    '#F5A623',   // Amber text links / highlights
   },

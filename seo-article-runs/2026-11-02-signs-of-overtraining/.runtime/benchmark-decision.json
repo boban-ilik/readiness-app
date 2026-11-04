@@ -1,0 +1,60 @@
+{
+  "status": "benchmarked",
+  "rationale": "The three highest-ranking accessible articles whose job is the reader task (am I overtraining, which signs are real, how long does recovery take) were captured in full and benchmarked passage by passage against primary sources (research.md section 3). Position 4 (Hoag Orthopedic Institute) is the only higher-ranking article that could not be captured: HTTP 403 on curl and WebFetch returned a model summary only, so it is excluded as inaccessible and the summary is held as a lead, not benchmarked as a page. Every other top-ten row for the primary query is excluded with a reason: SERP features (AI Overview, People Also Ask), a Reddit discussion row with two sitelinked threads (JavaScript shell only, not captured), union.health (connection refused on http and https), and two short pages that are list-only (K-State counseling self-help page reproducing an ACE list; Rochester Athletic Club trainer blog), whose relevant passages are still benchmarked in research.md. All three selected pages are cited by the AI Overview on both the primary query and the secondary query 'overtraining symptoms', supporting one article for the cluster. Positions are from the primary query's Ahrefs SERP overview (US, Ahrefs update 2026-10-29).",
+  "evidence_ref": "research.md#serp-and-competitor-benchmark",
+  "ranking_evidence": {
+    "basis": "observed_serp",
+    "reference": "Ahrefs SERP overview, keyword 'signs of overtraining', US, captured 2026-11-02 by the orchestrator via the Ahrefs MCP serp-overview tool (Ahrefs update 2026-10-29T21:53:58Z), stored at .runtime/serp-signs-of-overtraining-us.json; secondary keyword 'overtraining symptoms', US, captured 2026-11-02 (Ahrefs update 2026-10-21T23:25:36Z), stored at .runtime/serp-overtraining-symptoms-us.json, used as corroboration only.",
+    "inspection_complete": true,
+    "inspected_results": [
+      {
+        "url": "https://my.clevelandclinic.org/health/diseases/overtraining-syndrome",
+        "observed_position": 2,
+        "disposition": "selected",
+        "reason": "First organic row; health-library article covering definition, stages, symptoms, diagnosis, duration and treatment of overtraining syndrome. Captured in full (2,363 words) and cited by the AI Overview on both queries."
+      },
+      {
+        "url": "https://www.hoagorthopedicinstitute.com/blog/2026/january/avoiding-overtraining-how-to-stay-active-without/",
+        "observed_position": 4,
+        "disposition": "excluded",
+        "reason": "Inaccessible: HTTP 403 to curl on every attempt; WebFetch returned a model summary, not page text. A snippet or summary cannot be benchmarked as a full page, so the next-ranking accessible article (HSS, position 5) takes its place. The summary is recorded as a lead in research.md (E29) and nothing from it is quoted as verbatim."
+      },
+      {
+        "url": "https://www.hss.edu/health-library/move-better/overtraining",
+        "observed_position": 5,
+        "disposition": "selected",
+        "reason": "Hospital health-library article (published 2021-08-15) with overreaching vs overtraining, three grouped symptom lists, a recovery section including a return-to-training rule, and prevention. Captured in full (1,638 words); cited by the AI Overview on both queries."
+      },
+      {
+        "url": "https://www.nasm.org/resource-center/blog/recovery/overtraining-how-trainers-spot-it-prevent-it-and-program-around-it",
+        "observed_position": 6,
+        "disposition": "selected",
+        "reason": "NASM blog (published 2026-09-29, the freshest page in the set) covering the functional overreaching to overtraining syndrome spectrum, warning signs across performance, body and mind, recovery and comeback programming, FAQ. Captured in full (1,032 words); cited by the AI Overview on both queries."
+      },
+      {
+        "url": "https://www.reddit.com/r/naturalbodybuilding/comments/1j631c1/how_do_you_know_youre_overtraining/",
+        "observed_position": 7,
+        "disposition": "excluded",
+        "reason": "Discussion thread, not an article. curl returned only the Reddit JavaScript shell (about 8 KB, no post text); per the intake no workaround was attempted. Sitelinked threads r/xxfitness 18i0bru and r/Fitness 51qi7j blocked the same way. Titles only."
+      },
+      {
+        "url": "http://www.union.health/signs-of-overtraining-are-you-working-too-hard-in-the-gym",
+        "observed_position": 8,
+        "disposition": "excluded",
+        "reason": "Unreachable: connection refused on http and https (curl exit 000, WebFetch ECONNREFUSED) on 2026-11-02. Content not captured; title and Ahrefs metrics only (DR 47, UR 0)."
+      },
+      {
+        "url": "https://www.k-state.edu/counseling/services/resources/self_help/overtraining.html",
+        "observed_position": 9,
+        "disposition": "excluded",
+        "reason": "University counseling-center self-help page (about 600 words, last modified 2024-02-15) that reproduces an American Council on Exercise list of ten signs with one sentence each; no definitions, time frames, recovery or diagnosis content. Captured for exclusion; its list is benchmarked in research.md section 3 so the article still has to beat it."
+      },
+      {
+        "url": "https://www.racmn.com/blog/signs-and-symptoms-of-overtraining-what-to-watch-out-for",
+        "observed_position": 10,
+        "disposition": "excluded",
+        "reason": "Gym trainer blog (Rochester Athletic Club, published 2025-10-31, updated 2026-05-12, about 900 words): nine signs with one paragraph each and a four-bullet 'what to do' list; no sources, no definitions, no time frames. Captured for exclusion; relevant passages benchmarked in research.md section 3. Lower-ranked than the three selected pages."
+      }
+    ]
+  }
+}

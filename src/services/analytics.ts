@@ -19,6 +19,8 @@ export type AnalyticsEvent =
   | 'onboarding_complete'
   | 'new_today_shown'         // { kind }
   | 'trial_ending_shown'      // { when: 'today' | 'tomorrow' }
+  | 'today_section_toggled'   // { section, open }
+  | 'pro_banner_tapped'       // { mode: 'trial' | 'upsell' }
   | 'trial_ending_keep_pro'
   | 'first_look_shown'        // { from: 'today' | 'history' }
   | 'onboarding_step'         // { step, name }: one per onboarding screen shown
@@ -51,6 +53,9 @@ export type AnalyticsEvent =
   | 'feedback_opened'
   | 'reading_check_shown'      // no props: which reading and which answer are health details
   | 'reading_check_answered'
+  | 'garmin_connect_started'
+  | 'garmin_connected'
+  | 'garmin_disconnected'
   | 'rating_prompted';         // { moment: 'day7' | 'good_day' } (iOS may still not show the sheet)
 
 type Props = Record<string, string | number | boolean | null>;

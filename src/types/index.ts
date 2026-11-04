@@ -23,7 +23,7 @@ export interface JournalModifier {
 export interface HealthData {
   date: string;
   hrv: number | null;             // ms — from Apple Watch / Garmin (SDNN overnight)
-  hrvSource?: 'healthkit' | 'manual'; // set to 'manual' when user entered HRV by hand
+  hrvSource?: 'healthkit' | 'manual' | 'garmin'; // 'manual' when typed in; 'garmin' when read from Garmin Connect
   restingHeartRate: number | null; // bpm
   sleepDuration: number | null;   // minutes
   deepSleep: number | null;       // minutes

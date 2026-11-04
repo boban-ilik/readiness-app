@@ -16,7 +16,9 @@
  *               outage), still capped, logged so it is visible.
  *
  * Usage is recorded in public.ai_calls (service role only) before the model
- * call, so retries count too.
+ * call, so retries count too. A function that then fails before answering
+ * calls refundCall with the id the gate returned, so a free user's weekly
+ * briefing or question is only spent on an answer they received.
  */
 
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -38,7 +40,8 @@ export interface GateOptions {
 }
 
 export type GateResult =
-  | { ok: true;  userId: string; tier: Tier; /** Free-tier calls left this week after this one; null for other tiers. */ freeRemaining: number | null }
+  | { ok: true;  userId: string; tier: Tier; /** Free-tier calls left this week after this one; null for other tiers. */ freeRemaining: number | null;
+      /** The ai_calls row this call was counted as, for refundCall; null when the insert failed. */ callId: number | null }
   | { ok: false; response: Response };
 
 const TRIAL_MS       = 7 * 24 * 60 * 60 * 1000;
@@ -186,14 +189,26 @@ export async function gate(
     return { ok: false, response: json({ error: 'daily_limit' }, 429, cors) };
   }
 
-  const { error } = await admin.from('ai_calls').insert({ user_id: authed.id, fn: opts.fn });
+  const { data: inserted, error } = await admin.from('ai_calls').insert({ user_id: authed.id, fn: opts.fn }).select('id').single();
   if (error) console.warn('[entitlement] usage insert failed:', error.message);
+  const callId = typeof inserted?.id === 'number' ? inserted.id : null;
 
   if (tier === 'unverified') {
     console.warn(`[entitlement] ${opts.fn}: tier unverified for ${authed.id} (RevenueCat key missing or unreachable)`);
   }
 
-  return { ok: true, userId: authed.id, tier, freeRemaining };
+  return { ok: true, userId: authed.id, tier, freeRemaining, callId };
+}
+
+/**
+ * Uncounts a call that produced no answer (upstream error, bad input, a
+ * throw), so it does not use up a free allowance or the daily cap. Never
+ * throws: a failed refund only costs the user one counted call.
+ */
+export async function refundCall(callId: number | null): Promise<void> {
+  if (callId === null) return;
+  const { error } = await adminClient().from('ai_calls').delete().eq('id', callId);
+  if (error) console.warn('[entitlement] refund failed for call', callId, error.message);
 }
 
 // ─── Body ─────────────────────────────────────────────────────────────────────

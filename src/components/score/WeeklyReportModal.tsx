@@ -233,11 +233,23 @@ export default function WeeklyReportModal({ visible, onClose }: WeeklyReportModa
           </View>
           <View style={styles.navRight}>
             {!loading && (
-              <TouchableOpacity style={styles.navBtn} onPress={handleRefresh} activeOpacity={0.7}>
+              <TouchableOpacity
+                style={styles.navBtn}
+                onPress={handleRefresh}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Refresh report"
+              >
                 <Ionicons name="refresh-outline" size={20} color={colors.text.secondary} />
               </TouchableOpacity>
             )}
-            <TouchableOpacity style={styles.navBtn} onPress={onClose} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.navBtn}
+              onPress={onClose}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+            >
               <Ionicons name="close" size={22} color={colors.text.secondary} />
             </TouchableOpacity>
           </View>

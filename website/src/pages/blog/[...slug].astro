@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getCollection, render } from 'astro:content';
+import { SITE, OG_IMAGE_URL, authorRef, publisherRef, websiteRef, breadcrumbs } from '../../schema';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
@@ -15,9 +16,34 @@ const { Content } = await render(post);
 
 const fmt = (d: Date) =>
   d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+const pageUrl = `${SITE}/blog/${post.id}/`;
+const isoDate = (d: Date) => d.toISOString().slice(0, 10);
+const schema = [
+  {
+    '@type': 'BlogPosting',
+    '@id': `${pageUrl}#article`,
+    headline: post.data.title,
+    description: post.data.description,
+    url: pageUrl,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': pageUrl },
+    datePublished: isoDate(post.data.pubDate),
+    ...(post.data.updatedDate ? { dateModified: isoDate(post.data.updatedDate) } : {}),
+    image: { '@type': 'ImageObject', url: OG_IMAGE_URL, width: 1200, height: 630 },
+    author: authorRef,
+    publisher: publisherRef,
+    isPartOf: websiteRef,
+    inLanguage: 'en',
+  },
+  breadcrumbs(pageUrl, [
+    { name: 'Home', url: `${SITE}/` },
+    { name: 'Blog', url: `${SITE}/blog/` },
+    { name: post.data.title, url: pageUrl },
+  ]),
+];
 ---
 
-<Base title={`${post.data.title} | Readiness`} description={post.data.description}>
+<Base title={`${post.data.title} | Readiness`} description={post.data.description} schema={schema}>
   <article class="blog-post">
     <div class="wrap wrap-narrow">
       <a class="back-link" href="/blog/">← All articles</a>

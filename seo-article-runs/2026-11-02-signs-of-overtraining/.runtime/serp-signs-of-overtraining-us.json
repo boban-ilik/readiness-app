@@ -1,0 +1,40 @@
+{
+ "provider": "ahrefs serp-overview",
+ "country": "us",
+ "captured_at": "2026-11-02",
+ "ahrefs_update_date": "2026-10-29T21:53:58Z",
+ "keyword": "signs of overtraining",
+ "volume": 2400,
+ "difficulty": 3,
+ "note": "Retrieved by the orchestrator via the Ahrefs MCP serp-overview tool (top_positions 15). AI Overview sitelinks deduplicated. Position 3 is a People Also Ask block.",
+ "ai_overview_cited_urls": [
+  "https://my.clevelandclinic.org/health/diseases/overtraining-syndrome",
+  "https://www.hss.edu/health-library/move-better/overtraining",
+  "https://www.hoagorthopedicinstitute.com/blog/2026/january/avoiding-overtraining-how-to-stay-active-without/",
+  "https://www.nasm.org/resource-center/blog/recovery/overtraining-how-trainers-spot-it-prevent-it-and-program-around-it",
+  "https://www.k-state.edu/counseling/services/resources/self_help/overtraining.html",
+  "https://www.youtube.com/watch?v=oI0lPiNEm2g",
+  "https://www.polar.com/en/guide/overtraining",
+  "https://www.youtube.com/watch?v=WHuYqooUdnw",
+  "https://www.racmn.com/blog/signs-and-symptoms-of-overtraining-what-to-watch-out-for",
+  "http://www.union.health/signs-of-overtraining-are-you-working-too-hard-in-the-gym"
+ ],
+ "people_also_ask": [
+  "How do I fix overtraining?",
+  "What is stage 3 overtraining syndrome?",
+  "What are 10 signs that I might be overtraining?",
+  "Can overtraining cause anxiety?"
+ ],
+ "results": [
+  {"position": 1, "type": "ai_overview", "url": null},
+  {"position": 2, "type": "organic", "url": "https://my.clevelandclinic.org/health/diseases/overtraining-syndrome", "title": "Overtraining Syndrome: Symptoms, Causes & Treatment Options", "domain_rating": 92, "url_rating": 9, "traffic": 2425, "keywords": 320},
+  {"position": 3, "type": "people_also_ask", "url": null},
+  {"position": 4, "type": "organic", "url": "https://www.hoagorthopedicinstitute.com/blog/2026/january/avoiding-overtraining-how-to-stay-active-without/", "title": "Overtraining Syndrome: Signs, Symptoms, and How to Prevent It", "domain_rating": 51, "url_rating": 5, "traffic": 562, "keywords": 84},
+  {"position": 5, "type": "organic", "url": "https://www.hss.edu/health-library/move-better/overtraining", "title": "Overtraining: What It Is, Symptoms, and Recovery", "domain_rating": 80, "url_rating": 7, "traffic": 724, "keywords": 172},
+  {"position": 6, "type": "organic", "url": "https://www.nasm.org/resource-center/blog/recovery/overtraining-how-trainers-spot-it-prevent-it-and-program-around-it", "title": "Overtraining: How Trainers Spot It, Prevent It, and Program Around It", "domain_rating": 82, "url_rating": 4, "traffic": 489, "keywords": 101},
+  {"position": 7, "type": "organic (reddit, with sitelinks)", "url": "https://www.reddit.com/r/naturalbodybuilding/comments/1j631c1/how_do_you_know_youre_overtraining/", "title": "How do you know you're overtraining? : r/naturalbodybuilding", "domain_rating": 95, "url_rating": 0, "traffic": 132, "keywords": 47, "sitelinks": ["https://www.reddit.com/r/xxfitness/comments/18i0bru/signs_of_overtraining/", "https://www.reddit.com/r/Fitness/comments/51qi7j/how_do_you_detect_youre_overtraining/"]},
+  {"position": 8, "type": "organic", "url": "http://www.union.health/signs-of-overtraining-are-you-working-too-hard-in-the-gym", "title": "Signs of Overtraining: Are You Working Too Hard in the Gym?", "domain_rating": 47, "url_rating": 0, "traffic": 198, "keywords": 69},
+  {"position": 9, "type": "organic", "url": "https://www.k-state.edu/counseling/services/resources/self_help/overtraining.html", "title": "Signs of Over Training", "domain_rating": 83, "url_rating": 4, "traffic": 102, "keywords": 26},
+  {"position": 10, "type": "organic", "url": "https://www.racmn.com/blog/signs-and-symptoms-of-overtraining-what-to-watch-out-for", "title": "Signs and Symptoms of Overtraining: What to Watch Out For", "domain_rating": 31, "url_rating": 4, "traffic": 92, "keywords": 17}
+ ]
+}

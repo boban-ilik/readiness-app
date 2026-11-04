@@ -125,6 +125,8 @@ async function stravaTokenViaEdgeFunction(
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
 
+/** The OAuth state of the attempt in progress; user-scoped like the tokens. */
+export const STRAVA_OAUTH_STATE_KEY = '@readiness/strava_oauth_state';
 const KEY_ACCESS_TOKEN  = '@readiness/strava_access_token';
 const KEY_REFRESH_TOKEN = '@readiness/strava_refresh_token';
 const KEY_EXPIRES_AT    = '@readiness/strava_expires_at';
@@ -166,19 +168,44 @@ export interface StravaActivity {
  * The user authorises → Strava calls readiness://strava-callback?code=...
  * You must call handleStravaCallback(url) from your deep-link handler.
  */
-export function initiateStravaAuth(): void {
+/** 32 hex characters; WebCrypto when the runtime has it, Math.random otherwise. */
+function randomState(): string {
+  const bytes = new Uint8Array(16);
+  const webCrypto = (globalThis as { crypto?: { getRandomValues?: (a: Uint8Array) => Uint8Array } }).crypto;
+  if (webCrypto?.getRandomValues) webCrypto.getRandomValues(bytes);
+  else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+  return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+export async function initiateStravaAuth(): Promise<void> {
+  // The state ties Strava's callback to this attempt: the callback screen
+  // refuses a code that arrives with any other state (or none).
+  const state = randomState();
+  await AsyncStorage.setItem(STRAVA_OAUTH_STATE_KEY, state).catch(() => {});
+
   const params = new URLSearchParams({
     client_id:     STRAVA_CONFIG.clientId,
     redirect_uri:  STRAVA_CONFIG.redirectUri,
     response_type: 'code',
     approval_prompt: 'auto',
     scope:         STRAVA_CONFIG.scope,
+    state,
   });
 
   const url = `https://www.strava.com/oauth/mobile/authorize?${params.toString()}`;
-  Linking.openURL(url).catch(err =>
+  await Linking.openURL(url).catch(err =>
     console.error('[Strava] Failed to open auth URL:', err),
   );
+}
+
+/**
+ * True when `state` is the one initiateStravaAuth stored for the attempt in
+ * progress. The stored state is cleared either way, so it is good once.
+ */
+export async function consumeStravaState(state: string | undefined): Promise<boolean> {
+  const stored = await AsyncStorage.getItem(STRAVA_OAUTH_STATE_KEY).catch(() => null);
+  await AsyncStorage.removeItem(STRAVA_OAUTH_STATE_KEY).catch(() => {});
+  return !!stored && !!state && stored === state;
 }
 
 /**

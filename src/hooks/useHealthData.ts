@@ -4,7 +4,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   requestHealthKitPermissions,
   fetchTodaysHealthData,
-  fetchRHRHistory,
   fetchHRVByDay,
   fetchRHRByDay,
   isHealthKitAvailable,
@@ -21,6 +20,10 @@ import { pushScoreToWidget, setWidgetIllnessCap } from '@services/widgetBridge';
 import { localDateStr } from '@utils/index';
 import { excludeIllnessDays } from '@utils/illnessRecovery';
 import { loadIllnessEpisodes, isIllnessCapStored } from '@services/illnessEpisode';
+import { getRHRByDay, getHRVByDay, isGarminHRVUnavailable } from '@services/healthSource';
+import { healthKitLoadReason } from '@services/healthKitModule';
+import { isGarminConnected, fetchGarminDays, refreshGarminConnection } from '@services/garmin';
+import { overlayGarminToday } from '@utils/garminSource';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -43,6 +46,8 @@ interface UseHealthDataReturn {
   /** Store a manually entered HRV value (ms) for today and re-score.
    *  Pass null to clear a previously saved manual entry. */
   setManualHRV:  (value: number | null) => Promise<void>;
+  /** Changes every time a load finishes (initial, pull-to-refresh or silent). */
+  loadedAt:      number;
 }
 
 // ─── Manual HRV store ─────────────────────────────────────────────────────────
@@ -139,9 +144,7 @@ export async function getPersonalRHRBaseline(): Promise<number> {
 
   // Days inside a Sick episode stay out, so an illness can't drag "usual" with it
   const episodes = await loadIllnessEpisodes();
-  const history  = episodes.length
-    ? Object.values(excludeIllnessDays(await fetchRHRByDay(30), episodes, localDateStr()))
-    : await fetchRHRHistory(30);
+  const history  = Object.values(excludeIllnessDays(await getRHRByDay(30), episodes, localDateStr()));
   const baseline = computeRHRBaseline(history);
   console.log('[Readiness] RHR baseline computed:', baseline, 'bpm from', history.length, 'days');
 
@@ -184,12 +187,23 @@ export async function getPersonalHRVBaseline(): Promise<number> {
   // (Garmin, Polar, Whoop, Oura) would otherwise be judged against the
   // population stand-in forever. As in today's score, a typed-in value wins
   // for its day. Days inside a Sick episode stay out.
-  const [fromHealth, manual, episodes] = await Promise.all([
-    fetchHRVByDay(30),
-    loadManualHRVByDay(30),
+  // With Garmin connected the HRV history is Garmin's alone (RMSSD): typed-in
+  // and Apple values are a different measure and would skew the baseline.
+  const garmin = await isGarminConnected();
+  const [fromSource, manual, episodes] = await Promise.all([
+    getHRVByDay(30, { garminRequired: true }).catch(e => { if (isGarminHRVUnavailable(e)) return null; throw e; }),
+    garmin ? Promise.resolve({} as Record<string, number>) : loadManualHRVByDay(30),
     loadIllnessEpisodes(),
   ]);
-  const history = Object.values(excludeIllnessDays({ ...fromHealth, ...manual }, episodes, localDateStr()));
+  if (fromSource === null) {
+    // Garmin is connected but its history could not be read. Apple HRV is a
+    // different measure, so there is no fallback: the population stand-in
+    // serves this load and nothing is cached, so the next load tries again.
+    console.warn('[Readiness] HRV baseline: Garmin history unavailable, using the stand-in for this load');
+    setBaselineSource('hrv', false);
+    return computeHRVBaseline([]);
+  }
+  const history = Object.values(excludeIllnessDays({ ...fromSource, ...manual }, episodes, localDateStr()));
   const baseline = computeHRVBaseline(history);
   console.log('[Readiness] HRV baseline computed:', baseline, 'ms from', history.length, 'days');
 
@@ -285,6 +299,8 @@ export function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Pr
   ]);
 }
 
+const HEALTH_DENIED_MESSAGE = 'Health access denied. Go to Settings → Privacy & Security → Health → Readiness to grant access.';
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useHealthData(): UseHealthDataReturn {
@@ -298,6 +314,11 @@ export function useHealthData(): UseHealthDataReturn {
 
   // Tracks when HealthKit was last queried — used to throttle AppState refreshes.
   const lastFetchAt = useRef<number>(0);
+  const [loadedAt, setLoadedAt] = useState(0);
+
+  // Lets a load that gave up waiting on the Health Access sheet run again
+  // once iOS answers, without the callback depending on itself.
+  const loadRef = useRef<((mode?: LoadMode) => Promise<void>) | null>(null);
 
   const load = useCallback(async (mode: LoadMode = 'initial') => {
     console.log(`[Readiness] load() called — mode: ${mode}, iOS: ${Platform.OS === 'ios'}, hk: ${isHealthKitAvailable()}`);
@@ -333,29 +354,44 @@ export function useHealthData(): UseHealthDataReturn {
         // Extra try/catch guards against native NSExceptions that bypass JS catch.
         try {
           console.log('[Readiness] Requesting HealthKit permissions…');
-          const granted = await withTimeout(requestHealthKitPermissions(), 10_000, false);
+          // On a fresh install iOS shows the Health Access sheet here and only
+          // calls back once it closes. Reading that sheet can take longer than
+          // the timeout, so a timeout means "no answer yet", not "denied".
+          const request = requestHealthKitPermissions();
+          const granted = await withTimeout<boolean | null>(request, 10_000, null);
           console.log('[Readiness] HealthKit permissions result:', granted);
-          setHasPermission(granted);
+          setHasPermission(granted === true);
 
           if (granted) {
             // Unknown until each baseline loads: if one times out and the
             // stand-in is used, it must not be worded as the user's own.
             setBaselineSource('rhr', undefined);
             setBaselineSource('hrv', undefined);
+            // The Garmin flag is a local mirror of the connection on Supabase
+            // and can go stale (a disconnect on another phone, a reinstall).
+            // Refresh it once per load before anything reads it; a slow or
+            // failed read keeps the cached flag and never holds up the score.
+            await withTimeout(refreshGarminConnection().catch(() => null), 3_000, null);
             [healthData, baseline, hrvBase] = await Promise.all([
               withTimeout(fetchTodaysHealthData(),    12_000, null),
               withTimeout(getPersonalRHRBaseline(),    8_000, 60),
               withTimeout(getPersonalHRVBaseline(),    8_000, 55),
             ]);
+          } else if (granted === false) {
+            setError(HEALTH_DENIED_MESSAGE);
           } else {
-            setError('Health access denied. Go to Settings → Privacy & Security → Health → Readiness to grant access.');
+            request.then(ok => { if (ok) loadRef.current?.('silent'); else setError(HEALTH_DENIED_MESSAGE); });
           }
         } catch (hkErr: any) {
           console.warn('[Readiness] HealthKit block threw unexpectedly:', hkErr?.message ?? hkErr);
           // healthData stays null, baselines stay at defaults — score will be 50
         }
+      } else if (Platform.OS === 'ios' && !__DEV__) {
+        // A store or TestFlight build without a working Apple Health module.
+        // Showing demo numbers here is what hid the SDK 58 breakage, so say so.
+        throw new Error(`Apple Health could not be loaded (${healthKitLoadReason()}). Please update the app or contact support.`);
       } else {
-        // Expo Go / web — use mock data
+        // Expo Go / web: use mock data
         setHasPermission(true);
         healthData = MOCK_HEALTH_DATA;
         isDemoData = true;
@@ -374,6 +410,16 @@ export function useHealthData(): UseHealthDataReturn {
 
       setRhrBaseline(scoringRhrBase);
       setHrvBaseline(scoringHrvBase);
+
+      // ── Garmin overlay ──────────────────────────────────────────────────
+      // Garmin wins for what it has: HRV (otherwise typed in by hand for
+      // Garmin users), resting heart rate, sleep and stress. Steps and the
+      // rest stay with Apple Health. Also builds today's data from Garmin
+      // alone when Apple Health gave nothing.
+      if (!isDemoData && await isGarminConnected()) {
+        const garminDays = await withTimeout(fetchGarminDays(2).catch(() => null), 8_000, null);
+        if (garminDays) healthData = overlayGarminToday(healthData, garminDays, localDateStr());
+      }
 
       if (healthData) {
         // ── Manual HRV overlay ──────────────────────────────────────────────
@@ -451,6 +497,7 @@ export function useHealthData(): UseHealthDataReturn {
       setIsLoading(false);
       setIsRefreshing(false);
       lastFetchAt.current = Date.now();
+      setLoadedAt(lastFetchAt.current);
     }
   }, []);
 
@@ -506,6 +553,8 @@ export function useHealthData(): UseHealthDataReturn {
     return () => subscription.remove();
   }, [load]);
 
+  useEffect(() => { loadRef.current = load; }, [load]);
+
   return {
     readiness,
     isLoading,
@@ -516,5 +565,6 @@ export function useHealthData(): UseHealthDataReturn {
     rhrBaseline,
     hrvBaseline,
     setManualHRV,
+    loadedAt,
   };
 }

@@ -1,7 +1,18 @@
 ---
 import Base from '../layouts/Base.astro';
+import {
+  SITE,
+  APP_ID,
+  APP_STORE_URL,
+  LOGO_URL,
+  OG_IMAGE_URL,
+  publisherRef,
+  websiteRef,
+} from '../schema';
 
-const APP_STORE_URL = 'https://apps.apple.com/app/id6760478506';
+const title = 'Readiness | A readiness score for the watch you already own';
+const description =
+  'Daily readiness scores from your HRV, resting heart rate and sleep, read from Apple Health. Works with Apple Watch, Garmin, Polar, Fitbit and more. No extra hardware.';
 
 const features = [
   {
@@ -81,33 +92,89 @@ const faqs = [
     a: 'Subscriptions are billed by Apple and cancelled in your iPhone settings under Apple Account → Subscriptions, any time. The 14-day free trial on the annual plan can be cancelled before it converts and you will not be charged.',
   },
 ];
+
+const pageUrl = `${SITE}/`;
+const schema = [
+  {
+    '@type': 'WebPage',
+    '@id': `${pageUrl}#webpage`,
+    url: pageUrl,
+    name: title,
+    description,
+    inLanguage: 'en',
+    isPartOf: websiteRef,
+    about: { '@id': APP_ID },
+    primaryImageOfPage: { '@type': 'ImageObject', url: OG_IMAGE_URL, width: 1200, height: 630 },
+  },
+  {
+    '@type': ['SoftwareApplication', 'MobileApplication'],
+    '@id': APP_ID,
+    name: 'Readiness Coach',
+    alternateName: 'Readiness Coach: HRV Score',
+    description:
+      'Turns the HRV, resting heart rate and sleep your watch writes to Apple Health into one readiness score every morning, with a daily AI briefing, coach chat, a three-day forecast and overtraining alerts.',
+    applicationCategory: 'HealthApplication',
+    operatingSystem: 'iOS 15.0 or later',
+    image: LOGO_URL,
+    screenshot: [`${SITE}/screens/briefing.png`, `${SITE}/screens/history.png`],
+    installUrl: APP_STORE_URL,
+    sameAs: [APP_STORE_URL],
+    datePublished: '2026-08-11',
+    author: publisherRef,
+    publisher: publisherRef,
+    offers: [
+      { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD', url: APP_STORE_URL, availability: 'https://schema.org/InStock' },
+      { '@type': 'Offer', name: 'Readiness Pro, monthly', category: 'subscription', price: '9.99', priceCurrency: 'USD', url: APP_STORE_URL, availability: 'https://schema.org/InStock' },
+      { '@type': 'Offer', name: 'Readiness Pro, annual', category: 'subscription', price: '69.99', priceCurrency: 'USD', url: APP_STORE_URL, availability: 'https://schema.org/InStock' },
+    ],
+  },
+  {
+    '@type': 'FAQPage',
+    '@id': `${pageUrl}#faq`,
+    mainEntity: faqs.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  },
+];
 ---
 
-<Base>
+<Base title={title} description={description} schema={schema}>
   <!-- ── Hero ─────────────────────────────────────────────────────────── -->
   <section class="hero">
     <div class="wrap">
-      <div>
+      <div class="week" aria-label="A week of readiness scores, ending with today">
+        <div class="day past"><span class="dow">Tue</span><span class="score c-fair">48</span><span class="verdict">Easy</span></div>
+        <div class="day past"><span class="dow">Wed</span><span class="score c-good">71</span><span class="verdict">Steady</span></div>
+        <div class="day past"><span class="dow">Thu</span><span class="score c-good">66</span><span class="verdict">Steady</span></div>
+        <div class="day past"><span class="dow">Fri</span><span class="score c-poor">39</span><span class="verdict">Rest</span></div>
+        <div class="day past"><span class="dow">Sat</span><span class="score c-fair">55</span><span class="verdict">Easy</span></div>
+        <div class="day past"><span class="dow">Sun</span><span class="score c-optimal">82</span><span class="verdict">Push</span></div>
+        <div class="day today">
+          <div>
+            <span class="dow">Today</span>
+            <span class="score c-good" id="today-score" data-final="63">63</span>
+          </div>
+          <p class="coach">
+            <strong>Steady day.</strong> Zone 2 to 3, 50 to 70 minutes. Recovery is only moderate, so back
+            off if it feels harder than it should.
+          </p>
+        </div>
+      </div>
+
+      <div class="pitch">
         <h1>A readiness score for the watch you already own.</h1>
         <p class="lede">
-          Readiness reads your HRV, resting heart rate and sleep from Apple Health and turns them
-          into one number every morning: how ready your body is to train. Know when to push. Know
-          when to rest.
+          Every morning Readiness turns the HRV, resting heart rate and sleep your watch already records
+          into one number and a plain answer: push today, or rest.
         </p>
-        <a class="btn" href={APP_STORE_URL}>Download on the App Store</a>
-        <p class="hero-devices">
-          Works with Apple Watch · Garmin · Polar · Fitbit · Whoop · Samsung · Oura
-        </p>
-      </div>
-      <div class="hero-phone">
-        <div class="phone">
-          <img
-            src="/screens/hero.png"
-            alt="Readiness home screen showing a readiness score of 63, Good to Go, with today's training recommendation"
-            width="1242"
-            height="2688"
-            loading="eager"
-          />
+        <div class="actions">
+          <a class="btn" href={APP_STORE_URL}>Download on the App Store</a>
+          <p class="devices">
+            Free to start. Works with Apple Watch, Garmin, Polar, Fitbit, Whoop, Samsung and Oura through
+            Apple Health.
+          </p>
         </div>
       </div>
     </div>
@@ -269,3 +336,22 @@ const faqs = [
     </div>
   </section>
 </Base>
+
+<script>
+  // Count today's score up once on load. Skipped when the person prefers reduced motion.
+  const el = document.getElementById('today-score');
+  if (el && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const final = parseInt(el.dataset.final ?? '0', 10);
+    const duration = 900;
+    let start: number | null = null;
+    el.textContent = '0';
+    const step = (ts: number) => {
+      if (start === null) start = ts;
+      const t = Math.min(1, (ts - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = String(Math.round(final * eased));
+      if (t < 1) requestAnimationFrame(step);
+    };
+    setTimeout(() => requestAnimationFrame(step), 650);
+  }
+</script>

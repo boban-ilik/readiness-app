@@ -9,7 +9,7 @@
  * Step 5 · Setup (auto)     — compute baseline, then navigate to tabs
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ComponentRef } from 'react';
 import {
   View,
   Text,
@@ -100,7 +100,7 @@ function StepWelcome({
 }) {
   const DEMO_SCORE = 74;
   const scoreColor = getScoreColor(DEMO_SCORE);
-  const inputRef   = useRef<TextInput>(null);
+  const inputRef   = useRef<ComponentRef<typeof TextInput>>(null);
 
   return (
     <KeyboardAvoidingView
@@ -277,6 +277,8 @@ function StepDevice({
             style={[styles.deviceCard, device === d.key && styles.deviceCardActive]}
             onPress={() => setDevice(d.key)}
             activeOpacity={0.75}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: device === d.key }}
           >
             <Text style={styles.deviceEmoji}>{d.icon}</Text>
             <Text style={[styles.deviceLabel, device === d.key && styles.deviceLabelActive]}>
@@ -291,6 +293,8 @@ function StepDevice({
           style={[styles.deviceCardFull, device === d.key && styles.deviceCardActive]}
           onPress={() => setDevice(d.key)}
           activeOpacity={0.75}
+          accessibilityRole="radio"
+          accessibilityState={{ selected: device === d.key }}
         >
           <Text style={styles.deviceEmoji}>{d.icon}</Text>
           <Text style={[styles.deviceLabel, device === d.key && styles.deviceLabelActive]}>
@@ -414,6 +418,8 @@ function StepTrainingProfile({
               style={[styles.freqCard, active && styles.freqCardActive]}
               onPress={() => setFreq(opt.key)}
               activeOpacity={0.75}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active }}
             >
               <Text style={styles.freqIcon}>{opt.icon}</Text>
               <View style={styles.freqText}>
@@ -443,6 +449,8 @@ function StepTrainingProfile({
               style={[styles.goalCard, active && styles.goalCardActive]}
               onPress={() => setGoal(opt.key)}
               activeOpacity={0.75}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active }}
             >
               <Text style={styles.goalIcon}>{opt.icon}</Text>
               <Text style={[styles.goalLabel, active && styles.goalLabelActive]}>
@@ -470,6 +478,8 @@ function StepTrainingProfile({
               style={[styles.sexChip, active && styles.sexChipActive]}
               onPress={() => setSex(active ? null : opt.key)}
               activeOpacity={0.75}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active }}
             >
               <Text style={[styles.sexChipText, active && styles.sexChipTextActive]}>{opt.label}</Text>
             </TouchableOpacity>

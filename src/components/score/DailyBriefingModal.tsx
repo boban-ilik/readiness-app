@@ -49,6 +49,8 @@ interface DailyBriefingModalProps {
   healthData:  HealthData | null;
   rhrBaseline: number;
   hrvBaseline: number;
+  /** A briefing was shown; `fresh` is false when today's cached one was reused. */
+  onDelivered?: (fresh: boolean) => void;
 }
 
 // ─── Recovery Protocol ────────────────────────────────────────────────────────
@@ -195,6 +197,7 @@ export default function DailyBriefingModal({
   healthData,
   rhrBaseline,
   hrvBaseline,
+  onDelivered,
 }: DailyBriefingModalProps) {
   const router = useRouter();
   const { isPro, presentPaywall } = useSubscription();
@@ -248,13 +251,14 @@ export default function DailyBriefingModal({
         workloadRef.current   = freshWorkload;
         lifeEventsRef.current = freshEvents;
       }
-      const result = await fetchDailyBriefing(
+      const { briefing: result, fresh } = await fetchDailyBriefing(
         readiness, healthData, rhrBaseline, hrvBaseline, forceRefresh,
         patternsRef.current,
         workloadRef.current,
         lifeEventsRef.current,
       );
       setBriefing(result);
+      onDelivered?.(fresh);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load briefing');
     } finally {
@@ -308,11 +312,22 @@ export default function DailyBriefingModal({
             <View style={styles.headerActions}>
               {/* Regenerate is metered; the free weekly briefing is one call. */}
               {isPro && (
-                <TouchableOpacity style={styles.iconBtn} onPress={() => load(true)} disabled={isLoading}>
+                <TouchableOpacity
+                  style={styles.iconBtn}
+                  onPress={() => load(true)}
+                  disabled={isLoading}
+                  accessibilityRole="button"
+                  accessibilityLabel="Regenerate briefing"
+                >
                   <Text style={styles.iconBtnText}>↻</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity style={styles.iconBtn} onPress={onClose}>
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={onClose}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+              >
                 <Text style={styles.iconBtnText}>✕</Text>
               </TouchableOpacity>
             </View>
@@ -378,7 +393,7 @@ export default function DailyBriefingModal({
                     generated. Below it, the notice read as if it covered the
                     protocol too. */}
                 <Text style={styles.disclaimer}>
-                  AI-generated · Based on your biometrics and personal baselines
+                  AI-generated · Based on your biometrics and personal baselines · Not medical advice
                 </Text>
 
                 {/* ── Recovery Protocol (low score only) ── */}

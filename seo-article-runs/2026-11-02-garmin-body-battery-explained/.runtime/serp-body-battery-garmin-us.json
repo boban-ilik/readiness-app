@@ -1,0 +1,48 @@
+{
+ "provider": "ahrefs serp-overview (MCP), retrieved by the orchestrator",
+ "country": "us",
+ "serp_update_date": "2026-10-20T19:11:21Z",
+ "retrieved_at": "2026-11-02",
+ "keyword": "body battery garmin",
+ "volume": 2200,
+ "difficulty": 7,
+ "traffic_potential": 500,
+ "intents": "informational, branded",
+ "related_keywords": [
+  {"keyword": "garmin body battery", "volume": 3300, "difficulty": 7, "traffic_potential": 1800, "parent_topic": "garmin body battery"},
+  {"keyword": "body battery garmin meaning", "volume": 350, "difficulty": 4},
+  {"keyword": "garmin training readiness", "volume": 200, "difficulty": 0, "traffic_potential": 150},
+  {"keyword": "what is body battery garmin", "volume": 150, "difficulty": 6},
+  {"keyword": "garmin body battery explained", "volume": 50, "difficulty": 4}
+ ],
+ "results": [
+  {"position": 1, "type": "ai_overview", "url": null, "sources": [
+    "https://www.garmin.com/en-US/garmin-technology/health-science/body-battery/",
+    "https://www.garmin.com/en-US/blog/fitness/5-reasons-your-body-battery-running-low/",
+    "https://www.sonarhealth.co/blog/what-is-body-battery/",
+    "https://support.garmin.com/en-US/?faq=VOFJAsiXut9K19k1qEn5W5",
+    "https://www8.garmin.com/manuals/webhelp/GUID-5D183A14-BB43-4A9B-B441-5F824214CE40/EN-US/GUID-87E1392B-2C55-40B7-A1FF-3AB9252DA0A0.html",
+    "https://www.facebook.com/Garmin/videos/body-battery-your-personal-on-wrist-energy-monitor-lets-dive-in-to-the-answers-t/2734122170118760/",
+    "https://www.gpsnation.com/blogs/garminnews/understanding-garmin-body-battery-how-it-tracks-your-energy-levels"
+  ]},
+  {"position": 2, "type": "organic", "url": "https://www.garmin.com/en-US/garmin-technology/health-science/body-battery/", "title": "Body Battery Energy Monitoring | Garmin Technology", "domain_rating": 91, "traffic": 1662},
+  {"position": 3, "type": "people_also_ask", "url": null, "questions": [
+    "What is a good body battery score on Garmin?",
+    "Does Garmin body battery mean anything?",
+    "How do I get my Garmin body battery to 100%?",
+    "How accurate is body battery Garmin?"
+  ]},
+  {"position": 4, "type": "organic", "url": "https://www.reddit.com/r/Garmin/comments/1i49kbw/how_useful_is_garmins_body_battery/", "title": "How useful is Garmin's body battery?", "domain_rating": 95, "traffic": 375, "sitelinks": [
+    "https://www.reddit.com/r/Garmin/comments/wbwkzr/is_body_battery_at_all_accurate_useful/",
+    "https://www.reddit.com/r/Garmin/comments/1t65us1/is_garmins_body_battery_genuinely_useful_or_just/"
+  ]},
+  {"position": 5, "type": "discussion", "url": "https://www.reddit.com/r/Garmin/comments/1t65us1/is_garmins_body_battery_genuinely_useful_or_just/", "title": "Is Garmin's Body Battery genuinely useful or just fancy marketing?"},
+  {"position": 5, "type": "discussion", "url": "https://www.facebook.com/groups/garminforum/posts/2579850509041534/", "title": "How do you use Garmin's body battery feature?"},
+  {"position": 5, "type": "discussion", "url": "https://www.facebook.com/groups/garminforum/posts/1957605001266091/", "title": "How does Garmin's body battery function work?"},
+  {"position": 6, "type": "organic", "url": "https://support.garmin.com/en-US/?faq=VOFJAsiXut9K19k1qEn5W5", "title": "Garmin Body Battery Frequently Asked Questions", "domain_rating": 91, "traffic": 472},
+  {"position": 7, "type": "organic", "url": "https://www8.garmin.com/manuals/webhelp/GUID-5D183A14-BB43-4A9B-B441-5F824214CE40/EN-US/GUID-87E1392B-2C55-40B7-A1FF-3AB9252DA0A0.html", "title": "vivoactive 5 Owner's Manual - Body Battery", "domain_rating": 91, "traffic": 242},
+  {"position": 8, "type": "organic", "url": "https://www.garmin.com/en-US/blog/fitness/5-reasons-your-body-battery-running-low/", "title": "5 reasons your Body Battery says you're running low", "domain_rating": 91, "traffic": 245},
+  {"position": 9, "type": "organic video", "url": "https://www.facebook.com/Garmin/videos/body-battery-your-personal-on-wrist-energy-monitor-lets-dive-in-to-the-answers-t/2734122170118760/", "title": "Body Battery: your personal on-wrist energy monitor (Garmin video)", "domain_rating": 100, "traffic": 300},
+  {"position": 10, "type": "organic", "url": "https://www.sonarhealth.co/blog/what-is-body-battery/", "title": "What Is Body Battery? How Garmin's Energy Score Works", "domain_rating": 16, "traffic": 148}
+ ]
+}

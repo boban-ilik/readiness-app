@@ -15,13 +15,14 @@ import {
 } from '@services/water';
 import { TAP_LITRES, formatWater, waterProgress, type WaterUnit } from '@utils/water';
 import { track } from '@services/analytics';
+import { isGarminConnected, fetchGarminWaterToday } from '@services/garmin';
 
 const UNDO_MS = 5_000;
 
 interface Pending { id: number; litres: number; at: Date; timer: ReturnType<typeof setTimeout> }
 
 /** @param reloadKey changes whenever Today refreshes */
-export default function WaterRow({ reloadKey }: { reloadKey: unknown }) {
+export default function WaterRow({ reloadKey, flat = false }: { reloadKey: unknown; flat?: boolean }) {
   const [saved,   setSaved]   = useState(0);
   const [pending, setPending] = useState<Pending[]>([]);
   const [unit,    setUnit]    = useState<WaterUnit>('l');
@@ -35,7 +36,14 @@ export default function WaterRow({ reloadKey }: { reloadKey: unknown }) {
     const prefs = await loadWaterPrefs();
     setUnit(prefs.unit);
     setTarget(prefs.targetLitres);
-    if (await hasAskedWaterPermission()) setSaved(await fetchTodayWaterLitres());
+    let total = (await hasAskedWaterPermission()) ? await fetchTodayWaterLitres() : 0;
+    // Water logged on a Garmin watch or in Garmin Connect never reaches Apple
+    // Health; with Garmin connected the larger of the two totals is today's.
+    if (await isGarminConnected()) {
+      const garmin = await fetchGarminWaterToday().catch(() => null);
+      if (garmin != null && garmin > total) total = garmin;
+    }
+    setSaved(total);
   }, []);
 
   useEffect(() => { reload(); }, [reload, reloadKey]);
@@ -91,7 +99,7 @@ export default function WaterRow({ reloadKey }: { reloadKey: unknown }) {
   const lastPending = pending[pending.length - 1];
 
   return (
-    <View style={styles.card}>
+    <View style={flat ? styles.flat : styles.card}>
       <View style={styles.topRow}>
         <View style={styles.textBlock}>
           <Text style={styles.label}>💧 Water today</Text>
@@ -137,6 +145,9 @@ const styles = StyleSheet.create({
     gap:             spacing[3],
     borderWidth:     1,
     borderColor:     colors.border.subtle,
+  },
+  flat: {
+    gap: spacing[3],
   },
   topRow: {
     flexDirection:  'row',

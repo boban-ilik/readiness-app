@@ -60,6 +60,16 @@ Deno.serve(async (req: Request) => {
   });
 
   try {
+    // 0. Tell Garmin, if connected: the programme requires its registration
+    //    to be removed whenever the user can delete their account. The rows
+    //    themselves cascade with the auth user.
+    const { data: garmin } = await adminClient.from('garmin_connections').select('access_token').eq('user_id', userId).maybeSingle();
+    if (garmin?.access_token) {
+      await fetch('https://apis.garmin.com/partner-gateway/rest/user/registration', {
+        method: 'DELETE', headers: { Authorization: `Bearer ${garmin.access_token}` },
+      }).catch(e => console.warn('[delete-account] Garmin deregistration failed (non-fatal):', e?.message ?? e));
+    }
+
     // 1. Delete all readiness score rows
     const { error: dataError } = await adminClient
       .from('readiness_scores')

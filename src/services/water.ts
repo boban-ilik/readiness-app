@@ -7,21 +7,13 @@
  * calling initHealthKit again prompts only for types still undetermined.
  */
 
+import { healthKitModule } from '@services/healthKitModule';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DEFAULT_TARGET_LITRES, clampTarget, type WaterUnit } from '@utils/water';
 
-let AppleHealthKit: any = null;
-
-if (Platform.OS === 'ios') {
-  try {
-    const rnh = require('react-native-health');
-    const candidate = rnh.default ?? rnh;
-    if (typeof candidate?.initHealthKit === 'function') AppleHealthKit = candidate;
-  } catch {
-    // Not available (Expo Go / web).
-  }
-}
+// Loaded once in healthKitModule; null on Android, web and Expo Go.
+const AppleHealthKit: any = healthKitModule();
 
 export const WATER_UNIT_KEY   = '@readiness/water_unit';
 export const WATER_TARGET_KEY = '@readiness/water_target_l';

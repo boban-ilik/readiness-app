@@ -90,6 +90,8 @@ export default function ConfirmEmailScreen() {
             placeholder="Enter code"
             placeholderTextColor={colors.text.tertiary}
             keyboardType="number-pad"
+            textContentType="oneTimeCode"
+            accessibilityLabel="Confirmation code"
             returnKeyType="done"
             onSubmitEditing={handleConfirm}
             autoFocus

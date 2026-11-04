@@ -97,6 +97,8 @@ export function CalibrationBanner({ status }: CalibrationBannerProps) {
           onPress={() => setDismissed(true)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           activeOpacity={0.6}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss"
         >
           <Text style={styles.closeBtn}>✕</Text>
         </TouchableOpacity>

@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, TouchableOpacity, Share } from 'react-native';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, type ComponentRef } from 'react';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { captureRef } from 'react-native-view-shot';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -29,7 +29,7 @@ import BreakdownModal from '@components/score/BreakdownModal';
 import DailyBriefingModal from '@components/score/DailyBriefingModal';
 import CalibrationReportModal from '@components/score/CalibrationReportModal';
 import { hasSeenCalibrationReport, markCalibrationReportSeen } from '@services/calibrationReport';
-import { canUseFreeBriefing, markFreeBriefingUsed } from '@services/freeBriefing';
+import { canUseFreeBriefing, markFreeBriefingUsed, chargesFreeBriefing } from '@services/freeBriefing';
 import ShareCard from '@components/score/ShareCard';
 import { colors, fontSize, fontWeight, spacing, radius, getScoreColor, getScoreLabel } from '@constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,10 +40,12 @@ import { useSubscription } from '@contexts/SubscriptionContext';
 import { useNotifications } from '@hooks/useNotifications';
 import { useCalibrationStatus } from '@hooks/useCalibrationStatus';
 import FirstLookModal from '@components/score/FirstLookModal';
-import TrialEndingCard from '@components/score/TrialEndingCard';
 import NewTodayLine from '@components/score/NewTodayLine';
-import { hasDismissedTrialEnding, dismissTrialEnding } from '@services/trialEnding';
-import { trialEndingWhen, trialPillText } from '@utils/trialEnding';
+import { trialPillText } from '@utils/trialEnding';
+import CollapsibleSection from '@components/common/CollapsibleSection';
+import ProBanner from '@components/score/ProBanner';
+import TodayPlanCard, { LockedPlanRow } from '@components/score/TodayPlanCard';
+import { pickTodayAlert, proBannerMode, weekSummary } from '@utils/todaySections';
 import { hasWatchHistory, hasSeenFirstLook, markFirstLookSeen } from '@services/firstLook';
 import { useRatingPrompt, useGoodDayRatingPrompt } from '@hooks/useRatingPrompt';
 import { useCycleTracking } from '@hooks/useCycleTracking';
@@ -51,7 +53,7 @@ import { useOvertrainingWarning } from '@hooks/useOvertrainingWarning';
 import { useIllnessRecovery } from '@hooks/useIllnessRecovery';
 import { cancelIllnessEpisodeStartedOn } from '@services/illnessEpisode';
 import { PROFILE_SEX_KEY } from '@services/userProfile';
-import { formatDisplayDate } from '@utils/index';
+import { formatDisplayDate, localDateStr } from '@utils/index';
 import { computeActivityScore } from '@utils/breakdown';
 import { STRESS_ELEVATION_LOW, STRESS_ELEVATION_HIGH, isStandInBaseline } from '@utils/readiness';
 import { fetchTodayActivity, diagnoseNoData, type TodayActivity } from '@services/healthkit';
@@ -64,8 +66,10 @@ import { fetchRecentEvents, tagEvent, type LifeEvent } from '@services/lifeEvent
 import { supabase } from '@services/supabase';
 import type { HealthData } from '@/types/index';
 import { NAME_KEY } from '../onboarding';
-import { localDateStr } from '@utils/index';
 import { track, trackDaily } from '@services/analytics';
+
+const PRO_BANNER_DISMISSED_KEY = '@readiness/pro_banner_dismissed_day';
+const WEEK_SECTION_KEY         = '@readiness/today_week_open';
 
 // ─── Greeting helper ──────────────────────────────────────────────────────────
 
@@ -120,21 +124,6 @@ function InsufficientDataCard({ reason, onRefresh, onEnterHRV }: {
   );
 }
 
-function ProSummaryCard({ onPress }: { onPress: () => void }) {
-  return (
-    <TouchableOpacity style={styles.proSummaryCard} onPress={onPress} activeOpacity={0.85}>
-      <View style={styles.proSummaryHeader}>
-        <View style={styles.proSummaryBadge}><Text style={styles.proSummaryBadgeText}>PRO</Text></View>
-        <Text style={styles.proSummaryTitle}>Go beyond the score</Text>
-      </View>
-      <Text style={styles.proSummaryBody}>
-        Unlock deeper recovery, nutrition guidance, weekly trends, the 3-day forecast, unlimited coach chat and full activity context in one place.
-      </Text>
-      <Text style={styles.proSummaryCta}>See what’s included · $9.99/mo →</Text>
-    </TouchableOpacity>
-  );
-}
-
 // Returns a short "Last night · Mon, Mar 9" prefix for overnight metrics.
 function lastNightLabel(): string {
   const d = new Date();
@@ -148,7 +137,7 @@ function buildRecoveryDetail(h: HealthData | null, baseline: number): string | u
   const parts: string[] = [];
   // Always show HRV slot — dash makes the gap visible on the card itself
   if (h.hrv !== null) {
-    const manualTag = h.hrvSource === 'manual' ? ' (manual)' : '';
+    const manualTag = h.hrvSource === 'manual' ? ' (manual)' : h.hrvSource === 'garmin' ? ' (Garmin)' : '';
     parts.push(`HRV ${h.hrv}ms${manualTag}`);
   } else {
     parts.push('HRV not recorded');
@@ -241,7 +230,7 @@ function buildSleepDetail(h: HealthData | null): string | undefined {
 export default function HomeScreen() {
   const router = useRouter();
   const scoreSnapshot = useScoreSnapshot();
-  const { readiness, isLoading, isRefreshing, error, refresh, rhrBaseline, hrvBaseline, setManualHRV } = useHealthData();
+  const { readiness, isLoading, isRefreshing, error, refresh, rhrBaseline, hrvBaseline, setManualHRV, loadedAt } = useHealthData();
   const { isPro, isTrialActive, trialDaysLeft, trialEndsAt, presentPaywall } = useSubscription();
   const calibration = useCalibrationStatus();
 
@@ -250,21 +239,19 @@ export default function HomeScreen() {
   // First look: a new user who already has a week of watch data in Health
   // sees what their last 30 days say, once, on day 0 or 1, and never sees the
   // "calibrating" banner, because there is nothing left to calibrate.
-  // The day before the free Pro week ends, and on the day: what stays free
-  // and what is Pro, so nothing just vanishes on day 7.
-  const trialEnding = trialEndingWhen(trialEndsAt);
-  const [trialEndingOpen, setTrialEndingOpen] = useState(false);
+  // The one Pro pitch in the stream: a slim banner under the ring, every day
+  // in the last days of the free Pro week, otherwise once a day until hidden.
+  const [bannerDismissedDay, setBannerDismissedDay] = useState<string | null>(null);
   useEffect(() => {
-    if (!trialEnding) return;
-    let cancelled = false;
-    hasDismissedTrialEnding().then(done => {
-      if (cancelled || done) return;
-      track('trial_ending_shown', { when: trialEnding });
-      setTrialEndingOpen(true);
-    });
-    return () => { cancelled = true; };
-  }, [trialEnding]);
-  const closeTrialEnding = () => { dismissTrialEnding(); setTrialEndingOpen(false); };
+    AsyncStorage.getItem(PRO_BANNER_DISMISSED_KEY)
+      .then(v => setBannerDismissedDay(v))
+      .catch(() => {});
+  }, []);
+  const dismissBanner = () => {
+    const today = localDateStr();
+    setBannerDismissedDay(today);
+    AsyncStorage.setItem(PRO_BANNER_DISMISSED_KEY, today).catch(() => {});
+  };
 
   const [watchHistory,  setWatchHistory]  = useState<boolean | null>(null);
   const [firstLookOpen, setFirstLookOpen] = useState(false);
@@ -358,7 +345,7 @@ export default function HomeScreen() {
   );
   const [forecast,        setForecast]        = useState<ReadinessForecast | null>(null);
   const [yesterdayScore,  setYesterdayScore]  = useState<number | null>(null);
-  const shareCardRef = useRef<View>(null);
+  const shareCardRef = useRef<ComponentRef<typeof View>>(null);
 
   // ── Manual HRV handlers ────────────────────────────────────────────────────
   const handleEnterManualHRV = useCallback(() => {
@@ -438,13 +425,16 @@ export default function HomeScreen() {
   }, []);
 
   // Fetch today's in-progress activity for the Activity card comparison row.
-  // Re-runs whenever the main data refreshes so a pull-to-refresh updates both rows.
+  // Re-runs after every finished load, including the silent refresh when the
+  // app comes back to the foreground. Keyed only to isLoading/isRefreshing, a
+  // first fetch made before any steps existed stayed empty for the rest of
+  // the day, and the "Today so far" line never appeared.
   useEffect(() => {
-    if (isLoading) return; // wait until HealthKit is initialised
+    if (isLoading || !loadedAt) return; // wait until HealthKit is initialised
     fetchTodayActivity()
       .then(setTodayActivity)
       .catch(() => {}); // non-fatal — card degrades gracefully to yesterday-only
-  }, [isLoading, isRefreshing]);
+  }, [isLoading, loadedAt]);
 
   // Load life events + compute 3-day forecast once data is ready.
   // If today's HealthKit score hasn't synced yet (score=0), we fall back to the
@@ -521,6 +511,17 @@ export default function HomeScreen() {
   const score         = readiness?.score ?? 0;
   const hasInsufficientData = readiness?.dataQuality?.isInsufficient ?? false;
   const hasUsableScore = score > 0 && !hasInsufficientData;
+  const bannerMode = proBannerMode({
+    isPro, hasUsableScore, isTrialActive, trialDaysLeft,
+    dismissedDay: bannerDismissedDay, today: localDateStr(),
+  });
+  const todayAlert = pickTodayAlert({
+    illness:      !!illness.status,
+    illnessNudge: !!illness.nudge,
+    readingCheck: !!readingCheck.state,
+    overtraining: !overtraining.isLoading && overtraining.riskLevel !== 'none',
+    calibration:  watchHistory === false,
+  });
   // Second rating ask: a high-score day from day 3 on. Held back while any
   // sheet is open and while the user is recovering from illness.
   useGoodDayRatingPrompt(
@@ -611,6 +612,8 @@ export default function HomeScreen() {
                 onPress={handleShare}
                 disabled={isSharing}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Share today's score"
               >
                 <Text style={styles.shareBtnIcon}>⬆</Text>
               </TouchableOpacity>
@@ -639,7 +642,7 @@ export default function HomeScreen() {
             if (!hasUsableScore) return;
             if (!isPro) {
               if (await canUseFreeBriefing()) {
-                await markFreeBriefingUsed();
+                // The week is marked used once a briefing is delivered (onDelivered below).
                 track('briefing_opened', { pro: isPro }); setBriefingVisible(true);
               } else {
                 presentPaywall();
@@ -718,6 +721,16 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
+        {/* The only Pro pitch in the stream (see proBannerMode). */}
+        {bannerMode && (
+          <ProBanner
+            mode={bannerMode}
+            daysLeft={trialDaysLeft}
+            onPress={() => { track('pro_banner_tapped', { mode: bannerMode }); presentPaywall(); }}
+            onDismiss={dismissBanner}
+          />
+        )}
+
         {/* Days 1 to 6: one new thing from the user's own data each morning.
             Day 0 has the first look instead. */}
         {hasUsableScore && calibration.daysSinceJoined !== null
@@ -788,18 +801,10 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {trialEndingOpen && trialEnding && (
-          <TrialEndingCard
-            when={trialEnding}
-            onKeepPro={() => { track('trial_ending_keep_pro'); closeTrialEnding(); presentPaywall(); }}
-            onDismiss={closeTrialEnding}
-          />
-        )}
-
-        {/* Back from illness: why training is held at Easy Day, or the
-            "feeling unwell?" prompt when resting HR has been up two days */}
-        {illness.status && <IllnessRecoveryCard status={illness.status} onEnd={illness.end} />}
-        {illness.nudge && (
+        {/* Alert slot: one card, the most urgent thing that is active today
+            (pickTodayAlert). Everything else waits for tomorrow. */}
+        {todayAlert === 'illness' && illness.status && <IllnessRecoveryCard status={illness.status} onEnd={illness.end} />}
+        {todayAlert === 'illnessNudge' && illness.nudge && (
           <IllnessNudgeCard
             elevation={illness.nudge.elevation}
             onStart={async () => {
@@ -810,10 +815,7 @@ export default function HomeScreen() {
             onDismiss={illness.dismissNudge}
           />
         )}
-
-        {/* Ask before judging: a reading well outside the user's own usual
-            range gets a question, not a verdict. The illness cards come first. */}
-        {readingCheck.state && !illness.status && !illness.nudge && (
+        {todayAlert === 'readingCheck' && readingCheck.state && (
           <ReadingCheckCard
             state={readingCheck.state}
             changing={readingCheck.changing}
@@ -836,53 +838,40 @@ export default function HomeScreen() {
             }}
           />
         )}
+        {todayAlert === 'overtraining' && <OvertrainingWarningCard warning={overtraining} />}
+        {todayAlert === 'calibration' && <CalibrationBanner status={calibration} />}
 
-        {/* Today's recommendation — the answer to "what do I do today?", so it
-            sits directly under the score and is free: users act on the score
-            before deciding whether they need the deeper Pro analysis. */}
+        {/* Today's plan: the answer to "what do I do today?" as one card.
+            The recommendation and water are free; nutrition is Pro. */}
         {hasUsableScore && (
           <View style={styles.trainingSection}>
-            <Text style={styles.sectionTitle}>TODAY'S RECOMMENDATION</Text>
-            <TrainingLoadCard
-              score={score}
-              components={readiness?.components ?? { recovery: 50, sleep: 50, stress: 50 }}
-              illnessCap={illness.capTraining}
-            />
+            <Text style={styles.sectionTitle}>TODAY'S PLAN</Text>
+            <TodayPlanCard>
+              <TrainingLoadCard
+                flat
+                score={score}
+                components={readiness?.components ?? { recovery: 50, sleep: 50, stress: 50 }}
+                illnessCap={illness.capTraining}
+              />
+              {isPro ? (
+                <NutritionCard
+                  flat
+                  score={score}
+                  components={readiness?.components ?? { recovery: 50, sleep: 50, stress: 50 }}
+                  healthData={readiness?.healthData ?? null}
+                  hrvBaseline={hrvBaseline}
+                />
+              ) : (
+                <LockedPlanRow
+                  title="Nutrition matched to last night"
+                  body="Water, protein and what to skip, from your recovery."
+                  onPress={presentPaywall}
+                />
+              )}
+              {isWaterAvailable() && <WaterRow flat reloadKey={`${isLoading}|${isRefreshing}`} />}
+            </TodayPlanCard>
           </View>
         )}
-
-        {/* Streak banner */}
-        {hasUsableScore && <StreakBanner score={score} />}
-
-        {/* Yesterday's workout context — shows load tier + HRV suppression note */}
-        <WorkoutContextBanner loadSummary={workoutLoad} isLoading={workoutsLoading} />
-
-        {/* Last Strava workout — only shown when Strava is connected */}
-        <StravaLastWorkoutSection
-          isConnected={stravaConnected}
-          activities={stravaActivities}
-          isLoading={stravaLoading}
-        />
-
-        {/* Strava 4-week training load trend — Pro feature */}
-        <StravaTrainingLoadSection
-          isConnected={stravaConnected}
-          activities={stravaActivities}
-          isLoading={stravaLoading}
-          isPro={isPro}
-        />
-
-        {/* Cycle phase card — shown for female users with tracking enabled */}
-        <CyclePhaseSection
-          sex={profileSex}
-          enabled={cycle.settings.enabled}
-          cycleState={cycle.cycleState}
-          hasEntries={cycle.entries.length > 0}
-          onLogToday={cycle.logToday}
-        />
-
-        {/* Overtraining early warning — shown when pattern analysis detects fatigue risk */}
-        <OvertrainingWarningCard warning={overtraining} />
 
         {/* Data confidence banner — shown when wearable data is missing or partial.
             Tappable when HRV is what's missing, since that's the one gap the user
@@ -920,68 +909,74 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Calibration week banner — shown for first 7 days after onboarding */}
-        {watchHistory === false && <CalibrationBanner status={calibration} />}
-
-        {/* One consolidated upgrade message replaces separate feature gates. */}
-        {!isPro && hasUsableScore && <ProSummaryCard onPress={presentPaywall} />}
-
-        {/* Nutrition — Pro feature */}
-        {isPro && hasUsableScore && (
-          <View style={styles.trainingSection}>
-            <Text style={styles.sectionTitle}>NUTRITION TODAY</Text>
-            <NutritionCard
-              score={score}
-              components={readiness?.components ?? { recovery: 50, sleep: 50, stress: 50 }}
-              healthData={readiness?.healthData ?? null}
-              hrvBaseline={hrvBaseline}
-            />
-          </View>
-        )}
-
-        {/* Water, under Performance Fuel for Pro and in the same place for
-            free users. Free for everyone, saved to Apple Health; the coach and
-            briefing see today's total against the user's target */}
-        {isWaterAvailable() && (
-          <View style={styles.trainingSection}>
-            <Text style={styles.sectionTitle}>HYDRATION</Text>
-            <WaterRow reloadKey={`${isLoading}|${isRefreshing}`} />
-          </View>
-        )}
-
-        {/* Recovery Trend — Pro feature */}
-        {isPro && hasUsableScore && (
-          <View style={styles.trainingSection}>
-            <Text style={styles.sectionTitle}>WEEKLY TREND</Text>
-            <TrendInsightCard forecast={hasUsableScore ? forecast : null} />
-          </View>
-        )}
-
-        {/* 3-Day Readiness Forecast — Pro feature, covered by the single
-            upgrade card above rather than its own gate */}
-        {isPro && forecast && hasUsableScore && (
-          <View style={styles.trainingSection}>
-            <Text style={styles.sectionTitle}>3-DAY FORECAST</Text>
-            <ForecastStrip
-              forecast={illness.capTraining && illness.status
-                ? applyIllnessRecovery(forecast, illness.status.backStreak)
-                : forecast}
-              illnessCap={illness.capTraining}
-            />
-          </View>
-        )}
-
-        {/* Life Event Tagger */}
+        {/* This week: everything that is context, not today's call. Folded by
+            default; the device remembers when it was opened. */}
         {hasUsableScore && (
-          <View style={styles.trainingSection}>
-            <Text style={styles.sectionTitle}>WHAT'S AFFECTING YOU</Text>
-            <LifeEventTagger
-              events={lifeEvents}
-              onTagged={setLifeEvents}
-              onSickTagged={() => illness.start('tag')}
-              onSickRemoved={async date => { await cancelIllnessEpisodeStartedOn(date); illness.reload(); }}
+          <CollapsibleSection
+            storageKey={WEEK_SECTION_KEY}
+            name="week"
+            title="THIS WEEK"
+            summary={weekSummary({
+              isPro,
+              forecast,
+              lastWorkoutName: stravaConnected && stravaActivities[0] ? stravaActivities[0].name : null,
+              eventsTaggedToday: lifeEvents.filter(e => e.date === localDateStr()).length,
+            })}
+          >
+            {isPro && (
+              <View style={styles.trainingSection}>
+                <Text style={styles.sectionTitle}>TREND AND FORECAST</Text>
+                <TrendInsightCard forecast={forecast} />
+                {forecast && (
+                  <ForecastStrip
+                    forecast={illness.capTraining && illness.status
+                      ? applyIllnessRecovery(forecast, illness.status.backStreak)
+                      : forecast}
+                    illnessCap={illness.capTraining}
+                  />
+                )}
+              </View>
+            )}
+
+            {/* Only when at least one load block has something to show. */}
+            {((!workoutsLoading && workoutLoad.loadTier !== 'none') || (stravaConnected && !stravaLoading && stravaActivities.length > 0)) && (
+            <View style={styles.trainingSection}>
+              <Text style={styles.sectionTitle}>TRAINING LOAD</Text>
+              <WorkoutContextBanner loadSummary={workoutLoad} isLoading={workoutsLoading} />
+              <StravaLastWorkoutSection
+                isConnected={stravaConnected}
+                activities={stravaActivities}
+                isLoading={stravaLoading}
+              />
+              <StravaTrainingLoadSection
+                isConnected={stravaConnected}
+                activities={stravaActivities}
+                isLoading={stravaLoading}
+                isPro={isPro}
+              />
+            </View>
+            )}
+
+            <StreakBanner score={score} />
+
+            <CyclePhaseSection
+              sex={profileSex}
+              enabled={cycle.settings.enabled}
+              cycleState={cycle.cycleState}
+              hasEntries={cycle.entries.length > 0}
+              onLogToday={cycle.logToday}
             />
-          </View>
+
+            <View style={styles.trainingSection}>
+              <Text style={styles.sectionTitle}>WHAT'S AFFECTING YOU</Text>
+              <LifeEventTagger
+                events={lifeEvents}
+                onTagged={setLifeEvents}
+                onSickTagged={() => illness.start('tag')}
+                onSickRemoved={async date => { await cancelIllnessEpisodeStartedOn(date); illness.reload(); }}
+              />
+            </View>
+          </CollapsibleSection>
         )}
 
         <View style={styles.bottomPad} />
@@ -1036,6 +1031,7 @@ export default function HomeScreen() {
         healthData={readiness?.healthData ?? null}
         rhrBaseline={rhrBaseline}
         hrvBaseline={hrvBaseline}
+        onDelivered={(fresh) => { if (chargesFreeBriefing({ isPro, fresh })) void markFreeBriefingUsed(); }}
       />
 
       {/* ── Off-screen share card — rendered but not visible ─────────────────
@@ -1190,6 +1186,9 @@ const styles = StyleSheet.create({
     color:       colors.text.tertiary,
     marginTop:   spacing[1],
     letterSpacing: 0.3,
+    // Keep clear of the ring: the inside narrows below the centre
+    maxWidth:    150,
+    textAlign:   'center',
   },
   scoreDelta: {
     fontSize:    11,
@@ -1280,47 +1279,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg.tertiary,
   },
   refreshDataButtonText: {
-    color: colors.amber[400],
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semiBold,
-  },
-  proSummaryCard: {
-    backgroundColor: 'rgba(251, 191, 36, 0.08)',
-    borderRadius: radius.lg,
-    padding: spacing[5],
-    marginBottom: spacing[5],
-    gap: spacing[3],
-    borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.28)',
-  },
-  proSummaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-  },
-  proSummaryBadge: {
-    backgroundColor: colors.amber[400],
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing[2],
-    paddingVertical: spacing[1],
-  },
-  proSummaryBadgeText: {
-    color: colors.bg.primary,
-    fontSize: 11,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 1,
-  },
-  proSummaryTitle: {
-    color: colors.text.primary,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semiBold,
-  },
-  proSummaryBody: {
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
-    lineHeight: 20,
-  },
-  proSummaryCta: {
     color: colors.amber[400],
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semiBold,

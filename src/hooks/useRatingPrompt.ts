@@ -11,15 +11,23 @@
  *
  * StoreReview.requestReview() is fire-and-forget by design: iOS decides
  * whether the sheet actually appears, so this must never gate app behaviour.
+ *
+ * Neither ask fires before the app has been opened on MIN_DEVICE_DAYS
+ * separate days on this device. Account age alone is not engagement: an old
+ * account signing in on a new device (App Review's demo account, 1.2.0
+ * rejection under 5.6.3) would otherwise be asked on first launch, on top of
+ * the Health permission screen.
  */
 
 import { useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as StoreReview from 'expo-store-review';
 import { track } from '@services/analytics';
+import { localDateStr } from '@utils/index';
 
 const PROMPTED_KEY = '@readiness/rating_prompted';
 const GOOD_DAY_PROMPTED_KEY = '@readiness/rating_prompted_good_day';
+const OPEN_DAYS_KEY = '@readiness/rating_open_days';
 const CALIBRATION_DAYS = 7;
 
 // The second ask (1.0.5): a high-score day once the user has a few days of
@@ -29,6 +37,7 @@ export const GOOD_DAY_MIN_SCORE = 75;
 export const GOOD_DAY_MIN_DAYS  = 3;
 export const MIN_GAP_DAYS       = 14;
 const GOOD_DAY_DELAY_MS         = 3_000;   // let the score land before the sheet
+export const MIN_DEVICE_DAYS    = 3;
 
 const DAY_MS = 86_400_000;
 
@@ -36,6 +45,31 @@ const DAY_MS = 86_400_000;
 export function gapAllowsAsk(lastAsks: Array<string | null>, now: number): boolean {
   const last = Math.max(0, ...lastAsks.map(t => (t ? Date.parse(t) || 0 : 0)));
   return now - last >= MIN_GAP_DAYS * DAY_MS;
+}
+
+/** Pure: the open-day list with `today` added, keeping only what the check needs. */
+export function addOpenDay(days: string[], today: string): string[] {
+  return days.includes(today) ? days : [...days, today].slice(-MIN_DEVICE_DAYS);
+}
+
+/**
+ * Records today as an open day on this device and returns how many separate
+ * days are on record (capped at MIN_DEVICE_DAYS). One write per day per session.
+ */
+let recorded: { day: string; count: Promise<number> } | null = null;
+export function deviceOpenDays(): Promise<number> {
+  const today = localDateStr();
+  if (recorded?.day === today) return recorded.count;
+  const count = (async () => {
+    let days: string[] = [];
+    try { days = JSON.parse((await AsyncStorage.getItem(OPEN_DAYS_KEY)) ?? '[]'); } catch {}
+    if (!Array.isArray(days)) days = [];
+    const next = addOpenDay(days, today);
+    if (next !== days) await AsyncStorage.setItem(OPEN_DAYS_KEY, JSON.stringify(next));
+    return next.length;
+  })().catch(() => 0);
+  recorded = { day: today, count };
+  return count;
 }
 
 /** Pure: is this a good-day moment for someone who has not had that ask yet? */
@@ -62,6 +96,7 @@ export function useRatingPrompt(daysComplete: number): void {
         if (already || cancelled) return;
         // Asked on a good day recently: wait, this effect runs again on later launches.
         if (!gapAllowsAsk([goodDay], Date.now())) return;
+        if (await deviceOpenDays() < MIN_DEVICE_DAYS || cancelled) return;
         attempted.current = true;
         await AsyncStorage.setItem(PROMPTED_KEY, new Date().toISOString());
         if (await StoreReview.hasAction()) {
@@ -89,6 +124,9 @@ export function useRatingPrompt(daysComplete: number): void {
 export function useGoodDayRatingPrompt(score: number, daysSinceJoined: number | null, blocked: boolean): void {
   const attempted = useRef(false);
 
+  // Today mounts on every launch: count the day whether or not anyone is asked.
+  useEffect(() => { deviceOpenDays(); }, []);
+
   useEffect(() => {
     if (blocked || attempted.current || !isGoodDayMoment(score, daysSinceJoined)) return;
 
@@ -100,6 +138,7 @@ export function useGoodDayRatingPrompt(score: number, daysSinceJoined: number | 
           AsyncStorage.getItem(PROMPTED_KEY),
         ]);
         if (goodDay || cancelled || !gapAllowsAsk([day7], Date.now())) return;
+        if (await deviceOpenDays() < MIN_DEVICE_DAYS || cancelled) return;
         attempted.current = true;
         await AsyncStorage.setItem(GOOD_DAY_PROMPTED_KEY, new Date().toISOString());
         if (await StoreReview.hasAction()) {

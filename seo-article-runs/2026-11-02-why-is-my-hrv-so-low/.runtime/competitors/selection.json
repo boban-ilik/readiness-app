@@ -1,0 +1,32 @@
+{
+  "query": "why is my hrv so low",
+  "locale": "us / en",
+  "provider": "ahrefs serp-overview (orchestrator-supplied, SERP dated 2026-11-01T23:45:58Z)",
+  "captured_at": "2026-11-02",
+  "pages": [
+    {
+      "url": "https://www.whoop.com/us/en/thelocker/low-hrv/",
+      "title": "Low HRV Symptoms: 6 Signs, Causes, and Ways to Improve",
+      "observed_position": 2,
+      "selection_basis": "observed_rank",
+      "reason": "Highest-ranking external page whose job is the reader task (why HRV is low, causes, when to worry); AI Overview source for both SERPs. Captured via the desktop built-in browser because curl and WebFetch were blocked (HTTP 403).",
+      "capture_path": "whoop-low-hrv.md"
+    },
+    {
+      "url": "https://www.polar.com/en/guide/my-hrv-is-very-low",
+      "title": "My HRV is Very Low. Can I Increase My Heart Rate Variability?",
+      "observed_position": 3,
+      "selection_basis": "observed_rank",
+      "reason": "Second-highest dedicated low-HRV page; AI Overview source for both SERPs; recurs from the 2026-09-25 run (then position 6 for 'how to improve hrv'). Captured by curl (HTTP 200).",
+      "capture_path": "polar-my-hrv-is-very-low.md"
+    },
+    {
+      "url": "https://nurosym.com/blogs/articles/low-hrv",
+      "title": "Low HRV: What It Means, Causes & When to Be Concerned",
+      "observed_position": 7,
+      "selection_basis": "observed_rank",
+      "reason": "Third-highest dedicated low-HRV explainer (causes, dip vs trend, when to seek care); AI Overview source for the primary SERP. Cleveland Clinic (#6) was inspected and excluded as a general HRV definition page. Captured via the desktop built-in browser because curl returned HTTP 429 twice.",
+      "capture_path": "nurosym-low-hrv.md"
+    }
+  ]
+}
