@@ -45,31 +45,22 @@ import {
   getScoreColor,
   getScoreLabel,
 } from '@constants/theme';
+import {
+  ONBOARDING_KEY, DEVICE_KEY, NAME_KEY, FREQ_KEY, JOINED_AT_KEY,
+  PROFILE_GOAL_KEY, PROFILE_SEX_KEY,
+  NOTIF_ENABLED_KEY, NOTIF_HOUR_KEY, NOTIF_MINUTE_KEY,
+} from '@services/storageKeys';
+import {
+  DEVICES, DEVICE_NOTE, FREQ_OPTIONS, GOAL_OPTIONS, SEX_OPTIONS,
+  type DeviceType, type TrainingFrequency, type TrainingGoal, type BiologicalSex,
+} from '@constants/onboarding';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-export const ONBOARDING_KEY = '@readiness/onboarding_complete';
-const DEVICE_KEY           = '@readiness/device_type';
-export const NAME_KEY      = '@readiness/user_name';
-export const FREQ_KEY      = '@readiness/training_frequency';
-export const JOINED_AT_KEY = '@readiness/joined_at';
-
-// Profile keys (mirrored from src/services/userProfile.ts — kept here to avoid
-// circular imports between onboarding.tsx and userProfile.ts)
-const PROFILE_GOAL_KEY   = '@readiness/profile_goal';
-const PROFILE_SEX_KEY    = '@readiness/profile_sex';
-const NOTIF_ENABLED_KEY  = '@readiness/notif_digest_enabled';
-const NOTIF_HOUR_KEY     = '@readiness/notif_digest_hour';
-const NOTIF_MINUTE_KEY   = '@readiness/notif_digest_minute';
 const DEFAULT_DIGEST_HOUR = 8;
 
 const TOTAL_STEPS = 5;  // steps 0–4 show progress dots; step 5 = auto setup
 const STEP_NAMES = ['welcome', 'how_it_works', 'device', 'training_profile', 'permissions', 'setup'];
-
-type DeviceType       = 'garmin' | 'apple_watch' | 'both' | 'other' | 'none';
-type TrainingFrequency = 'light' | 'moderate' | 'high';
-type TrainingGoal      = 'performance' | 'recovery' | 'weight_loss' | 'general_health';
-type BiologicalSex     = 'male' | 'female' | 'prefer_not_to_say';
 
 function pause(ms: number) {
   return new Promise<void>(r => setTimeout(r, ms));
@@ -194,7 +185,7 @@ function StepHowItWorks({ onNext, onBack }: { onNext: () => void; onBack: () => 
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.stepTitle}>How your score is built</Text>
+      <Text style={styles.stepTitle} accessibilityRole="header">How your score is built</Text>
       <Text style={styles.stepSubtitle}>
         Three weighted components, recalculated every morning.
       </Text>
@@ -228,21 +219,6 @@ function StepHowItWorks({ onNext, onBack }: { onNext: () => void; onBack: () => 
 
 // ─── Step 2: Device selection ─────────────────────────────────────────────────
 
-const DEVICES: { key: DeviceType; label: string; icon: string }[] = [
-  { key: 'garmin',      label: 'Garmin',              icon: '⌚' },
-  { key: 'apple_watch', label: 'Apple Watch',         icon: '🍎' },
-  { key: 'both',        label: 'Both',                icon: '🔁' },
-  { key: 'other',       label: 'Other watch or ring', icon: '💍' },
-  { key: 'none',        label: 'No watch',            icon: '📱' },
-];
-
-// Said before Health access is asked, so nobody without a watch finds out
-// from an empty score on day one.
-const DEVICE_NOTE: Partial<Record<DeviceType, string>> = {
-  other: 'Readiness works with any watch or ring whose app shares heart rate, HRV and sleep with Apple Health. Turn that sharing on in its app.',
-  none:  'Most of the score comes from overnight heart data, which needs a watch. Without one your score will be limited: you can type in an HRV reading each morning, and sleep counts if an app writes it to Apple Health.',
-};
-
 function StepDevice({
   device,
   setDevice,
@@ -263,7 +239,7 @@ function StepDevice({
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.stepTitle}>What do you train with?</Text>
+      <Text style={styles.stepTitle} accessibilityRole="header">What do you train with?</Text>
       <Text style={styles.stepSubtitle}>
         Readiness syncs all data through Apple Health, no direct device connection needed.
       </Text>
@@ -323,35 +299,6 @@ function StepDevice({
 
 // ─── Step 3: Training profile (frequency + goal) ──────────────────────────────
 
-const FREQ_OPTIONS: {
-  key:   TrainingFrequency;
-  icon:  string;
-  label: string;
-  sub:   string;
-}[] = [
-  { key: 'light',    icon: '🚶', label: '2–3 days / week', sub: 'I exercise occasionally' },
-  { key: 'moderate', icon: '🏃', label: '4–5 days / week', sub: 'I train consistently' },
-  { key: 'high',     icon: '⚡', label: '6+ days / week',  sub: "I'm a high-volume athlete" },
-];
-
-const GOAL_OPTIONS: {
-  key:   TrainingGoal;
-  icon:  string;
-  label: string;
-  sub:   string;
-}[] = [
-  { key: 'performance',    icon: '🏆', label: 'Peak Performance',   sub: 'Push harder, train smarter' },
-  { key: 'recovery',       icon: '🔄', label: 'Optimise Recovery',  sub: 'Avoid burnout & overtraining' },
-  { key: 'weight_loss',    icon: '⚖️', label: 'Lose Weight',        sub: 'Balance training & body comp' },
-  { key: 'general_health', icon: '💪', label: 'General Health',     sub: 'Stay active, feel great' },
-];
-
-const SEX_OPTIONS: { key: BiologicalSex; label: string }[] = [
-  { key: 'female',            label: 'Female' },
-  { key: 'male',              label: 'Male' },
-  { key: 'prefer_not_to_say', label: 'Prefer not to say' },
-];
-
 function StepTrainingProfile({
   freq,
   setFreq,
@@ -403,12 +350,12 @@ function StepTrainingProfile({
       showsVerticalScrollIndicator={false}
     >
       {/* ── Frequency ── */}
-      <Text style={styles.stepTitle}>Your training profile</Text>
+      <Text style={styles.stepTitle} accessibilityRole="header">Your training profile</Text>
       <Text style={styles.stepSubtitle}>
         Helps calibrate your recommendations to your actual schedule and goals.
       </Text>
 
-      <Text style={styles.sectionHeading}>How often do you train?</Text>
+      <Text style={styles.sectionHeading} accessibilityRole="header">How often do you train?</Text>
       <View style={styles.freqList}>
         {FREQ_OPTIONS.map(opt => {
           const active = freq === opt.key;
@@ -439,7 +386,7 @@ function StepTrainingProfile({
       </View>
 
       {/* ── Goal ── */}
-      <Text style={[styles.sectionHeading, { marginTop: spacing[2] }]}>What's your primary goal?</Text>
+      <Text style={[styles.sectionHeading, { marginTop: spacing[2] }]} accessibilityRole="header">What's your primary goal?</Text>
       <View style={styles.goalGrid}>
         {GOAL_OPTIONS.map(opt => {
           const active = goal === opt.key;
@@ -468,7 +415,7 @@ function StepTrainingProfile({
       </View>
 
       {/* ── About you (optional) ── */}
-      <Text style={[styles.sectionHeading, { marginTop: spacing[2] }]}>About you (optional)</Text>
+      <Text style={[styles.sectionHeading, { marginTop: spacing[2] }]} accessibilityRole="header">About you (optional)</Text>
       <View style={styles.sexRow}>
         {SEX_OPTIONS.map(opt => {
           const active = sex === opt.key;
@@ -557,7 +504,7 @@ function StepPermissions({
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.stepTitle}>Connect Apple Health</Text>
+      <Text style={styles.stepTitle} accessibilityRole="header">Connect Apple Health</Text>
       <Text style={styles.stepSubtitle}>
         Readiness reads three types of data to calculate your score, nothing else.
       </Text>

@@ -6,7 +6,7 @@
  */
 
 import { supabase } from '@services/supabase';
-import type { ReadinessResult } from '@utils/readiness';
+import { isStandInBaseline, type ReadinessResult } from '@utils/readiness';
 import { getCycleContext } from '@services/cycleTracking';
 import type { HealthData } from '@/types/index';
 import type { PatternInsight } from '@services/patternAnalysis';
@@ -100,6 +100,8 @@ export async function askCoach(
         },
         rhrBaseline,
         hrvBaseline,
+        rhrBaselinePersonal: !isStandInBaseline('rhr', rhrBaseline),
+        hrvBaselinePersonal: !isStandInBaseline('hrv', hrvBaseline),
         patterns,
         workload,
         lifeEvents: lifeEvents.map(e => ({

@@ -18,6 +18,7 @@ import { supabase } from '@services/supabase';
 import { upsertTodayScore } from '@services/scoreSync';
 import { pushScoreToWidget, setWidgetIllnessCap } from '@services/widgetBridge';
 import { localDateStr } from '@utils/index';
+import { loadManualHRV, loadManualHRVByDay, saveManualHRV, removeManualHRV } from '@services/manualHRV';
 import { excludeIllnessDays } from '@utils/illnessRecovery';
 import { loadIllnessEpisodes, isIllnessCapStored } from '@services/illnessEpisode';
 import { getRHRByDay, getHRVByDay, isGarminHRVUnavailable } from '@services/healthSource';
@@ -48,57 +49,6 @@ interface UseHealthDataReturn {
   setManualHRV:  (value: number | null) => Promise<void>;
   /** Changes every time a load finishes (initial, pull-to-refresh or silent). */
   loadedAt:      number;
-}
-
-// ─── Manual HRV store ─────────────────────────────────────────────────────────
-// Per-day AsyncStorage key so yesterday's manual entry doesn't bleed into today.
-
-const MANUAL_HRV_KEY_PREFIX = '@readiness/manual_hrv_'; // + YYYY-MM-DD
-
-function todayDateStr(): string {
-  const d = new Date();
-  const y  = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, '0');
-  const da = String(d.getDate()).padStart(2, '0');
-  return `${y}-${mo}-${da}`;
-}
-
-async function loadManualHRV(): Promise<number | null> {
-  try {
-    const raw = await AsyncStorage.getItem(`${MANUAL_HRV_KEY_PREFIX}${todayDateStr()}`);
-    if (!raw) return null;
-    const val = parseFloat(raw);
-    return isNaN(val) ? null : val;
-  } catch {
-    return null;
-  }
-}
-
-/** HRV the user typed in over the last `days` days, keyed by local date. */
-export async function loadManualHRVByDay(days: number): Promise<Record<string, number>> {
-  const dates: string[] = [];
-  for (let i = 0; i <= days; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    dates.push(localDateStr(d));
-  }
-  const out: Record<string, number> = {};
-  try {
-    const pairs = await AsyncStorage.multiGet(dates.map(d => `${MANUAL_HRV_KEY_PREFIX}${d}`));
-    pairs.forEach(([, raw], i) => {
-      const v = raw ? parseFloat(raw) : NaN;
-      if (!isNaN(v)) out[dates[i]] = v;
-    });
-  } catch { /* no manual history */ }
-  return out;
-}
-
-async function saveManualHRV(value: number): Promise<void> {
-  await AsyncStorage.setItem(`${MANUAL_HRV_KEY_PREFIX}${todayDateStr()}`, String(value));
-}
-
-async function removeManualHRV(): Promise<void> {
-  await AsyncStorage.removeItem(`${MANUAL_HRV_KEY_PREFIX}${todayDateStr()}`);
 }
 
 // ─── Baseline cache ───────────────────────────────────────────────────────────

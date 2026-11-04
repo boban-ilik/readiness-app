@@ -48,3 +48,14 @@ export function pushScoreToWidget(result: ReadinessResult): void {
     console.warn('[Widget] pushScoreToWidget failed (non-fatal):', err);
   }
 }
+
+/** Clear the widget score (used on sign-out so the old user's score is gone). */
+export function clearWidget(): void {
+  if (Platform.OS !== 'ios') return;
+  if (!bridge) return;
+  try {
+    bridge.clearScore();
+  } catch (err) {
+    console.warn('[Widget] clearWidget failed (non-fatal):', err);
+  }
+}

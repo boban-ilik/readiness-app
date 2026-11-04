@@ -66,7 +66,7 @@ export default function TrendChartModal({ visible, onClose, past, forecast }: Pr
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.card} onLayout={onLayout}>
             {chart && (
-              <Svg width={width} height={HEIGHT}>
+              <Svg width={width} height={HEIGHT} accessible accessibilityLabel="Readiness trend: the past week and the next three days">
                 {chart.ticks.map(t => (
                   <Line key={t.value} x1={PAD.padLeft} x2={width - PAD.padRight} y1={t.y} y2={t.y}
                         stroke={colors.border.subtle} strokeWidth={1} strokeDasharray="3 5" />

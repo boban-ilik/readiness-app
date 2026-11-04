@@ -14,6 +14,7 @@ export interface ReadinessDataBridgeModule {
     trainingHeadline: string | null,
     trainingZone:     number | null,
   ): void;
+  clearScore(): void;
 }
 
 const ReadinessDataBridge = requireOptionalNativeModule<ReadinessDataBridgeModule>('ReadinessDataBridge');

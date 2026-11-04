@@ -26,6 +26,7 @@
 
 import { Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '@services/supabase';
 
 // ─── Configuration ────────────────────────────────────────────────────────────
@@ -266,26 +267,32 @@ export async function exchangeStravaCode(code: string): Promise<StravaToken | nu
 // ─── Token management ─────────────────────────────────────────────────────────
 
 async function persistToken(token: StravaToken): Promise<void> {
-  await AsyncStorage.multiSet([
-    [KEY_ACCESS_TOKEN,  token.accessToken],
-    [KEY_REFRESH_TOKEN, token.refreshToken],
-    [KEY_EXPIRES_AT,    String(token.expiresAt)],
-    [KEY_ATHLETE_NAME,  token.athleteName],
+  // Tokens are credentials — keep them in the Keychain, not AsyncStorage.
+  await Promise.all([
+    SecureStore.setItemAsync(KEY_ACCESS_TOKEN,  token.accessToken),
+    SecureStore.setItemAsync(KEY_REFRESH_TOKEN, token.refreshToken),
+    SecureStore.setItemAsync(KEY_EXPIRES_AT,    String(token.expiresAt)),
+    SecureStore.setItemAsync(KEY_ATHLETE_NAME,  token.athleteName),
+  ]);
+}
+
+/** Delete the persisted Strava tokens (used by disconnect and the sign-out wipe). */
+export async function clearStravaTokens(): Promise<void> {
+  await Promise.all([
+    SecureStore.deleteItemAsync(KEY_ACCESS_TOKEN).catch(() => {}),
+    SecureStore.deleteItemAsync(KEY_REFRESH_TOKEN).catch(() => {}),
+    SecureStore.deleteItemAsync(KEY_EXPIRES_AT).catch(() => {}),
+    SecureStore.deleteItemAsync(KEY_ATHLETE_NAME).catch(() => {}),
   ]);
 }
 
 export async function getStravaToken(): Promise<StravaToken | null> {
-  const values = await AsyncStorage.multiGet([
-    KEY_ACCESS_TOKEN,
-    KEY_REFRESH_TOKEN,
-    KEY_EXPIRES_AT,
-    KEY_ATHLETE_NAME,
+  const [accessToken, refreshToken, expiresAt, athleteName] = await Promise.all([
+    SecureStore.getItemAsync(KEY_ACCESS_TOKEN).catch(() => null),
+    SecureStore.getItemAsync(KEY_REFRESH_TOKEN).catch(() => null),
+    SecureStore.getItemAsync(KEY_EXPIRES_AT).catch(() => null),
+    SecureStore.getItemAsync(KEY_ATHLETE_NAME).catch(() => null),
   ]);
-
-  const map = Object.fromEntries(values.map(([k, v]) => [k, v]));
-  const accessToken  = map[KEY_ACCESS_TOKEN];
-  const refreshToken = map[KEY_REFRESH_TOKEN];
-  const expiresAt    = map[KEY_EXPIRES_AT];
 
   if (!accessToken || !refreshToken) return null;
 
@@ -293,17 +300,22 @@ export async function getStravaToken(): Promise<StravaToken | null> {
     accessToken,
     refreshToken,
     expiresAt:    Number(expiresAt ?? 0),
-    athleteName:  map[KEY_ATHLETE_NAME] ?? '',
+    athleteName:  athleteName ?? '',
   };
 }
 
 export async function disconnectStrava(): Promise<void> {
-  await AsyncStorage.multiRemove([
-    KEY_ACCESS_TOKEN,
-    KEY_REFRESH_TOKEN,
-    KEY_EXPIRES_AT,
-    KEY_ATHLETE_NAME,
-  ]);
+  // Best-effort: revoke the authorization on Strava's side first, then clear
+  // the local tokens either way. An expired token just makes the revoke a no-op.
+  await deauthorizeStrava().catch(() => {});
+  await clearStravaTokens();
+}
+
+/** Revoke the user's Strava authorization via the server-side proxy. */
+async function deauthorizeStrava(): Promise<void> {
+  const token = await getStravaToken();
+  if (!token?.accessToken) return;
+  await stravaTokenViaEdgeFunction({ grant_type: 'deauthorize', access_token: token.accessToken });
 }
 
 /** Returns a valid access token, refreshing if expired. */

@@ -22,15 +22,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { parseReport } from '../_shared/report.ts';
 import { gate } from '../_shared/entitlement.ts';
+import { postClaude, CLAUDE_HAIKU } from '../_shared/anthropic.ts';
+import { CORS_HEADERS as corsHeaders } from '../_shared/cors.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, content-type',
-};
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -41,6 +38,12 @@ function json(body: unknown, status = 200): Response {
 
 function dayLabel(dateStr: string): string {
   return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+}
+
+/** N days before a YYYY-MM-DD string, staying on the calendar (UTC-safe). */
+function daysBefore(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d - days)).toISOString().split('T')[0];
 }
 
 function trend(scores: number[]): 'improving' | 'declining' | 'stable' {
@@ -83,9 +86,14 @@ Deno.serve(async (req: Request) => {
     if (!gated.ok) return gated.response;
 
     // ── Fetch last 7 days ─────────────────────────────────────────────────────
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-    const fromDate = sevenDaysAgo.toISOString().split('T')[0];
+    // The client sends its local today, so the window lines up with the dates
+    // the app writes (localDateStr), not the server's UTC clock.
+    let clientToday = '';
+    try {
+      const body = await req.json();
+      if (typeof body?.today === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.today)) clientToday = body.today;
+    } catch { /* no body or not JSON — fall back to UTC */ }
+    const fromDate = daysBefore(clientToday || new Date().toISOString().split('T')[0], 6);
 
     const { data: rows, error: rowsError } = await userSupabase
       .from('readiness_scores')
@@ -157,20 +165,12 @@ Deno.serve(async (req: Request) => {
     // Structured output makes the reply schema-valid JSON. Every app version
     // shares this function, so if that request shape is ever rejected (400)
     // ask again as plain text and rely on the tolerant parser below.
-    const callClaude = (structured: boolean) => fetch('https://api.anthropic.com/v1/messages', {
-      method:  'POST',
-      headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model:      'claude-haiku-4-5-20251001',
-        max_tokens: 400,
-        messages:   [{ role: 'user', content: prompt }],
-        ...(structured ? { output_config: { format: { type: 'json_schema', schema: REPORT_SCHEMA } } } : {}),
-      }),
-    });
+    const callClaude = (structured: boolean) => postClaude({
+      model:      CLAUDE_HAIKU,
+      max_tokens: 400,
+      messages:   [{ role: 'user', content: prompt }],
+      ...(structured ? { output_config: { format: { type: 'json_schema', schema: REPORT_SCHEMA } } } : {}),
+    }, ANTHROPIC_API_KEY);
 
     let claudeRes = await callClaude(true);
     if (claudeRes.status === 400) {

@@ -20,7 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getNutritionRecommendation } from '@utils/nutrition';
 import { isWaterAvailable, loadWaterPrefs } from '@services/water';
 import { formatWater } from '@utils/water';
-import { PROFILE_WEIGHT_KEY } from '@services/userProfile';
+import { PROFILE_WEIGHT_KEY } from '@services/storageKeys';
 import type { ReadinessResult } from '@utils/readiness';
 import type { HealthData }      from '@/types/index';
 import {
@@ -45,7 +45,7 @@ interface NutritionCardProps {
 // ─── Small sub-components ─────────────────────────────────────────────────────
 
 function SectionLabel({ text }: { text: string }) {
-  return <Text style={styles.sectionLabel}>{text}</Text>;
+  return <Text style={styles.sectionLabel} accessibilityRole="header">{text}</Text>;
 }
 
 function BulletRow({ text }: { text: string }) {

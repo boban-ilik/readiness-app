@@ -24,8 +24,9 @@
 
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { JOINED_AT_KEY } from '@services/storageKeys';
 
-export const JOINED_AT_KEY      = '@readiness/joined_at';
+export { JOINED_AT_KEY };
 export const CALIBRATION_DAYS   = 7;
 
 export interface CalibrationStatus {

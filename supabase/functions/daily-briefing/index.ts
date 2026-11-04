@@ -22,12 +22,8 @@ import { sanitiseIllness, illnessLines, ILLNESS_RULE, type IllnessInput } from '
 import { sanitiseWater, waterLines, WATER_RULE, type WaterInput } from '../_shared/water.ts';
 import { sanitiseReadingCheck, readingCheckLines, READING_CHECK_RULE, type ReadingCheckInput } from '../_shared/readingCheck.ts';
 import { trainingCallLine, baselineNote, TRAINING_RULE } from '../_shared/coaching.ts';
-
-const CORS_HEADERS: Record<string, string> = {
-  'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { postClaude, CLAUDE_HAIKU } from '../_shared/anthropic.ts';
+import { CORS_HEADERS } from '../_shared/cors.ts';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,6 +83,9 @@ interface DailyBriefingInput {
   healthData:   HealthData;
   rhrBaseline:  number;
   hrvBaseline:  number;
+  /** Whether each baseline is personal (7+ days of the user's own data). */
+  rhrBaselinePersonal?: boolean;
+  hrvBaselinePersonal?: boolean;
   /** Longitudinal patterns detected from 30 days of history. May be empty. */
   patterns:     PatternInsight[];
   /** Yesterday's training load from HealthKit workouts. Null if no workouts. */
@@ -179,11 +178,11 @@ function buildPrompt(input: DailyBriefingInput): string {
 
   if (h.hrv !== null) {
     const d = Math.round(h.hrv - hrvBaseline);
-    lines.push(`  Heart rate variability: ${h.hrv} ms  (${baselineNote('hrv', hrvBaseline)}; delta: ${d >= 0 ? '+' : ''}${d} ms)`);
+    lines.push(`  Heart rate variability: ${h.hrv} ms  (${baselineNote('hrv', hrvBaseline, input.hrvBaselinePersonal)}; delta: ${d >= 0 ? '+' : ''}${d} ms)`);
   }
   if (h.restingHeartRate !== null) {
     const d = Math.round(h.restingHeartRate - rhrBaseline);
-    lines.push(`  Resting heart rate: ${h.restingHeartRate} bpm  (${baselineNote('rhr', rhrBaseline)}; delta: ${d >= 0 ? '+' : ''}${d} bpm)`);
+    lines.push(`  Resting heart rate: ${h.restingHeartRate} bpm  (${baselineNote('rhr', rhrBaseline, input.rhrBaselinePersonal)}; delta: ${d >= 0 ? '+' : ''}${d} bpm)`);
   }
   if (h.sleepDuration !== null) {
     const hrs = (h.sleepDuration / 60).toFixed(1);
@@ -387,20 +386,12 @@ serve(async (req: Request) => {
       });
     }
 
-    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model:      'claude-haiku-4-5-20251001',
-        max_tokens: 450,   // 1.0.4: room for the three follow-up questions
-        system:     SYSTEM_PROMPT,
-        messages:   [{ role: 'user', content: buildPrompt(input) }],
-      }),
-    });
+    const claudeRes = await postClaude({
+      model:      CLAUDE_HAIKU,
+      max_tokens: 450,   // 1.0.4: room for the three follow-up questions
+      system:     SYSTEM_PROMPT,
+      messages:   [{ role: 'user', content: buildPrompt(input) }],
+    }, apiKey);
 
     if (!claudeRes.ok) {
       const err = await claudeRes.text().catch(() => '');

@@ -19,7 +19,7 @@
 
 import * as FileSystem from 'expo-file-system/legacy';
 import Constants       from 'expo-constants';
-import type { DayHistory } from '@hooks/useHistoryData';
+import type { DayHistory } from '@/types/index';
 import { localDateStr } from '@utils/index';
 
 // ─── Expo Go detection ────────────────────────────────────────────────────────

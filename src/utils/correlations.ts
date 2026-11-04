@@ -15,7 +15,7 @@
  * returns AI-generated insight sentences.
  */
 
-import type { DayHistory } from '@hooks/useHistoryData';
+import type { DayHistory } from '@/types/index';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

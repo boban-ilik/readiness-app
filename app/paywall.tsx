@@ -101,11 +101,11 @@ const FOUNDER_CAP = 200;
 type RcPackageLike = {
   identifier?:  string;
   packageType?: string;
-  product?:     { productIdentifier?: string; priceString?: string };
+  product?:     { identifier?: string; priceString?: string };
 };
 
 function isFounderPackage(pkg: RcPackageLike): boolean {
-  const productId = (pkg.product?.productIdentifier ?? '').toLowerCase();
+  const productId = (pkg.product?.identifier ?? '').toLowerCase();
   return pkg.packageType === 'LIFETIME'
       || pkg.identifier === '$rc_lifetime'
       || productId.includes('lifetime')
@@ -231,7 +231,7 @@ export default function PaywallScreen() {
     setFounderPkg(null);
       try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const Purchases = (require('react-native-purchases') as { default: import('react-native-purchases').PurchasesStatic }).default;
+        const Purchases = (require('react-native-purchases') as { default: (typeof import('react-native-purchases'))['default'] }).default;
         const offerings = await Purchases.getOfferings();
         const current   = offerings.current;
         if (!current) {
@@ -262,7 +262,7 @@ export default function PaywallScreen() {
             current.availablePackages.map(p => ({
               id:      p.identifier,
               type:    p.packageType,
-              product: p.product?.productIdentifier ?? null,
+              product: p.product?.identifier ?? null,
               price:   p.product?.priceString ?? null,
             })),
           ),
@@ -270,10 +270,10 @@ export default function PaywallScreen() {
 
         for (const pkg of current.availablePackages) {
           // Every access here is guarded. Reading .includes() on an undefined
-          // productIdentifier previously threw and aborted the whole load, so
+          // product id previously threw and aborted the whole load, so
           // one hollow package silently downgraded the paywall to fallback
           // prices and made purchases impossible.
-          const productId = pkg.product?.productIdentifier ?? '';
+          const productId = pkg.product?.identifier ?? '';
           const price     = pkg.product?.priceString ?? '';
           const pkgId     = pkg.identifier ?? '';
 
@@ -366,7 +366,7 @@ export default function PaywallScreen() {
       if (rcLoaded && selectedPkg.rcPackage) {
         // ── Real purchase via RevenueCat ──────────────────────────────────────
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const Purchases = (require('react-native-purchases') as { default: import('react-native-purchases').PurchasesStatic }).default;
+        const Purchases = (require('react-native-purchases') as { default: (typeof import('react-native-purchases'))['default'] }).default;
 
         const { customerInfo } = await Purchases.purchasePackage(
           selectedPkg.rcPackage as Parameters<typeof Purchases.purchasePackage>[0],
@@ -412,7 +412,7 @@ export default function PaywallScreen() {
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const Purchases = (require('react-native-purchases') as { default: import('react-native-purchases').PurchasesStatic }).default;
+      const Purchases = (require('react-native-purchases') as { default: (typeof import('react-native-purchases'))['default'] }).default;
 
       const { customerInfo } = await Purchases.purchasePackage(
         founderPkg as Parameters<typeof Purchases.purchasePackage>[0],
@@ -447,10 +447,10 @@ export default function PaywallScreen() {
       // the price load refused exactly the subscriber on a new phone during
       // a StoreKit hiccup, and App Review tests Restore on a fresh install.
       let configured = false;
-      let Purchases: import('react-native-purchases').PurchasesStatic | null = null;
+      let Purchases: (typeof import('react-native-purchases'))['default'] | null = null;
       try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        Purchases  = (require('react-native-purchases') as { default: import('react-native-purchases').PurchasesStatic }).default;
+        Purchases  = (require('react-native-purchases') as { default: (typeof import('react-native-purchases'))['default'] }).default;
         configured = await Purchases.isConfigured();
       } catch {
         configured = false;
@@ -767,7 +767,9 @@ const styles = StyleSheet.create({
     borderColor: colors.border.subtle,
     overflow: 'hidden',
     marginBottom: spacing[4],
-    height: 52,
+    // minHeight, not height: the toggle must grow with scaled text instead of
+    // clipping it at large Dynamic Type sizes.
+    minHeight: 52,
   },
   toggleBtn: {
     flex: 1,

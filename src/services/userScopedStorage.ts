@@ -7,136 +7,26 @@
  * and Strava tokens — wrong data at best, and a privacy leak at worst.
  *
  * We record which user the on-device data belongs to and wipe it when a
- * different account signs in.
+ * different account signs in. The key list itself lives in storageKeys.ts so
+ * a newly added per-user key cannot be forgotten by the wipe.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clearCoachSession } from '@services/coachSession';
+import { clearStravaTokens } from '@services/strava';
+import { DATA_OWNER_KEY, USER_SCOPED_KEYS, USER_SCOPED_PREFIXES } from './storageKeys';
 
-/** Tracks which Supabase user the locally stored data belongs to. */
-export const DATA_OWNER_KEY = '@readiness/data_owner_id';
-
-/**
- * Every key holding data about a specific person. Anything genuinely global
- * (dev flags, app-level preferences) is deliberately excluded.
- *
- * Keep this in sync when adding new per-user storage.
- */
-export const USER_SCOPED_KEYS = [
-  // Onboarding + profile
-  '@readiness/onboarding_complete',
-  '@readiness/joined_at',
-  '@readiness/user_name',
-  '@readiness/device_type',
-  '@readiness/training_frequency',
-  '@readiness/profile_age',
-  '@readiness/profile_sex',
-  '@readiness/profile_goal',
-  '@readiness/profile_height_cm',
-  '@readiness/profile_weight_kg',
-  '@readiness/profile_photo_uri',
-
-  // Personal baselines
-  '@readiness/hrv_baseline',
-  '@readiness/rhr_baseline',
-
-  // Cycle tracking — sensitive
-  '@readiness/cycle_enabled',
-  '@readiness/cycle_entries',
-  '@readiness/cycle_length',
-  '@readiness/cycle_period_length',
-
-  // Streaks
-  '@readiness/best_streak',
-
-  // Strava OAuth — must never cross accounts
-  '@readiness/strava_access_token',
-  '@readiness/strava_refresh_token',
-  '@readiness/strava_expires_at',
-  '@readiness/strava_athlete_name',
-  '@readiness/strava_oauth_state',
-
-  // Garmin connection mirror (GARMIN_CONNECTED_KEY in services/garmin.ts):
-  // the next account on this phone must not inherit "Garmin connected"
-  '@readiness/garmin_connected',
-
-  // Today layout memory (CollapsibleSection, ProBanner)
-  '@readiness/today_week_open',
-  '@readiness/pro_banner_dismissed_day',
-
-  // Notification preferences and dedupe state
-  '@readiness/notif_digest_enabled',
-  '@readiness/notif_digest_hour',
-  '@readiness/notif_digest_minute',
-  '@readiness/notif_threshold_enabled',
-  '@readiness/notif_threshold_value',
-  '@readiness/notif_threshold_last_date',
-  '@readiness/notif_hrv_drop_enabled',
-  '@readiness/notif_hrv_drop_last_date',
-  '@readiness/notif_rhr_spike_enabled',
-  '@readiness/notif_rhr_spike_last_date',
-  '@readiness/notif_trend_decline_enabled',
-  '@readiness/notif_trend_decline_last_date',
-  '@readiness/notif_last_score',
-  '@readiness/notif_score_history',
-  '@readiness/notif_coach_checkin_enabled',
-  '@readiness/notif_coach_checkin_last_date',
-
-  // Coach conversation — contains health details and whatever the user typed
-  '@readiness/coach_chat_v1',
-
-  // One-time calibration-week report flag
-  '@readiness/calibration_report_seen',
-  '@readiness/first_look_seen',
-  '@readiness/trial_ending_seen',
-  '@readiness/opened_features',
-
-  // Weekly free-briefing allowance — per account, so switching accounts
-  // cannot smuggle extra briefings
-  '@readiness/free_briefing_last_used',
-
-  // Trend insight cache (30 min TTL) — narrates the previous user's week
-  '@readiness/trend_v1',
-  '@readiness/phase_baseline_v1',
-  '@readiness/coach_memory_v1',
-  '@readiness/coach_free_remaining_v1',
-
-  // Back-from-illness episodes and the "feeling unwell?" snooze
-  '@readiness/illness_episodes_v1',
-  '@readiness/illness_nudge_dismissed',
-
-  // What the 3-day forecast predicted, for a future accuracy record
-  '@readiness/forecast_log_v1',
-
-  // Water units and daily target (the Health permission flag is per device)
-  '@readiness/water_unit',
-  '@readiness/water_target_l',
-
-  // What the user said about unusual readings
-  '@readiness/reading_check_v1',
-];
-
-/**
- * Keys suffixed with a date, so they need a prefix sweep rather than an exact
- * match. The briefing cache and its feedback both hold personal health detail:
- * the cached briefing quotes the user's HRV, sleep and heart rate directly.
- */
-const USER_SCOPED_PREFIXES = [
-  '@readiness/manual_hrv_',
-  '@readiness/daily_briefing_v1_',
-  '@readiness/briefing_feedback_v1_',
-  // Weekly AI report (per ISO week) quotes averages, best/worst days and the
-  // narrative; the pattern cache feeds the next user's briefing, coach and
-  // forecast; the per-component AI insight quotes HRV/RHR directly.
-  '@readiness/weekly_report_v1_',
-  '@readiness/patterns_v1_',
-  '@readiness/ai_v1_',
-];
+// Re-export so existing importers (the guard test) keep working. New code
+// should import the keys directly from './storageKeys'.
+export { DATA_OWNER_KEY, USER_SCOPED_KEYS, USER_SCOPED_PREFIXES };
 
 async function clearUserScopedData(): Promise<void> {
   const all     = await AsyncStorage.getAllKeys();
   const dynamic = all.filter(k => USER_SCOPED_PREFIXES.some(p => k.startsWith(p)));
   await AsyncStorage.multiRemove([...USER_SCOPED_KEYS, ...dynamic]);
+  // SecureStore is a separate store from AsyncStorage, so the Strava tokens
+  // must be cleared explicitly here too.
+  await clearStravaTokens().catch(() => {});
   // The coach session is a module-level singleton, not storage, and the
   // Coach tab reads it first, so it has to be dropped here too.
   clearCoachSession();
@@ -165,4 +55,14 @@ export async function syncDataOwner(userId: string | null): Promise<boolean> {
 
   await AsyncStorage.setItem(DATA_OWNER_KEY, userId);
   return !isFirstRun;
+}
+
+/**
+ * Clear every piece of device-local personal data and forget the owner, for
+ * an explicit sign-out. Unlike syncDataOwner (which only wipes on the next
+ * account switch), this leaves the phone empty the moment the user signs out.
+ */
+export async function wipeUserData(): Promise<void> {
+  await clearUserScopedData();
+  await AsyncStorage.removeItem(DATA_OWNER_KEY).catch(() => {});
 }
