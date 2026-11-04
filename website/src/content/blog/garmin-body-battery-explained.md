@@ -105,6 +105,8 @@ Because the components are scored separately, a low morning can be traced to rec
 
 On iPhone, Garmin data can reach the app through Apple Health; [getting Garmin HRV into Apple Health](https://thereadiness.app/blog/garmin-hrv-apple-health/) explains that route and its HRV gap.
 
+Readiness Coach can also connect to your Garmin account and read overnight HRV, resting heart rate, sleep and stress directly, keeping Garmin's RMSSD separate from Apple Health's SDNN rather than averaging the two.
+
 None of this makes Body Battery wrong, and you do not have to choose. Body Battery tells you how the day is going. A score with published weights tells you which part of this morning moved. If you want to try the second next to the first, [Readiness Coach is on the App Store](https://apps.apple.com/app/id6760478506). It is a general wellness app, not a medical device, and it does not diagnose anything.
 
 ## Quick answers
