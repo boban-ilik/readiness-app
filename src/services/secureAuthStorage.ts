@@ -15,8 +15,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CHUNK_SIZE = 1800; // chars — under the 2048-byte cap, with margin
 
-const countKey = (key: string): string => `${key}::__count`;
-const chunkKey = (key: string, i: number): string => `${key}::${i}`;
+// SecureStore accepts only letters, digits, ".", "-" and "_" in a key, so
+// the chunk and count keys are derived with "." (a key with "::" throws on
+// device and never fails in Jest, which is how build 81 shipped with it).
+const countKey = (key: string): string => `${key}.count`;
+const chunkKey = (key: string, i: number): string => `${key}.${i}`;
 
 async function getItem(key: string): Promise<string | null> {
   // Small values are stored whole under the bare key.

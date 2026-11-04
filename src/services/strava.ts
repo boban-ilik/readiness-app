@@ -128,10 +128,20 @@ async function stravaTokenViaEdgeFunction(
 
 /** The OAuth state of the attempt in progress; user-scoped like the tokens. */
 export const STRAVA_OAUTH_STATE_KEY = '@readiness/strava_oauth_state';
-const KEY_ACCESS_TOKEN  = '@readiness/strava_access_token';
-const KEY_REFRESH_TOKEN = '@readiness/strava_refresh_token';
-const KEY_EXPIRES_AT    = '@readiness/strava_expires_at';
-const KEY_ATHLETE_NAME  = '@readiness/strava_athlete_name';
+// Keychain keys. SecureStore accepts only letters, digits, ".", "-" and "_",
+// so these cannot reuse the "@readiness/..." AsyncStorage names (a key with
+// "@" or "/" throws on device). The AsyncStorage names up to 1.2.1 are kept
+// as LEGACY_* so an existing connection is moved over once.
+const KEY_ACCESS_TOKEN  = 'readiness.strava.access_token';
+const KEY_REFRESH_TOKEN = 'readiness.strava.refresh_token';
+const KEY_EXPIRES_AT    = 'readiness.strava.expires_at';
+const KEY_ATHLETE_NAME  = 'readiness.strava.athlete_name';
+const LEGACY_KEYS = {
+  accessToken:  '@readiness/strava_access_token',
+  refreshToken: '@readiness/strava_refresh_token',
+  expiresAt:    '@readiness/strava_expires_at',
+  athleteName:  '@readiness/strava_athlete_name',
+} as const;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -286,6 +296,29 @@ export async function clearStravaTokens(): Promise<void> {
   ]);
 }
 
+/**
+ * One-time move of a connection saved by 1.2.1 or earlier, which kept the
+ * tokens in AsyncStorage. Returns the token when one was moved, else null.
+ * The plaintext copy is deleted only after the Keychain write succeeded.
+ */
+async function migrateLegacyToken(): Promise<StravaToken | null> {
+  const [accessToken, refreshToken, expiresAt, athleteName] = await Promise.all([
+    AsyncStorage.getItem(LEGACY_KEYS.accessToken).catch(() => null),
+    AsyncStorage.getItem(LEGACY_KEYS.refreshToken).catch(() => null),
+    AsyncStorage.getItem(LEGACY_KEYS.expiresAt).catch(() => null),
+    AsyncStorage.getItem(LEGACY_KEYS.athleteName).catch(() => null),
+  ]);
+  if (!accessToken || !refreshToken) return null;
+  const token: StravaToken = { accessToken, refreshToken, expiresAt: Number(expiresAt) || 0, athleteName: athleteName ?? '' };
+  try {
+    await persistToken(token);
+    await AsyncStorage.multiRemove(Object.values(LEGACY_KEYS));
+  } catch (err) {
+    console.warn('[Strava] token migration to the Keychain failed, keeping the old copy:', err);
+  }
+  return token;
+}
+
 export async function getStravaToken(): Promise<StravaToken | null> {
   const [accessToken, refreshToken, expiresAt, athleteName] = await Promise.all([
     SecureStore.getItemAsync(KEY_ACCESS_TOKEN).catch(() => null),
@@ -294,7 +327,7 @@ export async function getStravaToken(): Promise<StravaToken | null> {
     SecureStore.getItemAsync(KEY_ATHLETE_NAME).catch(() => null),
   ]);
 
-  if (!accessToken || !refreshToken) return null;
+  if (!accessToken || !refreshToken) return migrateLegacyToken();
 
   return {
     accessToken,

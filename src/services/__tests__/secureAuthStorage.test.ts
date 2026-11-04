@@ -30,7 +30,7 @@ describe('secureAuthStorage (chunked Keychain adapter)', () => {
   it('stores a small value whole under the bare key', async () => {
     await secureAuthStorage.setItem('k', 'small');
     expect(store.has('k')).toBe(true);
-    expect(store.has('k::__count')).toBe(false);
+    expect(store.has('k.count')).toBe(false);
     expect(await secureAuthStorage.getItem('k')).toBe('small');
   });
 
@@ -45,8 +45,8 @@ describe('secureAuthStorage (chunked Keychain adapter)', () => {
     await secureAuthStorage.setItem('k', 'x'.repeat(5000));
     await secureAuthStorage.setItem('k', 'small');
     expect(await secureAuthStorage.getItem('k')).toBe('small');
-    expect(store.has('k::__count')).toBe(false);
-    expect(store.has('k::0')).toBe(false);
+    expect(store.has('k.count')).toBe(false);
+    expect(store.has('k.0')).toBe(false);
   });
 
   it('removeItem clears both direct and chunked values', async () => {
@@ -68,7 +68,7 @@ describe('secureAuthStorage (chunked Keychain adapter)', () => {
       mockLegacy.set(KEY, session);
       expect(await secureAuthStorage.getItem(KEY)).toBe(session);
       expect(mockLegacy.has(KEY)).toBe(false);
-      expect(store.has(KEY + '::__count')).toBe(true);
+      expect(store.has(KEY + '.count')).toBe(true);
       expect(await secureAuthStorage.getItem(KEY)).toBe(session); // now served from the Keychain
     });
 
@@ -82,5 +82,11 @@ describe('secureAuthStorage (chunked Keychain adapter)', () => {
       expect(await secureAuthStorage.getItem(KEY)).toBe('session');
       expect(mockLegacy.has(KEY)).toBe(true);
     });
+  });
+
+  it('only ever uses keys SecureStore accepts (letters, digits, ".", "-", "_")', async () => {
+    await secureAuthStorage.setItem('sb-vgvrmhqkcqdimgwzbbhc-auth-token', 'x'.repeat(5000));
+    for (const k of store.keys()) expect(k).toMatch(/^[A-Za-z0-9._-]+$/);
+    expect(store.size).toBeGreaterThan(1);
   });
 });
