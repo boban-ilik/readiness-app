@@ -932,6 +932,7 @@ export default function HomeScreen() {
                     forecast={illness.capTraining && illness.status
                       ? applyIllnessRecovery(forecast, illness.status.backStreak)
                       : forecast}
+                    todayScore={score}
                     illnessCap={illness.capTraining}
                   />
                 )}
