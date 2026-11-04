@@ -109,3 +109,11 @@ Also: rebuilt on a newer foundation for current iOS, and today's activity update
 - claude/garmin has moved past the submitted code: the forecast Rising/Steady fix (4425d52, first task done by the DeepSeek Harness worker and reviewed here) and the hardening PR #7 (6504018). Tag v1.2.1-build80 marks what Apple is reviewing; on approval, main moves to that tag, not to the branch tip.
 - Production database: hrv_source column added to readiness_scores (migration 20261103000000). Builds from the branch tip write it; build 80 does not read or write it.
 - Next build from the tip is 1.2.2 material. Device checks owed before it ships: sign-out wipe, widget clear on sign-out, Keychain session surviving an app kill, Dynamic Type on Today and the paywall, VoiceOver on the paywall close and coach chat.
+
+## Approved (4 November 2026)
+
+- 1.2.1 build 80 approved by App Review on 4 November 2026; Ready for Sale with automatic release. Fourth submission, after 5.6.3 (rating prompt), 2.3.10 (drawn status bar in screenshots) and 1.4.1 (Garmin read as medical hardware) rejections.
+- Step 12 done: tag v1.2.1 at b29ff81 (the exact approved code); main merged to it as 09aa86b (main also carries the CI workflow commit pushed on 3 November; app code equals the tag).
+- Step 13 owed on 5 November: scores save for real users, Garmin data arrives overnight for the connected account, morning notification fires.
+- Next release from the claude/garmin tip is 1.2.2: bump app.json before the next build, create the 1.2.2 version in App Store Connect, and attach a build with that version string. Build 82 (1.2.1) stays a TestFlight-only build.
+- Website: the Body Battery post's direct-Garmin paragraph restored (2bc2716); the garmin-hrv-apple-health post still describes the pre-1.2 situation and needs an update.
