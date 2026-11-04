@@ -445,9 +445,7 @@ export function StravaTrainingLoadSection({ isConnected, activities, isLoading, 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  section: {
-    marginBottom: spacing[5],
-  },
+  section: {},
 
   card: {
     backgroundColor: colors.bg.elevated,

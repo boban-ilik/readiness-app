@@ -730,7 +730,7 @@ export default function HomeScreen() {
             })}
           >
             {isPro && (
-              <View style={styles.trainingSection}>
+              <View style={styles.weekGroup}>
                 <Text style={styles.sectionTitle} accessibilityRole="header">TREND AND FORECAST</Text>
                 <TrendInsightCard forecast={forecast} />
                 {forecast && (
@@ -747,7 +747,7 @@ export default function HomeScreen() {
 
             {/* Only when at least one load block has something to show. */}
             {((!workoutsLoading && workoutLoad.loadTier !== 'none') || (stravaConnected && !stravaLoading && stravaActivities.length > 0)) && (
-            <View style={styles.trainingSection}>
+            <View style={styles.weekGroup}>
               <Text style={styles.sectionTitle} accessibilityRole="header">TRAINING LOAD</Text>
               <WorkoutContextBanner loadSummary={workoutLoad} isLoading={workoutsLoading} />
               <StravaLastWorkoutSection
@@ -774,7 +774,7 @@ export default function HomeScreen() {
               onLogToday={cycle.logToday}
             />
 
-            <View style={styles.trainingSection}>
+            <View style={styles.weekGroup}>
               <Text style={styles.sectionTitle} accessibilityRole="header">WHAT'S AFFECTING YOU</Text>
               <LifeEventTagger
                 events={lifeEvents}
@@ -1097,6 +1097,10 @@ const styles = StyleSheet.create({
   trainingSection: {
     gap: spacing[2],
     marginBottom: spacing[5],
+  },
+  // Groups inside This week: the section body spaces them, so no margin of their own.
+  weekGroup: {
+    gap: spacing[2],
   },
   sectionTitle: {
     color: colors.text.tertiary,
