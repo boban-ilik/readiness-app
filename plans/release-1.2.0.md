@@ -117,3 +117,8 @@ Also: rebuilt on a newer foundation for current iOS, and today's activity update
 - Step 13 owed on 5 November: scores save for real users, Garmin data arrives overnight for the connected account, morning notification fires.
 - Next release from the claude/garmin tip is 1.2.2: bump app.json before the next build, create the 1.2.2 version in App Store Connect, and attach a build with that version string. Build 82 (1.2.1) stays a TestFlight-only build.
 - Website: the Body Battery post's direct-Garmin paragraph restored (2bc2716); the garmin-hrv-apple-health post still describes the pre-1.2 situation and needs an update.
+
+## 1.2.2 staged (4 November 2026)
+
+- App Store version 1.2.2 created (ec81aef5-94ca-459d-b3c0-17fe55b72f93), automatic release, inherited description, keywords, screenshots and review notes from 1.2.1; What's New written. Build 83 (commit 7d4b089) attached. Not submitted: Boban chose to submit on 5 November after the morning check of 1.2.1.
+- 5 November plan: morning check (scores saved overnight, Garmin data for the connected account, morning notification), then "submit" creates the 1.2.2 review submission.
