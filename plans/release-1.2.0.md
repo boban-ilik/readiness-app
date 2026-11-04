@@ -103,3 +103,9 @@ Also: rebuilt on a newer foundation for current iOS, and today's activity update
 - Reply sent 12:52 local (message 7). Resubmitted via Update Review then Resubmit to App Review.
 - Recommended in parallel: an App Review appointment (Tuesdays and Thursdays, "Meet with Apple" link in the rejection) or an App Review Board appeal; and, if build 80 bounces, shipping 1.2.1 with the Garmin link behind a flag and fighting the classification separately.
 - Incident: while updating the notes by script, the API echo matched "detail" and printed the full notes, demo password included, into the session transcript once. Changing the demo password is Boban's call.
+
+## After build 80 (4 November 2026)
+
+- claude/garmin has moved past the submitted code: the forecast Rising/Steady fix (4425d52, first task done by the DeepSeek Harness worker and reviewed here) and the hardening PR #7 (6504018). Tag v1.2.1-build80 marks what Apple is reviewing; on approval, main moves to that tag, not to the branch tip.
+- Production database: hrv_source column added to readiness_scores (migration 20261103000000). Builds from the branch tip write it; build 80 does not read or write it.
+- Next build from the tip is 1.2.2 material. Device checks owed before it ships: sign-out wipe, widget clear on sign-out, Keychain session surviving an app kill, Dynamic Type on Today and the paywall, VoiceOver on the paywall close and coach chat.
