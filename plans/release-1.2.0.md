@@ -122,3 +122,9 @@ Also: rebuilt on a newer foundation for current iOS, and today's activity update
 
 - App Store version 1.2.2 created (ec81aef5-94ca-459d-b3c0-17fe55b72f93), automatic release, inherited description, keywords, screenshots and review notes from 1.2.1; What's New written. Build 83 (commit 7d4b089) attached. Not submitted: Boban chose to submit on 5 November after the morning check of 1.2.1.
 - 5 November plan: morning check (scores saved overnight, Garmin data for the connected account, morning notification), then "submit" creates the 1.2.2 review submission.
+
+## 1.2.2 submitted (9 November 2026)
+
+- Review submission 73a0ca1a-5ff4-430a-a209-492b659b278e created through the API (fresh version, so no Update Review step was needed), version 1.2.2 build 83, Waiting for Review at 15:39 UTC. Automatic release on approval.
+- Health check the same day: 1.2.1 live, scores saving daily, Garmin HRV arriving, no edge function errors in 48 hours. Sales 1 to 7 November: 1 unit, no proceeds.
+- On approval: tag v1.2.2 at 7d4b089 (the build 83 commit), merge into main.
