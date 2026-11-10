@@ -1,129 +1,108 @@
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
-import { useEffect, useRef } from 'react';
+/**
+ * ScoreBreakdownCard
+ *
+ * One component of the score as a flat row: a thin arc for the value, the
+ * name with a one-line detail, and the number on the right. Rows sit on the
+ * screen background separated by a hairline (the 1.3 design). Free users see
+ * the number and a teaser of the detail; their tap opens the paywall.
+ */
+
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import { useSubscription } from '@contexts/SubscriptionContext';
-import { colors, fontSize, fontWeight, spacing, radius, shadow } from '@constants/theme';
+import { colors, spacing, typography } from '@constants/theme';
 
 interface ScoreBreakdownCardProps {
   label: string;
-  score: number;        // 0–100
-  weight: string;       // e.g. "45%"
+  score: number;        // 0 to 100
   detail?: string;      // e.g. "HRV 58ms · RHR 52bpm"
-  icon: string;         // emoji for now, swap for icons later
-  isLocked?: boolean;   // free tier — blur and show lock
-  onPress?: () => void; // Pro only — opens breakdown modal
+  isLocked?: boolean;   // free tier: teaser detail, tap goes to the paywall
+  onPress?: () => void; // Pro: opens the breakdown modal
+  /** Hairline under the row; off for the last row of the list. */
+  divider?: boolean;
+}
+
+const ARC_SIZE   = 36;
+const ARC_STROKE = 4;
+
+function Arc({ score, color }: { score: number; color: string }) {
+  const r      = (ARC_SIZE - ARC_STROKE) / 2;
+  const c      = 2 * Math.PI * r;
+  const center = ARC_SIZE / 2;
+  const filled = c * Math.min(Math.max(score, 0), 100) / 100;
+  return (
+    <Svg width={ARC_SIZE} height={ARC_SIZE}>
+      <Circle cx={center} cy={center} r={r} stroke={colors.bg.secondary} strokeWidth={ARC_STROKE} fill="none" />
+      {/* A round cap would draw a dot for a zero score; leave the track empty instead. */}
+      {filled > 0 && (
+        <Circle
+          cx={center} cy={center} r={r}
+          stroke={color} strokeWidth={ARC_STROKE} fill="none"
+          strokeLinecap="round"
+          strokeDasharray={[filled, c]}
+          transform={`rotate(-90 ${center} ${center})`}
+        />
+      )}
+    </Svg>
+  );
 }
 
 export default function ScoreBreakdownCard({
   label,
   score,
-  weight,
   detail,
-  icon,
   isLocked = false,
   onPress,
+  divider = true,
 }: ScoreBreakdownCardProps) {
   const { presentPaywall } = useSubscription();
-  const barColor = getBarColor(score);
-  const tappable = !!onPress;  // always tappable — locked cards go to paywall
+  const color       = getArcColor(score);
+  const handlePress = onPress ?? (isLocked ? presentPaywall : undefined);
+  const teaser      = detail && isLocked ? lockedTeaser(detail) : detail;
 
-  // ── Animated progress bar ──────────────────────────────────────────────────
-  // RN's Animated.Value supports string interpolation (for '%') and doesn't
-  // require the native driver — perfect for layout-driven width animations.
-  const barAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(barAnim, {
-      toValue:         score,   // always animate — free users see their real score
-      duration:        700,
-      useNativeDriver: false,
-      delay:           120,
-    }).start();
-  }, [score]);
-
-  const animatedBarWidth = barAnim.interpolate({
-    inputRange:  [0, 100],
-    outputRange: ['0%', '100%'],
-    extrapolate: 'clamp',
-  });
-
-  // ── Card shadow (iOS only — Android elevation already handled by bg) ────────
-  const cardShadow = Platform.OS === 'ios' ? shadow.sm : {};
-
-  const cardContent = (
-    <>
-      {/* Score-coloured left accent strip */}
-      <View style={[styles.accentBar, { backgroundColor: barColor }]} />
-
-      <View style={styles.inner}>
-        <View style={styles.header}>
-          <View style={styles.labelRow}>
-            <Text style={styles.icon}>{icon}</Text>
-            <Text style={styles.label}>{label}</Text>
-            <Text style={styles.weight}>{weight}</Text>
-          </View>
-          <View style={styles.scoreRow}>
-            <Text style={styles.score}>{Math.round(score)}</Text>
-            {tappable && <Text style={styles.chevron}>›</Text>}
-          </View>
-        </View>
-
-        {/* Animated progress bar — always shows real score */}
-        <View style={styles.barTrack}>
-          <Animated.View
-            style={[
-              styles.barFill,
-              { width: animatedBarWidth, backgroundColor: barColor },
-            ]}
-          />
-        </View>
-
-        {/* Detail line — free users see a teaser; Pro see the full line */}
-        {detail && !isLocked && (
-          <Text style={styles.detail}>{detail}</Text>
-        )}
-        {detail && isLocked && (
-          <Text style={styles.detail} numberOfLines={1}>
-            {detail.split('·')[0].trim()}
-            <Text style={styles.upgradeHint}> · Tap for full analysis →</Text>
-          </Text>
-        )}
-        {!detail && isLocked && (
-          <Text style={styles.upgradeHint}>Tap to see what's driving this →</Text>
-        )}
+  const content = (
+    <View style={[styles.row, divider && styles.divider]}>
+      <Arc score={score} color={color} />
+      <View style={styles.text}>
+        <Text style={styles.label}>{label}</Text>
+        {!!teaser && <Text style={styles.detail} numberOfLines={2}>{teaser}</Text>}
       </View>
-    </>
+      <View style={styles.right}>
+        <Text style={styles.score}>{Math.round(score)}</Text>
+        {isLocked
+          ? <Ionicons name="lock-closed-outline" size={14} color={colors.text.tertiary} />
+          : handlePress && <Ionicons name="chevron-forward" size={14} color={colors.text.tertiary} />}
+      </View>
+    </View>
   );
 
-  // Pro users — tappable breakdown card
-  if (tappable) {
-    return (
-      <TouchableOpacity
-        style={[styles.card, cardShadow]}
-        onPress={onPress}
-        activeOpacity={0.75}
-      >
-        {cardContent}
-      </TouchableOpacity>
-    );
-  }
-
-  // Locked (free) users — tapping goes to paywall
-  if (isLocked) {
-    return (
-      <TouchableOpacity
-        style={[styles.card, cardShadow]}
-        onPress={presentPaywall}
-        activeOpacity={0.75}
-      >
-        {cardContent}
-      </TouchableOpacity>
-    );
-  }
-
-  return <View style={[styles.card, cardShadow]}>{cardContent}</View>;
+  if (!handlePress) return content;
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`${label} ${Math.round(score)}${isLocked ? ', detail is Pro' : ''}`}
+    >
+      {content}
+    </TouchableOpacity>
+  );
 }
 
-function getBarColor(score: number): string {
+/**
+ * The one segment of the detail a free user sees: the first measurement
+ * ("HRV 47ms (Garmin)", "6h 31m", "Stress index 41/100"), so the teaser says
+ * something. The details start with "Last night" and a date, which are not
+ * worth the row.
+ */
+const MEASUREMENT = /\d\s*(ms|bpm|h\b|m\b|min|%|steps|\/)/;
+function lockedTeaser(detail: string): string {
+  const parts = detail.split('·').map(p => p.trim()).filter(Boolean);
+  return parts.find(p => MEASUREMENT.test(p)) ?? parts[0] ?? '';
+}
+
+function getArcColor(score: number): string {
   if (score <= 40) return colors.score.poor;
   if (score <= 60) return colors.score.fair;
   if (score <= 80) return colors.score.good;
@@ -131,82 +110,36 @@ function getBarColor(score: number): string {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.bg.tertiary,
-    borderRadius:    radius.lg,
-    borderWidth:     1,
-    borderColor:     colors.border.subtle,
-    overflow:        'hidden',  // clips the accent bar to the card's border radius
+  row: {
     flexDirection:   'row',
+    alignItems:      'center',
+    gap:             spacing[3.5],
+    paddingVertical: spacing[3.5],
   },
-  // Coloured 3px strip pinned to the left edge
-  accentBar: {
-    width:        3,
-    alignSelf:    'stretch',
+  divider: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.subtle,
   },
-  // Inner content takes remaining space
-  inner: {
-    flex:    1,
-    padding: spacing[4],
-    gap:     spacing[2.5],
-  },
-  header: {
-    flexDirection:  'row',
-    alignItems:     'center',
-    justifyContent: 'space-between',
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems:    'center',
-    gap:           spacing[2],
-  },
-  icon: {
-    fontSize: fontSize.base,
+  text: {
+    flex: 1,
+    gap:  2,
   },
   label: {
-    color:      colors.text.primary,
-    fontSize:   fontSize.sm,
-    fontWeight: fontWeight.semiBold,
-  },
-  weight: {
-    color:    colors.text.tertiary,
-    fontSize: fontSize.xs,
-  },
-  scoreRow: {
-    flexDirection: 'row',
-    alignItems:    'center',
-    gap:           spacing[1],
-  },
-  score: {
-    color:      colors.text.primary,
-    fontSize:   fontSize.lg,
-    fontWeight: fontWeight.bold,
-  },
-  chevron: {
-    color:      colors.text.tertiary,
-    fontSize:   fontSize.lg,
-    fontWeight: fontWeight.regular,
-    marginTop:  1,
-  },
-  locked: {
-    color: colors.text.tertiary,
-  },
-  barTrack: {
-    height:          4,
-    backgroundColor: colors.bg.elevated,
-    borderRadius:    radius.full,
-    overflow:        'hidden',
-  },
-  barFill: {
-    height:       '100%',
-    borderRadius: radius.full,
+    ...typography.title,
   },
   detail: {
-    color:    colors.text.secondary,
-    fontSize: fontSize.xs,
+    fontSize:   13,
+    lineHeight: 17,
+    color:      colors.text.secondary,
   },
-  upgradeHint: {
-    color:    colors.amber[600],
-    fontSize: fontSize.xs,
+  right: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    justifyContent: 'flex-end',
+    gap:            spacing[1],
+    minWidth:       44,
+  },
+  score: {
+    ...typography.rowNumeral,
   },
 });

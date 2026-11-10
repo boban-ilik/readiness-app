@@ -17,6 +17,7 @@ interface ScoreRingProps {
   size?: number;        // diameter in px
   strokeWidth?: number;
   color: string;        // ring colour from getScoreColor()
+  trackColor?: string;  // the unfilled part of the ring
 }
 
 export default function ScoreRing({
@@ -24,6 +25,7 @@ export default function ScoreRing({
   size = 240,
   strokeWidth = 14,
   color,
+  trackColor = colors.bg.elevated,
 }: ScoreRingProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -64,7 +66,7 @@ export default function ScoreRing({
           cx={center}
           cy={center}
           r={radius}
-          stroke={colors.bg.elevated}
+          stroke={trackColor}
           strokeWidth={strokeWidth}
           fill="none"
         />

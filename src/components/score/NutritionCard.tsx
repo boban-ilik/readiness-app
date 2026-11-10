@@ -15,6 +15,7 @@
 
 import { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getNutritionRecommendation } from '@utils/nutrition';
@@ -23,13 +24,7 @@ import { formatWater } from '@utils/water';
 import { PROFILE_WEIGHT_KEY } from '@services/storageKeys';
 import type { ReadinessResult } from '@utils/readiness';
 import type { HealthData }      from '@/types/index';
-import {
-  colors,
-  fontSize,
-  fontWeight,
-  spacing,
-  radius,
-} from '@constants/theme';
+import { colors, fontSize, fontWeight, spacing, radius, typography } from '@constants/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -92,8 +87,65 @@ export default function NutritionCard({
 
   const rec = getNutritionRecommendation(score, components, healthData, hrvBaseline, weightKg, waterTarget);
 
+  // Inside Today's plan: one row, the detail behind the tap.
+  if (flat) {
+    const subtitle = rec.actions.join('. ');
+    const weightText = weightKg
+      ? (waterTarget ? `Protein scaled to ${weightKg} kg, water from your Hydration target` : `Water and protein scaled to ${weightKg} kg`)
+      : 'Add your weight for a protein target';
+    return (
+      <View style={styles.flat}>
+        <TouchableOpacity
+          style={styles.flatRow}
+          onPress={() => setShowWhy(v => !v)}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: showWhy }}
+          accessibilityLabel={`${rec.headline}. ${subtitle}`}
+          accessibilityHint={showWhy ? 'Hides the detail' : 'Shows the detail'}
+        >
+          <Ionicons name="restaurant-outline" size={22} color={colors.amber[400]} style={styles.flatIcon} />
+          <View style={styles.flatText}>
+            <Text style={styles.flatTitle}>{rec.headline}</Text>
+            <Text style={styles.flatSub} numberOfLines={showWhy ? undefined : 2}>{subtitle}</Text>
+          </View>
+          <Ionicons name={showWhy ? 'chevron-up' : 'chevron-forward'} size={16} color={colors.text.tertiary} />
+        </TouchableOpacity>
+        {showWhy && (
+          <View style={styles.flatDetail}>
+            <Text style={styles.timingText}>{rec.context}</Text>
+            <View style={styles.section}>
+              <SectionLabel text="FAVOUR" />
+              {rec.prioritise.map((item, i) => <BulletRow key={i} text={item} />)}
+            </View>
+            <View style={styles.section}>
+              <SectionLabel text="GO EASY ON" />
+              {rec.moderate.map((item, i) => <BulletRow key={i} text={item} />)}
+            </View>
+            <View style={styles.section}>
+              <SectionLabel text="TIMING" />
+              <Text style={styles.timingText}>{rec.timing}</Text>
+            </View>
+            <View style={[styles.rationaleBox, { borderLeftColor: rec.color }]}>
+              <Text style={styles.rationaleText}>{rec.rationale}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.weightRow}
+              onPress={() => router.push('/(tabs)/profile')}
+              accessibilityRole="button"
+              accessibilityLabel={weightKg ? `Bodyweight ${weightKg} kilograms. Update in profile.` : 'Add your bodyweight in profile'}
+            >
+              <Text style={styles.weightText}>{weightText}</Text>
+              <Text style={styles.weightChevron}>{weightKg ? 'Update ›' : 'Add ›'}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  }
+
   return (
-    <View style={flat ? styles.flat : styles.card}>
+    <View style={styles.card}>
 
       {/* ── Header row ── */}
       <View style={styles.headerRow}>
@@ -227,6 +279,31 @@ const styles = StyleSheet.create({
   },
   flat: {
     gap: spacing[3],
+  },
+  flatRow: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           spacing[3.5],
+  },
+  flatIcon: {
+    width:     28,
+    textAlign: 'center',
+  },
+  flatText: {
+    flex: 1,
+    gap:  2,
+  },
+  flatTitle: {
+    ...typography.title,
+  },
+  flatSub: {
+    fontSize:   13,
+    lineHeight: 17,
+    color:      colors.text.secondary,
+  },
+  flatDetail: {
+    gap:         spacing[3],
+    paddingLeft: 28 + spacing[3.5],
   },
 
   // Header

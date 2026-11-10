@@ -11,7 +11,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
+import { colors, spacing, typography } from '@constants/theme';
 import { track } from '@services/analytics';
 
 interface Props {
@@ -48,7 +48,7 @@ export default function CollapsibleSection({ storageKey, name, title, summary, d
   return (
     <View style={styles.section}>
       <TouchableOpacity
-        style={[styles.header, !isOpen && styles.headerFolded]}
+        style={styles.header}
         onPress={toggle}
         activeOpacity={0.7}
         accessibilityRole="button"
@@ -59,7 +59,7 @@ export default function CollapsibleSection({ storageKey, name, title, summary, d
           <Text style={styles.title}>{title}</Text>
           {!isOpen && !!summary && <Text style={styles.summary}>{summary}</Text>}
         </View>
-        <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={18} color={colors.text.secondary} />
+        <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={18} color={colors.text.tertiary} />
       </TouchableOpacity>
       {isOpen && <View style={styles.body}>{children}</View>}
     </View>
@@ -68,36 +68,28 @@ export default function CollapsibleSection({ storageKey, name, title, summary, d
 
 const styles = StyleSheet.create({
   section: {
-    marginBottom: spacing[5],
+    marginBottom: spacing[7],
     gap:          spacing[3],
   },
+  // Flat, like the other section labels: the chevron and the summary line
+  // are what say it opens.
   header: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    gap:               spacing[3],
-    paddingHorizontal: spacing[4],
-    paddingVertical:   spacing[2],
-  },
-  headerFolded: {
-    backgroundColor: colors.bg.secondary,
-    borderRadius:    radius.xl,
-    borderWidth:     1,
-    borderColor:     colors.border.subtle,
-    paddingVertical: spacing[4],
+    flexDirection:   'row',
+    alignItems:      'center',
+    gap:             spacing[3.5],
+    paddingVertical: spacing[1],
+    minHeight:       44,
   },
   headerText: {
     flex: 1,
     gap:  spacing[1],
   },
   title: {
-    color:         colors.text.secondary,
-    fontSize:      fontSize.xs,
-    fontWeight:    fontWeight.semiBold,
-    letterSpacing: 2,
+    ...typography.label,
   },
   summary: {
     color:      colors.text.secondary,
-    fontSize:   fontSize.sm,
+    fontSize:   14,
     lineHeight: 20,
   },
   body: {

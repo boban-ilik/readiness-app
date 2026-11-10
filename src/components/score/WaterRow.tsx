@@ -9,7 +9,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, AppState, Alert } from 'react-native';
-import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, fontFamily, fontSize, fontWeight, spacing, radius, typography } from '@constants/theme';
 import {
   fetchTodayWaterLitres, saveWaterLitres, loadWaterPrefs, requestWaterPermission, hasAskedWaterPermission,
 } from '@services/water';
@@ -98,8 +99,42 @@ export default function WaterRow({ reloadKey, flat = false }: { reloadKey: unkno
   const progress = waterProgress(total, target);
   const lastPending = pending[pending.length - 1];
 
+  if (flat) {
+    return (
+      <View style={styles.flatRow}>
+        <Ionicons name="water-outline" size={22} color={colors.info} style={styles.flatIcon} />
+        <View style={styles.flatText}>
+          <Text style={styles.flatTitle}>
+            Water <Text style={styles.flatAmount}>{formatWater(total, unit)}</Text>
+            <Text style={styles.flatTarget}>{` of ${formatWater(target, unit)}`}</Text>
+          </Text>
+          <View style={styles.flatTrack}>
+            <View style={[styles.flatFill, { width: `${Math.round(progress * 100)}%` }]} />
+          </View>
+          {lastPending && (
+            <View style={styles.undoRow}>
+              <Text style={styles.undoText}>Added {formatWater(lastPending.litres, unit)}</Text>
+              <TouchableOpacity onPress={undo} hitSlop={8} accessibilityRole="button">
+                <Text style={styles.undoBtn}>Undo</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+        <TouchableOpacity
+          style={styles.flatAdd}
+          onPress={add}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={`Add ${formatWater(TAP_LITRES[unit], unit)} of water`}
+        >
+          <Text style={styles.flatAddText}>+{formatWater(TAP_LITRES[unit], unit)}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
-    <View style={flat ? styles.flat : styles.card}>
+    <View style={styles.card}>
       <View style={styles.topRow}>
         <View style={styles.textBlock}>
           <Text style={styles.label}>💧 Water today</Text>
@@ -146,8 +181,54 @@ const styles = StyleSheet.create({
     borderWidth:     1,
     borderColor:     colors.border.subtle,
   },
-  flat: {
-    gap: spacing[3],
+  flatRow: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           spacing[3.5],
+  },
+  flatIcon: {
+    width:     28,
+    textAlign: 'center',
+  },
+  flatText: {
+    flex: 1,
+    gap:  spacing[1.5],
+  },
+  flatTitle: {
+    ...typography.title,
+  },
+  flatAmount: {
+    fontFamily: fontFamily.numeral,
+    fontSize:   fontSize.base,
+    fontWeight: fontWeight.regular,
+  },
+  flatTarget: {
+    fontWeight: fontWeight.regular,
+    color:      colors.text.secondary,
+  },
+  flatTrack: {
+    height:          4,
+    borderRadius:    2,
+    backgroundColor: colors.bg.tertiary,
+    overflow:        'hidden',
+  },
+  flatFill: {
+    height:          4,
+    borderRadius:    2,
+    backgroundColor: colors.info,
+  },
+  flatAdd: {
+    height:            40,
+    paddingHorizontal: spacing[4],
+    borderRadius:      20,
+    borderWidth:       1,
+    borderColor:       colors.info,
+    justifyContent:    'center',
+  },
+  flatAddText: {
+    fontSize:   14,
+    fontWeight: fontWeight.bold,
+    color:      colors.info,
   },
   topRow: {
     flexDirection:  'row',
