@@ -128,3 +128,9 @@ Also: rebuilt on a newer foundation for current iOS, and today's activity update
 - Review submission 73a0ca1a-5ff4-430a-a209-492b659b278e created through the API (fresh version, so no Update Review step was needed), version 1.2.2 build 83, Waiting for Review at 15:39 UTC. Automatic release on approval.
 - Health check the same day: 1.2.1 live, scores saving daily, Garmin HRV arriving, no edge function errors in 48 hours. Sales 1 to 7 November: 1 unit, no proceeds.
 - On approval: tag v1.2.2 at 7d4b089 (the build 83 commit), merge into main.
+
+## 1.2.2 approved (10 November 2026)
+
+- Approved on the first submission, Ready for Sale with automatic release. Tag v1.2.2 at 7d4b089 (build 83); main merged to it.
+- Live now: audit fixes 1 to 8, the Today redesign, the forecast fix, the hardening PR (CI gate, accessibility, Keychain session and Strava tokens with migrations, typed Supabase client, storage keys owner), the This week spacing fix.
+- Next: watch Day-7 retention and search traffic for the eight-week test; Garmin HRV and Apple Health blog post still to update; RevenueCat anonymous customers still open.
