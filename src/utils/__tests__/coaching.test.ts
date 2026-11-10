@@ -23,6 +23,14 @@ describe('baseline wording for the model', () => {
     expect(baselineNote('hrv', 55)).toMatch(/do not call it their baseline/);
     expect(baselineNote('rhr', 52)).toBe('personal baseline: 52 bpm');
   });
+
+  it('trusts the client personal flag over the stand-in value', () => {
+    // 60 bpm and 55 ms are the stand-in values, but a real baseline can land
+    // exactly on them — the client knows and the server must not guess.
+    expect(baselineNote('rhr', 60, true)).toBe('personal baseline: 60 bpm');
+    expect(baselineNote('rhr', 60, false)).toMatch(/stand-in/);
+    expect(baselineNote('hrv', 55, true)).toBe('personal baseline: 55 ms');
+  });
 });
 
 describe('water for the model', () => {

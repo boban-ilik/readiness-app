@@ -12,7 +12,7 @@
 
 import { View, Text, StyleSheet } from 'react-native';
 import { computeInsights, type Insight } from '@utils/correlations';
-import type { DayHistory } from '@hooks/useHistoryData';
+import type { DayHistory } from '@/types/index';
 import {
   colors,
   fontSize,

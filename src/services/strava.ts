@@ -26,6 +26,7 @@
 
 import { Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '@services/supabase';
 
 // ─── Configuration ────────────────────────────────────────────────────────────
@@ -127,10 +128,20 @@ async function stravaTokenViaEdgeFunction(
 
 /** The OAuth state of the attempt in progress; user-scoped like the tokens. */
 export const STRAVA_OAUTH_STATE_KEY = '@readiness/strava_oauth_state';
-const KEY_ACCESS_TOKEN  = '@readiness/strava_access_token';
-const KEY_REFRESH_TOKEN = '@readiness/strava_refresh_token';
-const KEY_EXPIRES_AT    = '@readiness/strava_expires_at';
-const KEY_ATHLETE_NAME  = '@readiness/strava_athlete_name';
+// Keychain keys. SecureStore accepts only letters, digits, ".", "-" and "_",
+// so these cannot reuse the "@readiness/..." AsyncStorage names (a key with
+// "@" or "/" throws on device). The AsyncStorage names up to 1.2.1 are kept
+// as LEGACY_* so an existing connection is moved over once.
+const KEY_ACCESS_TOKEN  = 'readiness.strava.access_token';
+const KEY_REFRESH_TOKEN = 'readiness.strava.refresh_token';
+const KEY_EXPIRES_AT    = 'readiness.strava.expires_at';
+const KEY_ATHLETE_NAME  = 'readiness.strava.athlete_name';
+const LEGACY_KEYS = {
+  accessToken:  '@readiness/strava_access_token',
+  refreshToken: '@readiness/strava_refresh_token',
+  expiresAt:    '@readiness/strava_expires_at',
+  athleteName:  '@readiness/strava_athlete_name',
+} as const;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -266,44 +277,78 @@ export async function exchangeStravaCode(code: string): Promise<StravaToken | nu
 // ─── Token management ─────────────────────────────────────────────────────────
 
 async function persistToken(token: StravaToken): Promise<void> {
-  await AsyncStorage.multiSet([
-    [KEY_ACCESS_TOKEN,  token.accessToken],
-    [KEY_REFRESH_TOKEN, token.refreshToken],
-    [KEY_EXPIRES_AT,    String(token.expiresAt)],
-    [KEY_ATHLETE_NAME,  token.athleteName],
+  // Tokens are credentials — keep them in the Keychain, not AsyncStorage.
+  await Promise.all([
+    SecureStore.setItemAsync(KEY_ACCESS_TOKEN,  token.accessToken),
+    SecureStore.setItemAsync(KEY_REFRESH_TOKEN, token.refreshToken),
+    SecureStore.setItemAsync(KEY_EXPIRES_AT,    String(token.expiresAt)),
+    SecureStore.setItemAsync(KEY_ATHLETE_NAME,  token.athleteName),
   ]);
 }
 
+/** Delete the persisted Strava tokens (used by disconnect and the sign-out wipe). */
+export async function clearStravaTokens(): Promise<void> {
+  await Promise.all([
+    SecureStore.deleteItemAsync(KEY_ACCESS_TOKEN).catch(() => {}),
+    SecureStore.deleteItemAsync(KEY_REFRESH_TOKEN).catch(() => {}),
+    SecureStore.deleteItemAsync(KEY_EXPIRES_AT).catch(() => {}),
+    SecureStore.deleteItemAsync(KEY_ATHLETE_NAME).catch(() => {}),
+  ]);
+}
+
+/**
+ * One-time move of a connection saved by 1.2.1 or earlier, which kept the
+ * tokens in AsyncStorage. Returns the token when one was moved, else null.
+ * The plaintext copy is deleted only after the Keychain write succeeded.
+ */
+async function migrateLegacyToken(): Promise<StravaToken | null> {
+  const [accessToken, refreshToken, expiresAt, athleteName] = await Promise.all([
+    AsyncStorage.getItem(LEGACY_KEYS.accessToken).catch(() => null),
+    AsyncStorage.getItem(LEGACY_KEYS.refreshToken).catch(() => null),
+    AsyncStorage.getItem(LEGACY_KEYS.expiresAt).catch(() => null),
+    AsyncStorage.getItem(LEGACY_KEYS.athleteName).catch(() => null),
+  ]);
+  if (!accessToken || !refreshToken) return null;
+  const token: StravaToken = { accessToken, refreshToken, expiresAt: Number(expiresAt) || 0, athleteName: athleteName ?? '' };
+  try {
+    await persistToken(token);
+    await AsyncStorage.multiRemove(Object.values(LEGACY_KEYS));
+  } catch (err) {
+    console.warn('[Strava] token migration to the Keychain failed, keeping the old copy:', err);
+  }
+  return token;
+}
+
 export async function getStravaToken(): Promise<StravaToken | null> {
-  const values = await AsyncStorage.multiGet([
-    KEY_ACCESS_TOKEN,
-    KEY_REFRESH_TOKEN,
-    KEY_EXPIRES_AT,
-    KEY_ATHLETE_NAME,
+  const [accessToken, refreshToken, expiresAt, athleteName] = await Promise.all([
+    SecureStore.getItemAsync(KEY_ACCESS_TOKEN).catch(() => null),
+    SecureStore.getItemAsync(KEY_REFRESH_TOKEN).catch(() => null),
+    SecureStore.getItemAsync(KEY_EXPIRES_AT).catch(() => null),
+    SecureStore.getItemAsync(KEY_ATHLETE_NAME).catch(() => null),
   ]);
 
-  const map = Object.fromEntries(values.map(([k, v]) => [k, v]));
-  const accessToken  = map[KEY_ACCESS_TOKEN];
-  const refreshToken = map[KEY_REFRESH_TOKEN];
-  const expiresAt    = map[KEY_EXPIRES_AT];
-
-  if (!accessToken || !refreshToken) return null;
+  if (!accessToken || !refreshToken) return migrateLegacyToken();
 
   return {
     accessToken,
     refreshToken,
     expiresAt:    Number(expiresAt ?? 0),
-    athleteName:  map[KEY_ATHLETE_NAME] ?? '',
+    athleteName:  athleteName ?? '',
   };
 }
 
 export async function disconnectStrava(): Promise<void> {
-  await AsyncStorage.multiRemove([
-    KEY_ACCESS_TOKEN,
-    KEY_REFRESH_TOKEN,
-    KEY_EXPIRES_AT,
-    KEY_ATHLETE_NAME,
-  ]);
+  // Best-effort: revoke the authorization on Strava's side first, then clear
+  // the local tokens either way. An expired token just makes the revoke a no-op.
+  await deauthorizeStrava().catch(() => {});
+  await clearStravaTokens();
+}
+
+/** Revoke the user's Strava authorization via the server-side proxy. */
+async function deauthorizeStrava(): Promise<void> {
+  const token = await getStravaToken();
+  if (!token?.accessToken) return;
+  await stravaTokenViaEdgeFunction({ grant_type: 'deauthorize', access_token: token.accessToken });
 }
 
 /** Returns a valid access token, refreshing if expired. */

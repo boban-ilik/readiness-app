@@ -83,7 +83,9 @@ export interface TrainingTrend {
   hasSufferScore: boolean;
 }
 
-// ─── Sport intensity multipliers (consistent with workoutLoad.ts) ─────────────
+// ─── Sport intensity multipliers ──────────────────────────────────────────────
+// Strava models load per sport; HealthKit's workoutLoad.ts uses broad categories
+// (strength/cardio/low) instead. They are deliberately separate scales.
 
 const SPORT_MULTIPLIER: Record<string, number> = {
   // High intensity

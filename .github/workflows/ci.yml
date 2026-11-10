@@ -2,12 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, claude/garmin]
   pull_request:
 
 jobs:
   app:
-    name: Type-check, lint, test
+    name: Type-check, lint, test (coverage)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,20 +26,21 @@ jobs:
       - name: Lint
         run: npx eslint . --ext .ts,.tsx
 
-      - name: Test
-        run: npx jest --ci
+      - name: Test (with coverage)
+        run: npx jest --ci --coverage
 
   edge-functions:
-    name: Deno check (advisory)
+    name: Deno test + check
     runs-on: ubuntu-latest
-    # First pass: surface type errors without blocking merge. Tighten once clean.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v1.x
+
+      - name: Deno test
+        run: deno task test
 
       - name: Deno check edge functions
         run: deno check supabase/functions/*/index.ts

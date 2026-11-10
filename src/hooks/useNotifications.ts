@@ -37,14 +37,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { localDateStr } from '@utils/index';
+import { JOINED_AT_KEY } from '@services/storageKeys';
 import { track } from '@services/analytics';
 import type { PatternInsight } from '@services/patternAnalysis';
 import { FORECAST_LOG_KEY, type ForecastLog } from '@services/forecastLog';
 import { digestTeaser } from '@utils/digestTeaser';
 
-// Written by onboarding (app/onboarding.tsx JOINED_AT_KEY); not imported from
-// there to keep screens out of this hook's imports.
-const JOINED_AT_STORAGE_KEY = '@readiness/joined_at';
+// Written by onboarding; sourced from storageKeys.ts so the literal can't drift.
+const JOINED_AT_STORAGE_KEY = JOINED_AT_KEY;
 
 // ─── Expo Go guard ────────────────────────────────────────────────────────────
 // expo-notifications requires native code compiled into a custom dev build.

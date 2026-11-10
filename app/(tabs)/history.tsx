@@ -20,7 +20,8 @@ import Svg, {
   LinearGradient,
   Stop,
 } from 'react-native-svg';
-import { useHistoryData, type DayHistory } from '@hooks/useHistoryData';
+import { useHistoryData } from '@hooks/useHistoryData';
+import type { DayHistory } from '@/types/index';
 import { useStreak } from '@hooks/useStreak';
 import { useSubscription } from '@contexts/SubscriptionContext';
 import { ProGate } from '@components/common/ProGate';
@@ -38,7 +39,9 @@ import {
   getScoreColor,
   getScoreLabel,
 } from '@constants/theme';
-import { formatDuration } from '@utils/index';
+import { formatDuration, localDateStr } from '@utils/index';
+import { buildCalendarGrid, shortDate } from '@utils/historyCalendar';
+import { buildPoints, type MetricConfig } from '@utils/historyChart';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -47,22 +50,11 @@ type MetricMode = 'score' | 'hrv' | 'sleep' | 'rhr';
 
 // ─── Metric configuration ─────────────────────────────────────────────────────
 
-interface MetricConfig {
-  label:     string;
-  unit:      string;
-  color:     string;
-  getValue:  (d: DayHistory) => number | null;
-  gridLines: number[];
-  yMin:      number;
-  yMax:      number;
-  format:    (v: number) => string;
-}
-
 const METRIC_CONFIG: Record<MetricMode, MetricConfig> = {
   score: {
     label:     'READINESS',
     unit:      'pts',
-    color:     '#F5A623',   // amber
+    color:     colors.amber[400],
     getValue:  d => d.score,
     gridLines: [25, 50, 75],
     yMin:      0,
@@ -101,85 +93,7 @@ const METRIC_CONFIG: Record<MetricMode, MetricConfig> = {
   },
 };
 
-interface CalendarCell {
-  date:      string;       // YYYY-MM-DD
-  dayNum:    number;       // 1–31
-  isToday:   boolean;
-  history:   DayHistory | null;
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function localDateStr(d: Date): string {
-  const y  = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, '0');
-  const da = String(d.getDate()).padStart(2, '0');
-  return `${y}-${mo}-${da}`;
-}
-
-/** Builds a Monday-aligned calendar grid for the given month. Null = padding cell. */
-function buildCalendarGrid(
-  history:  DayHistory[],
-  year:     number,
-  month:    number,  // 0–11
-  todayStr: string,
-): (CalendarCell | null)[][] {
-  const histMap      = new Map(history.map(d => [d.date, d]));
-  const firstDay     = new Date(year, month, 1);
-  const daysInMonth  = new Date(year, month + 1, 0).getDate();
-  // Monday = 0, Sunday = 6 offset
-  const startPad     = (firstDay.getDay() + 6) % 7;
-
-  const cells: (CalendarCell | null)[] = Array(startPad).fill(null);
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = localDateStr(new Date(year, month, d));
-    cells.push({
-      date:    dateStr,
-      dayNum:  d,
-      isToday: dateStr === todayStr,
-      history: histMap.get(dateStr) ?? null,
-    });
-  }
-  while (cells.length % 7 !== 0) cells.push(null);
-
-  const rows: (CalendarCell | null)[][] = [];
-  for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
-  return rows;
-}
-
 // ─── SVG Trend Chart ──────────────────────────────────────────────────────────
-
-interface ChartPt {
-  x:        number;
-  y:        number | null;
-  score:    number | null;
-  dayLabel: string;
-  isToday:  boolean;
-}
-
-function buildPoints(
-  data:        DayHistory[],
-  plotWidth:   number,
-  plotHeight:  number,
-  padTop:      number,
-  todayStr:    string,
-  cfg:         MetricConfig,
-  padX:        number,
-): ChartPt[] {
-  const n = data.length;
-  const range = cfg.yMax - cfg.yMin;
-  return data.map((d, i) => {
-    const raw = cfg.getValue(d);
-    const clamped = raw !== null ? Math.max(cfg.yMin, Math.min(cfg.yMax, raw)) : null;
-    return {
-      x:        padX + (n <= 1 ? plotWidth / 2 : (i / (n - 1)) * plotWidth),
-      y:        clamped !== null ? padTop + (1 - (clamped - cfg.yMin) / range) * plotHeight : null,
-      score:    raw,
-      dayLabel: d.dayLabel,
-      isToday:  d.date === todayStr,
-    };
-  });
-}
 
 function TrendChart({
   data,
@@ -368,13 +282,6 @@ function StatChip({
 }
 
 // ─── Day row ──────────────────────────────────────────────────────────────────
-
-function shortDate(dateStr: string): string {
-  return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', {
-    month: 'short',
-    day:   'numeric',
-  });
-}
 
 function DayRow({ day, isToday }: { day: DayHistory; isToday: boolean }) {
   const scoreColor = day.score !== null ? getScoreColor(day.score) : colors.text.tertiary;
@@ -954,7 +861,7 @@ export default function HistoryScreen() {
 
           {/* Patterns / correlations */}
           <View style={styles.correlationsBlock}>
-            <Text style={styles.sectionTitle}>INSIGHTS</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header">INSIGHTS</Text>
             <CorrelationsCard history={history} />
           </View>
 
@@ -966,7 +873,7 @@ export default function HistoryScreen() {
 
           {/* Daily log */}
           <View style={styles.dayList}>
-            <Text style={styles.sectionTitle}>DAILY LOG</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header">DAILY LOG</Text>
             <Text style={styles.scoreBasis}>
               Scores based on HRV, sleep and resting heart rate · coloured bars show recovery / sleep / stress
             </Text>
@@ -1018,7 +925,7 @@ export default function HistoryScreen() {
         >
 
           <View style={styles.dayList}>
-            <Text style={styles.sectionTitle}>DAILY LOG</Text>
+            <Text style={styles.sectionTitle} accessibilityRole="header">DAILY LOG</Text>
             <Text style={styles.scoreBasis}>
               Scores based on HRV, sleep and resting heart rate · coloured bars show recovery / sleep / stress
             </Text>

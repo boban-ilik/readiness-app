@@ -36,7 +36,10 @@ import {
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import type { CustomerInfo, PurchasesStatic } from 'react-native-purchases';
+import type { CustomerInfo } from 'react-native-purchases';
+
+/** The SDK's default export (the Purchases class) — derived from its real types. */
+type PurchasesStatic = (typeof import('react-native-purchases'))['default'];
 import { useAuth } from '@contexts/AuthContext';
 
 // ─── RevenueCat API Key ────────────────────────────────────────────────────────

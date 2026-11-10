@@ -35,6 +35,7 @@ import {
   getScoreLabel,
 } from '@constants/theme';
 import { localDateStr } from '@utils/index';
+import { startSkeletonPulse } from '@utils/motion';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -56,16 +57,7 @@ function weekRangeLabel(scores: WeeklyReportScore[]): string {
 
 function SkeletonBlock({ lines = 3 }: { lines?: number }) {
   const opacity = useRef(new Animated.Value(0.35)).current;
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.65, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.35, duration: 800, useNativeDriver: true }),
-      ]),
-    );
-    anim.start();
-    return () => anim.stop();
-  }, [opacity]);
+  useEffect(() => startSkeletonPulse(opacity, 0.35, 0.65, 800), [opacity]);
 
   const widths = ['92%', '85%', '70%', '88%', '76%'];
   return (

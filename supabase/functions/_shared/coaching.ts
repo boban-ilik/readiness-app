@@ -33,10 +33,16 @@ export const TRAINING_RULE =
 
 const STAND_IN = { hrv: 55, rhr: 60 };
 
-/** "personal baseline: 62 ms" or a note that the number is only a typical stand-in. */
-export function baselineNote(kind: 'hrv' | 'rhr', value: number): string {
+/**
+ * "personal baseline: 62 ms" or a note that the number is only a typical
+ * stand-in. When the client states whether the baseline is personal, trust it
+ * (a real baseline can coincide with the stand-in value, e.g. 60 bpm);
+ * undefined keeps the value-based guess for older clients.
+ */
+export function baselineNote(kind: 'hrv' | 'rhr', value: number, personal?: boolean): string {
   const unit = kind === 'hrv' ? 'ms' : 'bpm';
-  return value === STAND_IN[kind]
+  const isStandIn = personal === undefined ? value === STAND_IN[kind] : !personal;
+  return isStandIn
     ? `compared with a typical ${value} ${unit}, a stand-in until the user has 7 days of data: do not call it their baseline`
     : `personal baseline: ${value} ${unit}`;
 }

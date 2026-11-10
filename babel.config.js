@@ -13,7 +13,6 @@ module.exports = function (api) {
             '@constants': './src/constants',
             '@hooks': './src/hooks',
             '@services': './src/services',
-            '@store': './src/store',
             '@types': './src/types',
             '@contexts': './src/contexts',
             '@utils': './src/utils',

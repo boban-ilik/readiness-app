@@ -22,7 +22,17 @@ import { useStravaActivities }       from '@hooks/useStravaActivities';
 import { useGarminConnection }       from '@hooks/useGarminConnection';
 import { ProGate }                   from '@components/common/ProGate';
 import { Ionicons }                  from '@expo/vector-icons';
-import { NAME_KEY, FREQ_KEY, JOINED_AT_KEY, ONBOARDING_KEY } from '../onboarding';
+import {
+  NAME_KEY, FREQ_KEY, JOINED_AT_KEY, ONBOARDING_KEY,
+  PROFILE_PHOTO_KEY as PHOTO_KEY,
+  PROFILE_AGE_KEY as AGE_KEY,
+  PROFILE_SEX_KEY as SEX_KEY,
+  PROFILE_HEIGHT_KEY as HEIGHT_KEY,
+  PROFILE_WEIGHT_KEY as WEIGHT_KEY,
+  PROFILE_GOAL_KEY as GOAL_KEY,
+} from '@services/storageKeys';
+import type { TrainingFrequency, BiologicalSex, TrainingGoal } from '@constants/onboarding';
+import { freqLabel, sexLabel, goalLabel, formatJoinedDate } from '@utils/profileLabels';
 import { FIRST_LOOK_SEEN_KEY } from '@services/firstLook';
 import { pushProfile }               from '@services/profileSync';
 
@@ -99,53 +109,9 @@ async function persistPhoto(
 
 // ─── AsyncStorage keys ────────────────────────────────────────────────────────
 
-const PHOTO_KEY  = '@readiness/profile_photo_uri';
-const AGE_KEY    = '@readiness/profile_age';
-const SEX_KEY    = '@readiness/profile_sex';
-const HEIGHT_KEY = '@readiness/profile_height_cm';
-const WEIGHT_KEY = '@readiness/profile_weight_kg';
-
 // Was support@readinessapp.com, a domain that is not ours and has no mail
 // records, so every in-app report bounced. Forwarded by Cloudflare Email Routing.
 const SUPPORT_EMAIL = 'support@thereadiness.app';
-const GOAL_KEY   = '@readiness/profile_goal';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type TrainingFrequency = 'light' | 'moderate' | 'high';
-type BiologicalSex     = 'male' | 'female' | 'prefer_not_to_say';
-type TrainingGoal      = 'performance' | 'recovery' | 'weight_loss' | 'general_health';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function freqLabel(freq: TrainingFrequency): string {
-  switch (freq) {
-    case 'light':    return '🚶 2–3 days/week';
-    case 'moderate': return '🏃 4–5 days/week';
-    case 'high':     return '⚡ 6+ days/week';
-  }
-}
-
-function sexLabel(sex: BiologicalSex): string {
-  switch (sex) {
-    case 'male':               return 'Male';
-    case 'female':             return 'Female';
-    case 'prefer_not_to_say':  return 'Prefer not to say';
-  }
-}
-
-function goalLabel(goal: TrainingGoal): string {
-  switch (goal) {
-    case 'performance':    return '🏆 Peak performance';
-    case 'recovery':       return '🔄 Optimise recovery';
-    case 'weight_loss':    return '⚖️  Lose weight';
-    case 'general_health': return '❤️  General health';
-  }
-}
-
-function formatJoinedDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-}
 
 // ─── Reusable settings row components ─────────────────────────────────────────
 
@@ -302,7 +268,7 @@ function CoachMemorySection() {
 }
 
 function SectionLabel({ title }: { title: string }) {
-  return <Text style={styles.sectionLabel}>{title}</Text>;
+  return <Text style={styles.sectionLabel} accessibilityRole="header">{title}</Text>;
 }
 
 function SettingsCard({ children }: { children: React.ReactNode }) {

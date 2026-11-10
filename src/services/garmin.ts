@@ -91,8 +91,10 @@ export async function refreshGarminConnection(): Promise<GarminConnection | null
     .select('garmin_user_id, permissions, status, connected_at')
     .maybeSingle();
   if (error) { console.warn('[Garmin] connection read failed:', error.message); return null; }
-  const conn = data && data.status === 'active'
-    ? { garminUserId: data.garmin_user_id, permissions: data.permissions ?? [], status: data.status, connectedAt: data.connected_at }
+  // The view's columns type as nullable (Postgres drops NOT NULL on views);
+  // the underlying table guarantees them, so a null id is treated as no row.
+  const conn: GarminConnection | null = data && data.status === 'active' && data.garmin_user_id
+    ? { garminUserId: data.garmin_user_id, permissions: data.permissions ?? [], status: 'active', connectedAt: data.connected_at ?? '' }
     : null;
   const was = await isGarminConnected();
   await setConnectedFlag(!!conn);

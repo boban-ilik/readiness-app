@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from '@contexts/AuthContext';
 import { SubscriptionProvider } from '@contexts/SubscriptionContext';
 import { colors } from '@constants/theme';
 import { getAuthRedirect } from '@utils/authRouting';
+import { ONBOARDING_KEY } from '@services/storageKeys';
 
 enableScreens(false);
 
@@ -30,8 +31,6 @@ if (__DEV__) {
     _prev?.(event);
   };
 }
-
-const ONBOARDING_KEY = '@readiness/onboarding_complete';
 
 // Same guard as useNotifications: the native module is absent in Expo Go.
 const IS_EXPO_GO =

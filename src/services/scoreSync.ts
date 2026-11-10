@@ -24,6 +24,7 @@ export interface SupabaseScoreRow {
   sleep_score:     number;
   stress_score:    number;
   hrv:             number | null;
+  hrv_source:      string | null;
   rhr:             number | null;
   sleep_duration:  number | null;
   sleep_efficiency: number | null;
@@ -63,6 +64,7 @@ export async function upsertTodayScore(
     sleep_score:      components.sleep,
     stress_score:     components.stress,
     hrv:              healthData.hrv,
+    hrv_source:       healthData.hrvSource ?? null,
     rhr:              healthData.restingHeartRate,
     sleep_duration:   healthData.sleepDuration,
     sleep_efficiency: healthData.sleepEfficiency,
@@ -97,7 +99,7 @@ export async function fetchHistoryFromSupabase(
   const { data, error } = await supabase
     .from('readiness_scores')
     .select(
-      'date, score, recovery_score, sleep_score, stress_score, hrv, rhr, sleep_duration, sleep_efficiency',
+      'date, score, recovery_score, sleep_score, stress_score, hrv, hrv_source, rhr, sleep_duration, sleep_efficiency',
     )
     .eq('user_id', userId)
     .gte('date', fromStr)

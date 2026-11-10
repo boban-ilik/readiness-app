@@ -163,7 +163,6 @@ export function StravaLastWorkoutSection({ isConnected, activities, isLoading }:
 
 const styles = StyleSheet.create({
   section: {
-    marginBottom: spacing[5],
     gap: spacing[2],
   },
   sectionHeader: {

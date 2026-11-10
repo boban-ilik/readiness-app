@@ -15,6 +15,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@services/supabase';
+import { localDateStr } from '@utils/index';
 
 const SUPABASE_URL         = process.env.EXPO_PUBLIC_SUPABASE_URL      ?? '';
 const SUPABASE_ANON_KEY    = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
@@ -132,6 +133,7 @@ export async function fetchWeeklyReport(forceRefresh = false): Promise<WeeklyRep
         'Authorization': `Bearer ${session.access_token}`,
         'apikey':        SUPABASE_ANON_KEY,
       },
+      body: JSON.stringify({ today: localDateStr(new Date()) }),
     });
   } finally {
     clearTimeout(timeout);

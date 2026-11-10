@@ -9,7 +9,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@services/supabase';
-import type { ReadinessResult } from '@utils/readiness';
+import { isStandInBaseline, type ReadinessResult } from '@utils/readiness';
 import type { HealthData } from '@/types/index';
 import { getScoreLabel } from '@constants/theme';
 import type { PatternInsight } from '@services/patternAnalysis';
@@ -211,6 +211,8 @@ export async function fetchDailyBriefing(
         },
         rhrBaseline,
         hrvBaseline,
+        rhrBaselinePersonal: !isStandInBaseline('rhr', rhrBaseline),
+        hrvBaselinePersonal: !isStandInBaseline('hrv', hrvBaseline),
         patterns,
         workload,
         lifeEvents,

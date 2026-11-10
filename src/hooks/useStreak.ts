@@ -12,6 +12,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@services/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { localDateStr } from '@utils/index';
 
 const BEST_STREAK_KEY = '@readiness/best_streak';
 
@@ -19,13 +20,6 @@ export interface StreakData {
   current:   number;   // consecutive days up to today/yesterday
   best:      number;   // all-time best streak
   isLoading: boolean;
-}
-
-function localDateStr(d: Date): string {
-  const y  = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, '0');
-  const da = String(d.getDate()).padStart(2, '0');
-  return `${y}-${mo}-${da}`;
 }
 
 export function useStreak(): StreakData {

@@ -10,12 +10,14 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { colors, fontSize, fontWeight, spacing, radius, getScoreColor } from '@constants/theme';
-import type { ReadinessForecast, DayForecast } from '@services/readinessForecast';
+import { forecastBaseline, type ReadinessForecast, type DayForecast } from '@services/readinessForecast';
 import { useForecastTrackRecord, TRACK_RECORD_DAYS } from '@hooks/useForecastTrackRecord';
 import { trackRecordLine } from '@utils/forecastTrackRecord';
 
 interface Props {
   forecast: ReadinessForecast;
+  /** Today's actual score, the baseline the first forecast day is measured from */
+  todayScore: number;
   /** Recovering from illness: no "Ready to push" and no best window */
   illnessCap?: boolean;
 }
@@ -135,16 +137,16 @@ function DeltaPill({ delta }: { delta: number }) {
 function ForecastCard({
   day,
   index,
-  previousScore,
+  baselineScore,
   illnessCap,
 }: {
   day: DayForecast;
   index: number;
-  previousScore: number;
+  baselineScore: number;
   illnessCap: boolean;
 }) {
   const scoreColor = getScoreColor(day.score);
-  const delta = day.score - previousScore;
+  const delta = day.score - baselineScore;
   const opacity    = day.confidence === 'low' ? 0.75 : 1;
 
   return (
@@ -197,7 +199,7 @@ function ForecastCard({
 
 // ─── Strip ────────────────────────────────────────────────────────────────────
 
-export default function ForecastStrip({ forecast, illnessCap = false }: Props) {
+export default function ForecastStrip({ forecast, todayScore, illnessCap = false }: Props) {
   // What the day-ahead forecast got right lately: a forecast nobody can check
   // is a guess with a number on it.
   const record = useForecastTrackRecord();
@@ -271,7 +273,7 @@ export default function ForecastStrip({ forecast, illnessCap = false }: Props) {
             key={i}
             day={day}
             index={i}
-            previousScore={i === 0 ? forecast[0].score : forecast[i - 1].score}
+            baselineScore={forecastBaseline(forecast, i, todayScore)}
             illnessCap={illnessCap}
           />
         ))}

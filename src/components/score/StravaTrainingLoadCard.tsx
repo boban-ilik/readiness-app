@@ -27,7 +27,7 @@ const STRAVA_ORANGE = '#FC4C02';
 
 // Historical bars always render in amber so they're visible regardless of
 // whatever the current week's trend color happens to be.
-const HISTORICAL_BAR_COLOR = '#F5A623'; // colors.amber[400]
+const HISTORICAL_BAR_COLOR = colors.amber[400];
 
 // ─── Bar chart ────────────────────────────────────────────────────────────────
 
@@ -156,7 +156,7 @@ function AcRatioBar({ ratio, trendColor }: RatioProps) {
     <View style={ratioStyles.wrap}>
       <View style={ratioStyles.track}>
         {/* Coloured zones */}
-        <View style={[ratioStyles.zone, { width: '20%', backgroundColor: '#9BA3B8' + '40' }]} />
+        <View style={[ratioStyles.zone, { width: '20%', backgroundColor: colors.text.secondary + '40' }]} />
         <View style={[ratioStyles.zone, { width: '20%', backgroundColor: '#60A5FA' + '40' }]} />
         <View style={[ratioStyles.zone, { width: '20%', backgroundColor: '#22C55E' + '40' }]} />
         <View style={[ratioStyles.zone, { width: '20%', backgroundColor: '#F59E0B' + '40' }]} />
@@ -445,9 +445,7 @@ export function StravaTrainingLoadSection({ isConnected, activities, isLoading, 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  section: {
-    marginBottom: spacing[5],
-  },
+  section: {},
 
   card: {
     backgroundColor: colors.bg.elevated,

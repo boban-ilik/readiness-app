@@ -1,14 +1,13 @@
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { secureAuthStorage } from './secureAuthStorage';
 
 export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 export const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
-// AsyncStorage for native — no size limit (unlike SecureStore's 2048 byte cap,
-// which Supabase session tokens routinely exceed).
-// For web, fall back to localStorage guarded against SSR (Node.js has no localStorage).
+// Web fallback: localStorage, guarded against SSR (Node.js has no localStorage).
 const webStorage = {
   getItem: (key: string): Promise<string | null> => {
     if (typeof localStorage === 'undefined') return Promise.resolve(null);
@@ -26,9 +25,11 @@ const webStorage = {
   },
 };
 
-const storage = Platform.OS === 'web' ? webStorage : AsyncStorage;
+// SecureStore (the iOS Keychain) for native — the session JWT is a credential,
+// so it must not sit in plain-text AsyncStorage. Web falls back to localStorage.
+const storage = Platform.OS === 'web' ? webStorage : secureAuthStorage;
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     storage,
     autoRefreshToken: true,

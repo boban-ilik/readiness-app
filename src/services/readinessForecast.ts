@@ -33,6 +33,20 @@ export interface DayForecast {
 
 export type ReadinessForecast = [DayForecast, DayForecast, DayForecast];
 
+/**
+ * The score a forecast card's change is measured against: today's actual
+ * score for the first day, the previous forecast day for the others. This is
+ * the same baseline the trend badge uses, so the delta pill cannot contradict
+ * it.
+ */
+export function forecastBaseline(
+  forecast: ReadinessForecast,
+  index: number,
+  todayScore: number,
+): number {
+  return index === 0 ? todayScore : forecast[index - 1].score;
+}
+
 // ─── Pattern weights ──────────────────────────────────────────────────────────
 // How much each pattern moves the score per day (decay toward baseline)
 

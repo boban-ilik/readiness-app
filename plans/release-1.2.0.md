@@ -93,3 +93,27 @@ Also: rebuilt on a newer foundation for current iOS, and today's activity update
 - Build 79 rejected under 1.4.1 Physical Harm: the reviewer read the Garmin link as "connects to external medical hardware" and asked for regulatory documents, region limits or a jurisdiction statement, and a medical disclaimer in the description.
 - Done with Boban's approval: medical disclaimer appended to the description (before the EULA line); reply sent in App Store Connect at 11:57 local explaining the app reads consumer wearable data through HealthKit and Garmin's Health API, connects to no hardware, and makes no medical claim; version resubmitted with the same build 79 via Update Review then Resubmit.
 - If Apple holds the hardware reading: options are an App Review appointment (Tuesdays and Thursdays) or an appeal; no documents of the kind requested exist for consumer wearables.
+
+## Fourth submission: build 80 (3 November 2026)
+
+- Build 79 rejected again under 1.4.1 on 3 November with the identical notice and no engagement with the reply.
+- Merged PR #6 (Garmin worded as a cloud account sync, wellness disclaimers in the app) and PR #5 (accessibility: icon-button labels, selection state, tertiary contrast) into claude/garmin (b29ff81). Jest 215 tests, tsc and eslint clean.
+- Build 80 built locally, uploaded, VALID, attached to 1.2.1.
+- Description: the GENERAL WELLNESS, NOT MEDICAL ADVICE block from docs/APP_STORE_LISTING.md replaces the earlier disclaimer paragraph. Review notes: the ABOUT GARMIN (NOT MEDICAL HARDWARE) paragraph replaces NEW IN 1.2; notes trimmed to 3,960 characters to fit Apple's 4,000 limit.
+- Reply sent 12:52 local (message 7). Resubmitted via Update Review then Resubmit to App Review.
+- Recommended in parallel: an App Review appointment (Tuesdays and Thursdays, "Meet with Apple" link in the rejection) or an App Review Board appeal; and, if build 80 bounces, shipping 1.2.1 with the Garmin link behind a flag and fighting the classification separately.
+- Incident: while updating the notes by script, the API echo matched "detail" and printed the full notes, demo password included, into the session transcript once. Changing the demo password is Boban's call.
+
+## After build 80 (4 November 2026)
+
+- claude/garmin has moved past the submitted code: the forecast Rising/Steady fix (4425d52, first task done by the DeepSeek Harness worker and reviewed here) and the hardening PR #7 (6504018). Tag v1.2.1-build80 marks what Apple is reviewing; on approval, main moves to that tag, not to the branch tip.
+- Production database: hrv_source column added to readiness_scores (migration 20261103000000). Builds from the branch tip write it; build 80 does not read or write it.
+- Next build from the tip is 1.2.2 material. Device checks owed before it ships: sign-out wipe, widget clear on sign-out, Keychain session surviving an app kill, Dynamic Type on Today and the paywall, VoiceOver on the paywall close and coach chat.
+
+## Approved (4 November 2026)
+
+- 1.2.1 build 80 approved by App Review on 4 November 2026; Ready for Sale with automatic release. Fourth submission, after 5.6.3 (rating prompt), 2.3.10 (drawn status bar in screenshots) and 1.4.1 (Garmin read as medical hardware) rejections.
+- Step 12 done: tag v1.2.1 at b29ff81 (the exact approved code); main merged to it as 09aa86b (main also carries the CI workflow commit pushed on 3 November; app code equals the tag).
+- Step 13 owed on 5 November: scores save for real users, Garmin data arrives overnight for the connected account, morning notification fires.
+- Next release from the claude/garmin tip is 1.2.2: bump app.json before the next build, create the 1.2.2 version in App Store Connect, and attach a build with that version string. Build 82 (1.2.1) stays a TestFlight-only build.
+- Website: the Body Battery post's direct-Garmin paragraph restored (2bc2716); the garmin-hrv-apple-health post still describes the pre-1.2 situation and needs an update.
