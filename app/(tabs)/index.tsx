@@ -31,7 +31,7 @@ import CalibrationReportModal from '@components/score/CalibrationReportModal';
 import { hasSeenCalibrationReport, markCalibrationReportSeen } from '@services/calibrationReport';
 import { canUseFreeBriefing, markFreeBriefingUsed, chargesFreeBriefing } from '@services/freeBriefing';
 import ShareCard from '@components/score/ShareCard';
-import { colors, fontSize, fontWeight, spacing, radius, getScoreColor, getScoreLabel } from '@constants/theme';
+import { colors, fontSize, fontWeight, spacing, radius, getScoreColor, getScoreLabel, typography } from '@constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useHealthData } from '@hooks/useHealthData';
 import { useRecentWorkouts } from '@hooks/useRecentWorkouts';
@@ -978,8 +978,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   scoreNumber: {
-    fontSize: fontSize['5xl'],
-    fontWeight: fontWeight.bold,
+    ...typography.displayNumeral,
     // No fixed lineHeight: it clipped the number at large Dynamic Type sizes.
   },
   scoreLabel: {

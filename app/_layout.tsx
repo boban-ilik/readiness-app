@@ -6,6 +6,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { enableScreens } from 'react-native-screens';
+import { useFonts } from 'expo-font';
+import { FONT_SOURCES } from '@constants/fonts';
 import { AuthProvider, useAuth } from '@contexts/AuthContext';
 import { SubscriptionProvider } from '@contexts/SubscriptionContext';
 import { colors } from '@constants/theme';
@@ -157,6 +159,13 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  // Archivo for numerals and headings. The first render waits for the files,
+  // which are bundled, so the wait is a frame or two; if loading fails the
+  // app carries on in the system font rather than staying blank.
+  const [fontsLoaded, fontError] = useFonts(FONT_SOURCES);
+  if (!fontsLoaded && !fontError) {
+    return <View style={{ flex: 1, backgroundColor: colors.bg.primary }} />;
+  }
   return (
     <AuthProvider>
       <SubscriptionProvider>

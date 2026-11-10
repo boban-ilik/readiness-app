@@ -6,6 +6,8 @@
  * Dark mode first. Amber/gold accent. Precision over decoration.
  */
 
+import type { TextStyle, ViewStyle } from 'react-native';
+
 // ─── Colors ──────────────────────────────────────────────────────────────────
 
 export const colors = {
@@ -70,17 +72,17 @@ export const colors = {
 
 // ─── Typography ───────────────────────────────────────────────────────────────
 
+// Archivo for numerals and headings, the system font for body text (1.3).
+// The faces are loaded at app start by app/_layout.tsx from ./fonts.ts; until
+// then, or if loading fails, iOS falls back to the system font.
 export const fontFamily = {
-  // Will be loaded via expo-font
-  regular:   'Inter-Regular',
-  medium:    'Inter-Medium',
-  semiBold:  'Inter-SemiBold',
-  bold:      'Inter-Bold',
-  // Score number uses a tabular / monospaced variant for clean digits
-  mono:      'Inter-Regular',
+  heading:     'Archivo_600SemiBold',
+  headingBold: 'Archivo_700Bold',
+  numeral:     'ArchivoNarrow_700Bold',   // condensed, for the big numbers
 } as const;
 
 export const fontSize = {
+  '2xs': 11,   // Uppercase section labels
   xs:   12,
   sm:   15,
   base: 17,
@@ -92,6 +94,7 @@ export const fontSize = {
   '4xl': 48,
   '5xl': 64,   // The big readiness score number
   '6xl': 80,
+  '7xl': 84,   // The readiness score in the ring (1.3)
 } as const;
 
 export const fontWeight = {
@@ -155,6 +158,72 @@ export const radius = {
   '2xl': 32,
   full:  9999,  // Pill / circle
 } as const;
+
+// ─── Type presets ─────────────────────────────────────────────────────────────
+// Spread into a style: `{ ...typography.label }`. Presets that set a
+// fontFamily must not also set fontWeight; iOS would substitute a face.
+
+export const typography = {
+  /** 11 pt uppercase section label: "BREAKDOWN", "TODAY'S PLAN". */
+  label: {
+    fontSize:      fontSize['2xs'],
+    letterSpacing: 1.8,
+    fontWeight:    fontWeight.semiBold,
+    color:         colors.text.tertiary,
+    textTransform: 'uppercase',
+  },
+  /** The readiness score inside the ring. */
+  displayNumeral: {
+    fontFamily:    fontFamily.numeral,
+    fontSize:      fontSize['7xl'],
+    letterSpacing: -2,
+    color:         colors.text.primary,
+  },
+  /** Component scores and metric values at the end of a row. */
+  rowNumeral: {
+    fontFamily:    fontFamily.numeral,
+    fontSize:      fontSize['2xl'],
+    letterSpacing: -0.5,
+    color:         colors.text.primary,
+  },
+  /** Screen and sheet headings. */
+  heading: {
+    fontFamily:    fontFamily.headingBold,
+    fontSize:      fontSize.xl,
+    letterSpacing: -0.5,
+    color:         colors.text.primary,
+  },
+  /** Card and row titles. */
+  title: {
+    fontSize:   16,
+    fontWeight: fontWeight.semiBold,
+    color:      colors.text.primary,
+  },
+  body: {
+    fontSize:   fontSize.sm,
+    lineHeight: 22,
+    color:      colors.text.primary,
+  },
+  caption: {
+    fontSize:   13,
+    lineHeight: 18,
+    color:      colors.text.secondary,
+  },
+} as const satisfies Record<string, TextStyle>;
+
+// ─── Surfaces ─────────────────────────────────────────────────────────────────
+// One background (bg.primary). Sections sit flat on it, separated by spacing
+// and a `typography.label`. A card is used only where something is tappable
+// or needs attention.
+
+export const surface = {
+  card: {
+    backgroundColor: colors.bg.secondary,
+    borderColor:     colors.border.subtle,
+    borderWidth:     1,
+    borderRadius:    radius.lg,
+  },
+} as const satisfies Record<string, ViewStyle>;
 
 // ─── Shadows ──────────────────────────────────────────────────────────────────
 // React Native shadow props (iOS) + elevation (Android)
@@ -258,6 +327,8 @@ export const theme = {
   fontWeight,
   lineHeight,
   letterSpacing,
+  typography,
+  surface,
   spacing,
   radius,
   shadow,
