@@ -550,7 +550,8 @@ export default function HomeScreen() {
         )}
 
         {/* Breakdown, directly under the score: what made today's number,
-            before any of the cards that react to it. */}
+            before any of the cards that react to it. Every row opens the
+            detail sheet; for free users the AI read inside it is the lock. */}
         {hasUsableScore && (
           <View style={styles.breakdown}>
             <Text style={styles.sectionTitle} accessibilityRole="header">BREAKDOWN</Text>
@@ -560,8 +561,7 @@ export default function HomeScreen() {
                 label="Recovery"
                 score={readiness?.components.recovery ?? 0}
                 detail={buildRecoveryDetail(readiness?.healthData ?? null, rhrBaseline)}
-                isLocked={!isPro}
-                onPress={() => isPro ? setSelectedCard('recovery') : router.push('/paywall')}
+                onPress={() => setSelectedCard('recovery')}
               />
             </Animated.View>
 
@@ -570,8 +570,7 @@ export default function HomeScreen() {
                 label="Sleep"
                 score={readiness?.components.sleep ?? 0}
                 detail={buildSleepDetail(readiness?.healthData ?? null)}
-                isLocked={!isPro}
-                onPress={() => isPro ? setSelectedCard('sleep') : router.push('/paywall')}
+                onPress={() => setSelectedCard('sleep')}
               />
             </Animated.View>
 
@@ -580,8 +579,7 @@ export default function HomeScreen() {
                 label="Stress"
                 score={readiness?.components.stress ?? 0}
                 detail={buildStressDetail(readiness?.healthData ?? null, rhrBaseline, hrvBaseline)}
-                isLocked={!isPro}
-                onPress={() => isPro ? setSelectedCard('stress') : router.push('/paywall')}
+                onPress={() => setSelectedCard('stress')}
               />
             </Animated.View>
 
@@ -590,8 +588,7 @@ export default function HomeScreen() {
                 label="Activity"
                 score={activityScore}
                 detail={buildActivityDetail(readiness?.healthData ?? null, todayActivity)}
-                isLocked={!isPro}
-                onPress={() => isPro ? setSelectedCard('activity') : presentPaywall()}
+                onPress={() => setSelectedCard('activity')}
                 divider={false}
               />
             </Animated.View>
@@ -800,7 +797,9 @@ export default function HomeScreen() {
         onClearManualHRV={
           readiness?.healthData?.hrvSource === 'manual' ? handleClearManualHRV : undefined
         }
-        onUpgrade={presentPaywall}
+        // The sheet is a native Modal: a route pushed underneath it would be
+        // invisible, so close the sheet first.
+        onUpgrade={() => { setSelectedCard(null); presentPaywall(); }}
       />
 
       {/* ── Daily briefing modal (Pro only) ── */}

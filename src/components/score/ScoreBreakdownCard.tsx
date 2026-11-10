@@ -3,22 +3,20 @@
  *
  * One component of the score as a flat row: a thin arc for the value, the
  * name with a one-line detail, and the number on the right. Rows sit on the
- * screen background separated by a hairline (the 1.3 design). Free users see
- * the number and a teaser of the detail; their tap opens the paywall.
+ * screen background separated by a hairline (the 1.3 design). Every user
+ * can open the detail sheet; the Pro lock lives inside it.
  */
 
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { useSubscription } from '@contexts/SubscriptionContext';
 import { colors, spacing, typography } from '@constants/theme';
 
 interface ScoreBreakdownCardProps {
   label: string;
   score: number;        // 0 to 100
   detail?: string;      // e.g. "HRV 58ms · RHR 52bpm"
-  isLocked?: boolean;   // free tier: teaser detail, tap goes to the paywall
-  onPress?: () => void; // Pro: opens the breakdown modal
+  onPress?: () => void; // opens the breakdown sheet
   /** Hairline under the row; off for the last row of the list. */
   divider?: boolean;
 }
@@ -52,54 +50,36 @@ export default function ScoreBreakdownCard({
   label,
   score,
   detail,
-  isLocked = false,
   onPress,
   divider = true,
 }: ScoreBreakdownCardProps) {
-  const { presentPaywall } = useSubscription();
-  const color       = getArcColor(score);
-  const handlePress = onPress ?? (isLocked ? presentPaywall : undefined);
-  const teaser      = detail && isLocked ? lockedTeaser(detail) : detail;
+  const color = getArcColor(score);
 
   const content = (
     <View style={[styles.row, divider && styles.divider]}>
       <Arc score={score} color={color} />
       <View style={styles.text}>
         <Text style={styles.label}>{label}</Text>
-        {!!teaser && <Text style={styles.detail} numberOfLines={2}>{teaser}</Text>}
+        {!!detail && <Text style={styles.detail} numberOfLines={2}>{detail}</Text>}
       </View>
       <View style={styles.right}>
         <Text style={styles.score}>{Math.round(score)}</Text>
-        {isLocked
-          ? <Ionicons name="lock-closed-outline" size={14} color={colors.text.tertiary} />
-          : handlePress && <Ionicons name="chevron-forward" size={14} color={colors.text.tertiary} />}
+        {onPress && <Ionicons name="chevron-forward" size={14} color={colors.text.tertiary} />}
       </View>
     </View>
   );
 
-  if (!handlePress) return content;
+  if (!onPress) return content;
   return (
     <TouchableOpacity
-      onPress={handlePress}
+      onPress={onPress}
       activeOpacity={0.7}
       accessibilityRole="button"
-      accessibilityLabel={`${label} ${Math.round(score)}${isLocked ? ', detail is Pro' : ''}`}
+      accessibilityLabel={`${label} ${Math.round(score)}`}
     >
       {content}
     </TouchableOpacity>
   );
-}
-
-/**
- * The one segment of the detail a free user sees: the first measurement
- * ("HRV 47ms (Garmin)", "6h 31m", "Stress index 41/100"), so the teaser says
- * something. The details start with "Last night" and a date, which are not
- * worth the row.
- */
-const MEASUREMENT = /\d\s*(ms|bpm|h\b|m\b|min|%|steps|\/)/;
-function lockedTeaser(detail: string): string {
-  const parts = detail.split('·').map(p => p.trim()).filter(Boolean);
-  return parts.find(p => MEASUREMENT.test(p)) ?? parts[0] ?? '';
 }
 
 function getArcColor(score: number): string {
