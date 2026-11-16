@@ -33,10 +33,13 @@ import { track } from '@services/analytics';
 import { fetchFounderRemaining } from '@services/founder';
 import {
   colors,
+  fontFamily,
   fontSize,
   fontWeight,
   spacing,
   radius,
+  surface,
+  typography,
 } from '@constants/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -137,18 +140,16 @@ function FeatureRow({
   icon,
   title,
   body,
-  isFirst,
+  isLast,
 }: {
   icon:    React.ComponentProps<typeof Ionicons>['name'];
   title:   string;
   body:    string;
-  isFirst?: boolean;
+  isLast?: boolean;
 }) {
   return (
-    <View style={[styles.featureRow, isFirst && styles.featureRowFirst]}>
-      <View style={styles.featureIconWrap}>
-        <Ionicons name={icon} size={22} color={colors.amber[400]} />
-      </View>
+    <View style={[styles.featureRow, !isLast && styles.featureDivider]}>
+      <Ionicons name={icon} size={22} color={colors.amber[400]} style={styles.featureIcon} />
       <View style={styles.featureText}>
         <Text style={styles.featureTitle}>{title}</Text>
         <Text style={styles.featureBody}>{body}</Text>
@@ -157,47 +158,64 @@ function FeatureRow({
   );
 }
 
-const CYCLE_LABELS: Record<BillingCycle, string> = {
-  monthly:  'Monthly',
-  annual:   'Annual',
-};
+/** "$69.99" from "$69.99 / year". */
+function priceOnly(label: string): string {
+  return label.split(' / ')[0];
+}
 
-function BillingToggle({
+/**
+ * One plan as a card: a radio for the subscriptions (selected = the CTA buys
+ * it), a plain button for the Founder lifetime purchase.
+ */
+function PlanCard({
+  title,
+  sub,
+  price,
+  unit,
   selected,
-  packages,
-  onSelect,
+  badge,
+  onPress,
+  disabled,
 }: {
-  selected:  BillingCycle;
-  packages:  Record<BillingCycle, DisplayPackage>;
-  onSelect:  (c: BillingCycle) => void;
+  title:     string;
+  sub:       string;
+  price:     string;
+  unit:      string;
+  selected?: boolean;
+  badge?:    string;
+  onPress:   () => void;
+  disabled?: boolean;
 }) {
+  const radio = selected !== undefined;
   return (
-    <View style={styles.toggleWrap}>
-      {(['monthly', 'annual'] as BillingCycle[]).map(cycle => {
-        const badge = packages[cycle].badge;
-        return (
-          <TouchableOpacity
-            key={cycle}
-            style={[styles.toggleBtn, selected === cycle && styles.toggleBtnActive]}
-            onPress={() => onSelect(cycle)}
-            activeOpacity={0.75}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: selected === cycle }}
-          >
-            <Text style={[styles.toggleLabel, selected === cycle && styles.toggleLabelActive]}>
-              {CYCLE_LABELS[cycle]}
-            </Text>
-            {badge && (
-              <View style={[styles.saveBadge, selected !== cycle && styles.saveBadgeInactive]}>
-                <Text style={[styles.saveBadgeText, selected !== cycle && styles.saveBadgeTextInactive]}>
-                  {badge}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        );
-      })}
-    </View>
+    <TouchableOpacity
+      style={[styles.plan, selected && styles.planSelected]}
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.8}
+      accessibilityRole={radio ? 'radio' : 'button'}
+      accessibilityState={radio ? { selected } : undefined}
+      accessibilityLabel={`${title}, ${price} ${unit}. ${sub}`}
+    >
+      {!!badge && (
+        <View style={styles.planBadge}>
+          <Text style={styles.planBadgeText}>{badge}</Text>
+        </View>
+      )}
+      {radio && (
+        <View style={[styles.radio, selected && styles.radioSelected]}>
+          {selected && <View style={styles.radioDot} />}
+        </View>
+      )}
+      <View style={styles.planText}>
+        <Text style={styles.planTitle}>{title}</Text>
+        <Text style={styles.planSub}>{sub}</Text>
+      </View>
+      <Text style={styles.planPrice}>
+        {price}
+        <Text style={styles.planUnit}> {unit}</Text>
+      </Text>
+    </TouchableOpacity>
   );
 }
 
@@ -484,37 +502,37 @@ export default function PaywallScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-
-      {/* ── Close button ── */}
-      <TouchableOpacity
-        style={styles.closeBtn}
-        onPress={() => router.back()}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        accessibilityRole="button"
-        accessibilityLabel="Close"
-      >
-        <Text style={styles.closeBtnText}>✕</Text>
-      </TouchableOpacity>
-
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
-        bounces={false}
       >
+
+        {/* ── Close ── */}
+        <View style={styles.topBar}>
+          <TouchableOpacity
+            style={styles.closeBtn}
+            onPress={() => router.back()}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
+            <Ionicons name="close" size={18} color={colors.text.secondary} />
+          </TouchableOpacity>
+        </View>
 
         {/* ── Hero ── */}
         <View style={styles.hero}>
-          <Text style={styles.crown}>♛</Text>
-          <Text style={styles.heroTitle}>Readiness Pro</Text>
+          <Text style={styles.eyebrow}>Readiness Pro</Text>
+          <Text style={styles.heroTitle}>Know why the number moved, not just that it did.</Text>
           <Text style={styles.heroSub}>
-            Train smarter every day, guided by your body.
+            Pro adds the explanation layer: a morning briefing, a coach you can question, and four weeks of context behind every score.
           </Text>
         </View>
 
         {/* ── Feature list ── */}
         <View style={styles.featureList}>
           {FEATURES.map((f, i) => (
-            <FeatureRow key={f.title} {...f} isFirst={i === 0} />
+            <FeatureRow key={f.title} {...f} isLast={i === FEATURES.length - 1} />
           ))}
         </View>
 
@@ -542,100 +560,76 @@ export default function PaywallScreen() {
 
         {rcLoaded && (
           <>
-            {/* ── Billing toggle ── */}
-            <BillingToggle
-              selected={cycle}
-              packages={packages}
-              onSelect={setCycle}
-            />
-
-            {/* ── Price display ── */}
-            <View style={styles.priceBlock}>
-              <Text style={styles.priceMain}>{selectedPkg.priceLabel}</Text>
-              {cycle === 'annual' && (
-                <Text style={styles.priceNote}>
-                  Just {selectedPkg.perMonth}/mo, {selectedPkg.total}
-                </Text>
+            {/* ── Plans ── */}
+            <View style={styles.plans}>
+              <Text style={styles.sectionLabel} accessibilityRole="header">Choose a plan</Text>
+              <PlanCard
+                title="Annual"
+                sub={`${packages.annual.perMonth} a month, billed once a year${annualSaving ? `, save ${annualSaving}` : ''}`}
+                price={priceOnly(packages.annual.priceLabel)}
+                unit="/ yr"
+                badge="14 days free"
+                selected={cycle === 'annual'}
+                onPress={() => setCycle('annual')}
+              />
+              <PlanCard
+                title="Monthly"
+                sub="Billed monthly, no trial"
+                price={priceOnly(packages.monthly.priceLabel)}
+                unit="/ mo"
+                selected={cycle === 'monthly'}
+                onPress={() => setCycle('monthly')}
+              />
+              {/* Founder (lifetime): tapping starts the App Store purchase. */}
+              {showFounder && (
+                <PlanCard
+                  title="Founder, lifetime"
+                  sub={founderRemaining == null
+                    ? `Pro forever for the first ${FOUNDER_CAP} supporters.`
+                    : `Pro forever for the first ${FOUNDER_CAP} supporters. ${founderRemaining} left.`}
+                  price={founderPrice}
+                  unit="once"
+                  onPress={handleFounder}
+                  disabled={busy}
+                />
               )}
             </View>
 
-            {/* ── Trial badge (annual only — monthly has no introductory offer) ── */}
-            {cycle === 'annual' && (
-              <View style={styles.trialBadge}>
-                <Text style={styles.trialBadgeIcon}>🎁</Text>
-                <Text style={styles.trialBadgeText}>14-day free trial included</Text>
-              </View>
-            )}
-
-            {/* ── Annual advantage (shown on monthly, where the trial is invisible) ── */}
-            {cycle === 'monthly' && (
-              <TouchableOpacity
-                style={styles.switchPrompt}
-                onPress={() => setCycle('annual')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.switchPromptText}>
-                  Go annual for a <Text style={styles.switchPromptStrong}>14-day free trial</Text>
-                  {annualSaving ? <> and save {annualSaving}</> : null}
-                </Text>
-              </TouchableOpacity>
-            )}
-
             {/* ── CTA ── */}
-            <TouchableOpacity
-              style={[styles.ctaButton, busy && styles.ctaButtonBusy]}
-              onPress={handleSubscribe}
-              disabled={busy}
-              activeOpacity={0.85}
-            >
-              {busy
-                ? <ActivityIndicator color={colors.text.inverse} />
-                : <Text style={styles.ctaText}>
-                    {cycle === 'annual' ? 'Start Free Trial' : 'Subscribe Monthly'}
-                  </Text>
-              }
-            </TouchableOpacity>
-
-            <Text style={styles.ctaNote}>
-              {cycle === 'annual'
-                ? 'No charge for 14 days · Cancel anytime in App Store'
-                : 'Billed monthly · Cancel anytime in App Store'}
-            </Text>
-
-            {/* ── Founder (lifetime) card ── */}
-            {showFounder && (
-              <View style={styles.founderCard}>
-                <View style={styles.founderHeader}>
-                  <Text style={styles.founderTitle}>Founder · lifetime</Text>
-                  <Text style={styles.founderPrice}>{founderPrice} once</Text>
-                </View>
-                <Text style={styles.founderSub}>
-                  {founderRemaining == null
-                    ? `Limited to the first ${FOUNDER_CAP} supporters`
-                    : `Pro forever for the first ${FOUNDER_CAP} supporters · ${founderRemaining} left`}
-                </Text>
-                <TouchableOpacity
-                  style={[styles.founderButton, busy && styles.ctaButtonBusy]}
-                  onPress={handleFounder}
-                  disabled={busy}
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.founderButtonText}>Become a Founder</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            <View style={styles.ctaBlock}>
+              <TouchableOpacity
+                style={[styles.ctaButton, busy && styles.ctaButtonBusy]}
+                onPress={handleSubscribe}
+                disabled={busy}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+              >
+                {busy
+                  ? <ActivityIndicator color={colors.text.inverse} />
+                  : <Text style={styles.ctaText}>
+                      {cycle === 'annual' ? 'Start Free Trial' : 'Subscribe Monthly'}
+                    </Text>
+                }
+              </TouchableOpacity>
+              <Text style={styles.ctaNote}>
+                {cycle === 'annual'
+                  ? 'No charge for 14 days · Cancel anytime in App Store'
+                  : 'Billed monthly · Cancel anytime in App Store'}
+              </Text>
+            </View>
           </>
         )}
 
         {/* ── Footer links ── */}
         <View style={styles.footer}>
-          <TouchableOpacity onPress={handleRestore} disabled={busy} activeOpacity={0.7}>
+          <TouchableOpacity onPress={handleRestore} disabled={busy} activeOpacity={0.7} accessibilityRole="button">
             <Text style={styles.footerLink}>Restore Purchases</Text>
           </TouchableOpacity>
           <Text style={styles.footerDot}>·</Text>
           <TouchableOpacity
             onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})}
             activeOpacity={0.7}
+            accessibilityRole="link"
           >
             <Text style={styles.footerLink}>Privacy</Text>
           </TouchableOpacity>
@@ -643,6 +637,7 @@ export default function PaywallScreen() {
           <TouchableOpacity
             onPress={() => Linking.openURL(TERMS_URL).catch(() => {})}
             activeOpacity={0.7}
+            accessibilityRole="link"
           >
             <Text style={styles.footerLink}>Terms</Text>
           </TouchableOpacity>
@@ -660,305 +655,200 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg.primary,
   },
-
-  closeBtn: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 56 : 16,
-    right: spacing[5],
-    zIndex: 10,
-    width: 32,
-    height: 32,
-    borderRadius: radius.full,
-    backgroundColor: colors.bg.elevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  closeBtnText: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
-  },
-
   scroll: {
-    paddingHorizontal: spacing[6],
-    paddingBottom: spacing[6],
-    paddingTop: spacing[8],
+    paddingHorizontal: spacing[5],
+    paddingBottom:     spacing[6],
+    gap:               spacing[7],
   },
 
-  // ── Hero ────────────────────────────────────────────────────────────────────
-  hero: {
-    alignItems: 'center',
-    paddingTop: spacing[6],
-    paddingBottom: spacing[6],
-    gap: spacing[2],
+  // ── Close ──
+  topBar: {
+    flexDirection:  'row',
+    justifyContent: 'flex-end',
+    paddingTop:     spacing[2],
+    marginBottom:   -spacing[3],
   },
-  crown: {
-    fontSize: 44,
+  closeBtn: {
+    width:           36,
+    height:          36,
+    borderRadius:    18,
+    backgroundColor: colors.bg.secondary,
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
+
+  // ── Hero ──
+  hero: {
+    gap: spacing[2.5],
+  },
+  eyebrow: {
+    ...typography.label,
     color: colors.amber[400],
-    marginBottom: spacing[2],
   },
   heroTitle: {
-    color: colors.text.primary,
-    fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.bold,
-    letterSpacing: 0.5,
+    fontFamily:    fontFamily.headingBold,
+    fontSize:      30,
+    lineHeight:    34,
+    letterSpacing: -0.9,
+    color:         colors.text.primary,
   },
   heroSub: {
+    ...typography.body,
     color: colors.text.secondary,
-    fontSize: fontSize.base,
-    textAlign: 'center',
-    lineHeight: fontSize.base * 1.5,
   },
 
-  // ── Feature list ────────────────────────────────────────────────────────────
-  featureList: {
-    backgroundColor: colors.bg.secondary,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    overflow: 'hidden',
-    marginBottom: spacing[5],
-  },
+  // ── Features ──
+  featureList: {},
   featureRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing[3],
-    padding: spacing[4],
-    borderTopWidth: 1,
-    borderTopColor: colors.border.subtle,
+    flexDirection:   'row',
+    alignItems:      'flex-start',
+    gap:             spacing[3.5],
+    paddingVertical: spacing[3.5],
   },
-  featureRowFirst: {
-    borderTopWidth: 0,
+  featureDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.subtle,
   },
-  featureIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.md,
-    backgroundColor: colors.amber[900] + '33',
-    borderWidth: 1,
-    borderColor: colors.amber[700] + '55',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
+  featureIcon: {
+    width:     28,
+    textAlign: 'center',
+    marginTop: 1,
   },
   featureText: {
     flex: 1,
-    gap: spacing[0.5],
+    gap:  2,
   },
   featureTitle: {
-    color: colors.text.primary,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semiBold,
+    ...typography.title,
   },
   featureBody: {
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
-    lineHeight: fontSize.sm * 1.5,
+    ...typography.caption,
   },
 
-  // ── Billing toggle ──────────────────────────────────────────────────────────
-  toggleWrap: {
-    flexDirection: 'row',
-    backgroundColor: colors.bg.elevated,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    overflow: 'hidden',
-    marginBottom: spacing[4],
-    // minHeight, not height: the toggle must grow with scaled text instead of
-    // clipping it at large Dynamic Type sizes.
-    minHeight: 52,
-  },
-  toggleBtn: {
-    flex: 1,
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[1],
-    paddingHorizontal: 4,
-    gap: 3,
-  },
-  toggleBtnActive: {
-    backgroundColor: colors.amber[400],
-  },
-  toggleLabel: {
-    color: colors.text.secondary,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semiBold,
-  },
-  toggleLabelActive: {
-    color: colors.text.inverse,
-  },
-  saveBadge: {
-    backgroundColor: 'rgba(0,0,0,0.22)',
-    borderRadius: 3,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-  },
-  saveBadgeInactive: {
-    backgroundColor: colors.amber[400] + '22',
-    borderWidth: 1,
-    borderColor: colors.amber[500] + '55',
-  },
-  saveBadgeText: {
-    color: '#fff',
-    fontSize: 7,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 0.3,
-  },
-  saveBadgeTextInactive: {
-    color: colors.amber[400],
-  },
-
-  // ── Price display ────────────────────────────────────────────────────────────
+  // ── Loading / unavailable ──
   priceBlock: {
     alignItems: 'center',
-    marginBottom: spacing[4],
-    gap: spacing[1],
-  },
-  priceMain: {
-    color: colors.text.primary,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
+    gap:        spacing[3],
+    paddingVertical: spacing[4],
   },
   priceNote: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.sm,
-  },
-
-  // ── Trial badge ──────────────────────────────────────────────────────────────
-  trialBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    backgroundColor: colors.amber[900] + '44',
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.amber[700],
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[4],
-    alignSelf: 'center',
-    marginBottom: spacing[5],
-  },
-  trialBadgeIcon: {
-    fontSize: 16,
-  },
-  trialBadgeText: {
-    color: colors.amber[400],
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-  },
-
-  // ── Annual advantage prompt (monthly only) ──────────────────────────────────
-  switchPrompt: {
-    alignSelf: 'center',
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    backgroundColor: colors.bg.secondary,
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[4],
-    marginBottom: spacing[5],
-  },
-  switchPromptText: {
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
+    ...typography.caption,
     textAlign: 'center',
   },
-  switchPromptStrong: {
-    color: colors.amber[400],
+
+  // ── Plans ──
+  plans: {
+    gap: spacing[2.5],
+  },
+  sectionLabel: {
+    ...typography.label,
+    marginBottom: spacing[1.5],
+  },
+  plan: {
+    ...surface.card,
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           spacing[3.5],
+    padding:       spacing[4],
+  },
+  planSelected: {
+    borderColor: colors.amber[400],
+    borderWidth: 1.5,
+  },
+  planBadge: {
+    position:          'absolute',
+    top:               -10,
+    left:              spacing[4],
+    backgroundColor:   colors.amber[400],
+    borderRadius:      6,
+    paddingHorizontal: spacing[2],
+    paddingVertical:   3,
+  },
+  planBadgeText: {
+    fontSize:      10,
+    letterSpacing: 1.2,
+    fontWeight:    fontWeight.bold,
+    color:         colors.bg.primary,
+    textTransform: 'uppercase',
+  },
+  radio: {
+    width:          20,
+    height:         20,
+    borderRadius:   10,
+    borderWidth:    1.5,
+    borderColor:    colors.border.strong,
+    alignItems:     'center',
+    justifyContent: 'center',
+  },
+  radioSelected: {
+    borderColor: colors.amber[400],
+  },
+  radioDot: {
+    width:           10,
+    height:          10,
+    borderRadius:    5,
+    backgroundColor: colors.amber[400],
+  },
+  planText: {
+    flex: 1,
+    gap:  2,
+  },
+  planTitle: {
+    ...typography.title,
+  },
+  planSub: {
+    ...typography.caption,
+  },
+  planPrice: {
+    ...typography.rowNumeral,
+    fontSize: fontSize.xl,
+  },
+  // Nested Text inherits the numeral face; name the system face explicitly.
+  planUnit: {
+    fontFamily: 'System',
+    fontSize:   13,
     fontWeight: fontWeight.semiBold,
+    color:      colors.text.secondary,
   },
 
-  // ── CTA ─────────────────────────────────────────────────────────────────────
+  // ── CTA ──
+  ctaBlock: {
+    gap: spacing[3],
+  },
   ctaButton: {
+    height:          54,
+    borderRadius:    radius.lg,
     backgroundColor: colors.amber[400],
-    borderRadius: radius.md,
-    paddingVertical: spacing[4],
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 56,
-    marginBottom: spacing[3],
+    alignItems:      'center',
+    justifyContent:  'center',
   },
   ctaButtonBusy: {
-    opacity: 0.75,
+    opacity: 0.7,
   },
   ctaText: {
-    color: colors.text.inverse,
-    fontSize: fontSize.base,
+    fontSize:   fontSize.base,
     fontWeight: fontWeight.bold,
+    color:      colors.text.inverse,
   },
   ctaNote: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
+    fontSize:  fontSize.xs,
+    color:     colors.text.tertiary,
     textAlign: 'center',
-    marginBottom: spacing[6],
   },
 
-  // ── Founder card ────────────────────────────────────────────────────────────
-  founderCard: {
-    backgroundColor: colors.amber[900] + '33',
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.amber[700],
-    padding: spacing[4],
-    gap: spacing[2],
-    marginBottom: spacing[6],
-  },
-  founderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    gap: spacing[2],
-  },
-  founderTitle: {
-    color: colors.amber[400],
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
-    flexShrink: 1,
-  },
-  founderPrice: {
-    color: colors.text.primary,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semiBold,
-  },
-  founderSub: {
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
-    lineHeight: fontSize.sm * 1.5,
-  },
-  founderButton: {
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.amber[400],
-    paddingVertical: spacing[3],
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 48,
-    marginTop: spacing[1],
-  },
-  founderButtonText: {
-    color: colors.amber[400],
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
-  },
-
-  // ── Footer ──────────────────────────────────────────────────────────────────
+  // ── Footer ──
   footer: {
-    flexDirection: 'row',
+    flexDirection:  'row',
     justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing[2],
+    alignItems:     'center',
+    gap:            spacing[2.5],
   },
   footerLink: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
+    fontSize: 13,
+    color:    colors.text.secondary,
   },
   footerDot: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
+    fontSize: 13,
+    color:    colors.text.tertiary,
   },
 });
