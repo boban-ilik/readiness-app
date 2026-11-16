@@ -12,7 +12,7 @@ import { loadCoachMemory, addCoachMemory, removeCoachMemory, clearCoachMemory, M
 import { loadWaterPrefs, saveWaterUnit, saveWaterTarget } from '@services/water';
 import { track } from '@services/analytics';
 import { TARGET_STEP_LITRES, TARGET_MIN_LITRES, TARGET_MAX_LITRES, clampTarget, litresToFlOz, type WaterUnit } from '@utils/water';
-import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
+import { colors, fontFamily, fontSize, fontWeight, spacing, radius, surface, typography } from '@constants/theme';
 import { useAuth }                   from '@contexts/AuthContext';
 import { supabase }                 from '@services/supabase';
 import { useSubscription }           from '@contexts/SubscriptionContext';
@@ -261,7 +261,7 @@ function CoachMemorySection() {
         )}
       </SettingsCard>
       <Text style={styles.sectionHint}>
-        🔒 Kept on this phone only and sent with your coach questions so answers stay consistent. Remove anything you don't want remembered.
+        Kept on this phone only and sent with your coach questions so answers stay consistent. Remove anything you don't want remembered.
       </Text>
     </>
   );
@@ -421,7 +421,7 @@ function NotificationsContent() {
       <View style={styles.notifContent}>
         <View style={styles.expoGoNote}>
           <Text style={styles.expoGoNoteText}>
-            🔔  Notifications require a custom dev build. Run{' '}
+            Notifications require a custom dev build. Run{' '}
             <Text style={styles.expoGoNoteCode}>npx expo run:ios</Text> or use
             EAS Build to test this feature on a real device.
           </Text>
@@ -510,7 +510,7 @@ function NotificationsContent() {
         )}
       </SettingsCard>
 
-      <SectionLabel title="SMART ALERTS  ✦ PRO" />
+      <SectionLabel title="SMART ALERTS · PRO" />
       <SettingsCard>
         <ToggleRow
           label="HRV drop alert"
@@ -578,7 +578,7 @@ function NotificationsContent() {
       {permissionStatus === 'denied' && (
         <View style={styles.permWarning}>
           <Text style={styles.permWarningText}>
-            ⚠️  Notifications are blocked. Go to iOS Settings → Readiness → Notifications to enable them.
+            Notifications are blocked. Go to iOS Settings → Readiness → Notifications to enable them.
           </Text>
         </View>
       )}
@@ -1031,7 +1031,7 @@ export default function ProfileScreen() {
             )}
             {/* Camera badge */}
             <View style={styles.cameraBadge}>
-              <Text style={styles.cameraIcon}>📷</Text>
+              <Ionicons name="camera" size={11} color={colors.text.secondary} />
             </View>
           </TouchableOpacity>
 
@@ -1039,7 +1039,7 @@ export default function ProfileScreen() {
             {/* Tappable name */}
             <TouchableOpacity onPress={handleEditName} activeOpacity={0.7} style={styles.heroNameRow}>
               <Text style={styles.heroName}>{displayName}</Text>
-              <Text style={styles.editPencil}>✎</Text>
+              <Ionicons name="pencil" size={14} color={colors.text.tertiary} />
             </TouchableOpacity>
 
             <View style={styles.heroBadges}>
@@ -1077,7 +1077,7 @@ export default function ProfileScreen() {
                   </View>
                 ) : isPro ? (
                   <View style={styles.proPill}>
-                    <Text style={styles.proPillText}>PRO ♛</Text>
+                    <Text style={styles.proPillText}>PRO</Text>
                   </View>
                 ) : (
                   <Text style={styles.freePillText}>Free</Text>
@@ -1105,7 +1105,7 @@ export default function ProfileScreen() {
             onPress={presentPaywall}
           >
             <Text style={styles.upgradeText}>
-              {isTrialActive ? 'Keep Pro after your calibration week' : 'Upgrade to Pro · $9.99/mo'}
+              {isTrialActive ? 'Keep Pro after your calibration week' : 'Upgrade to Pro'}
             </Text>
           </TouchableOpacity>
         )}
@@ -1295,7 +1295,7 @@ export default function ProfileScreen() {
                       <TouchableOpacity
                         onPress={() => {
                           cycle.logToday().catch(() => {});
-                          Alert.alert('Logged ✓', 'Period start logged for today.');
+                          Alert.alert('Logged', 'Period start logged for today.');
                         }}
                         style={{ paddingHorizontal: spacing[3], paddingVertical: spacing[1] }}
                         activeOpacity={0.7}
@@ -1310,7 +1310,7 @@ export default function ProfileScreen() {
               )}
             </SettingsCard>
             <Text style={styles.sectionHint}>
-              🔒 Your period dates stay on this device. Readiness reads them from Apple Health if you allow it, and from anything you log here. After two complete cycles, your score compares today with the same phase of your earlier cycles instead of the whole month. While tracking is on, your current cycle phase (not the dates) is sent with briefing and coach requests so the AI reads your numbers in context. Turn tracking off to stop both.
+              Your period dates stay on this device. Readiness reads them from Apple Health if you allow it, and from anything you log here. After two complete cycles, your score compares today with the same phase of your earlier cycles instead of the whole month. While tracking is on, your current cycle phase (not the dates) is sent with briefing and coach requests so the AI reads your numbers in context. Turn tracking off to stop both.
             </Text>
           </>
         )}
@@ -1379,7 +1379,7 @@ export default function ProfileScreen() {
             <SettingsCard>
               <ToggleRow
                 label="Pro subscription"
-                sublabel={isPro ? '✓ Pro features unlocked' : 'Tap to simulate a Pro purchase'}
+                sublabel={isPro ? 'Pro features unlocked' : 'Tap to simulate a Pro purchase'}
                 value={isPro}
                 onValueChange={(v) => debugSetPro(v)}
                 topBorder={false}
@@ -1410,16 +1410,14 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text.primary,
-    fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.bold,
-    marginBottom: spacing[6],
+    fontFamily: fontFamily.heading,
+    fontSize: fontSize.xl,
+    letterSpacing: -0.3,
+    marginBottom: spacing[5],
   },
 
   sectionLabel: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semiBold,
-    letterSpacing: 1.5,
+    ...typography.label,
     marginBottom: spacing[2],
     marginTop: spacing[4],
   },
@@ -1431,11 +1429,8 @@ const styles = StyleSheet.create({
   },
 
   settingsCard: {
-    backgroundColor: colors.bg.tertiary,
-    borderRadius: radius.lg,
+    ...surface.card,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
   },
 
   row: {
@@ -1621,7 +1616,7 @@ const styles = StyleSheet.create({
   upgradeText: {
     color: colors.text.inverse,
     fontSize: fontSize.base,
-    fontWeight: fontWeight.semiBold,
+    fontWeight: fontWeight.bold,
   },
 
   rowChevron: {
@@ -1671,12 +1666,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[4],
-    backgroundColor: colors.bg.tertiary,
-    borderRadius: radius.xl,
+    ...surface.card,
     padding: spacing[5],
     marginBottom: spacing[5],
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
   },
   avatarWrapper: {
     position: 'relative',
@@ -1697,9 +1689,9 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: colors.text.inverse,
+    fontFamily: fontFamily.headingBold,
     fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.bold,
-    lineHeight: 32,
+    lineHeight: 34,
   },
   cameraBadge: {
     position: 'absolute',
@@ -1714,10 +1706,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cameraIcon: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
   heroInfo: {
     flex: 1,
     gap: spacing[1.5],
@@ -1729,13 +1717,9 @@ const styles = StyleSheet.create({
   },
   heroName: {
     color: colors.text.primary,
+    fontFamily: fontFamily.heading,
     fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-  },
-  editPencil: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.base,
-    marginTop: 1,
+    letterSpacing: -0.3,
   },
   heroBadges: {
     flexDirection: 'row',
