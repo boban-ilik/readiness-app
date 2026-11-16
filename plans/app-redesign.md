@@ -25,7 +25,9 @@
 
 ## Out of scope
 
-New features beyond the locked insight; changes to the score model or copy of the briefing; History and Profile layouts; Android.
+New features beyond the locked insight; changes to the score model or copy of the briefing; the Profile layout; Android.
+
+History was added to scope on 2026-11-16 at Boban's request, after build 84. It follows decisions 1, 2 and 7: flat chart, stats and daily log, Archivo numerals, no emoji, cards only for the weekly report entry, the calendar day detail and the upgrade gate. The upgrade gate (ProGate) is shared with Profile, so the notifications gate there changed with it. No mock was made for History; it was built straight from the locked rules.
 
 ## Open
 

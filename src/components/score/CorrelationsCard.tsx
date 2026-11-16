@@ -11,14 +11,14 @@
  */
 
 import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { computeInsights, type Insight } from '@utils/correlations';
 import type { DayHistory } from '@/types/index';
 import {
   colors,
   fontSize,
-  fontWeight,
   spacing,
-  radius,
+  typography,
 } from '@constants/theme';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -32,15 +32,19 @@ function insightColor(direction: Insight['direction']): string {
 }
 
 function InsightRow({ insight, showBorder }: { insight: Insight; showBorder: boolean }) {
+  // The icon carries the direction; the headline stays neutral.
   const headlineColor = insightColor(insight.direction);
 
   return (
     <View style={[styles.insightRow, showBorder && styles.insightRowBorder]}>
-      <Text style={styles.insightIcon}>{insight.icon}</Text>
+      <Ionicons
+        name={insight.direction === 'positive' ? 'trending-up' : insight.direction === 'negative' ? 'trending-down' : 'remove'}
+        size={18}
+        color={insight.direction === 'neutral' ? colors.text.tertiary : headlineColor}
+        style={styles.insightIcon}
+      />
       <View style={styles.insightBody}>
-        <Text style={[styles.insightHeadline, { color: headlineColor }]}>
-          {insight.headline}
-        </Text>
+        <Text style={styles.insightHeadline}>{insight.headline}</Text>
         <Text style={styles.insightDetail}>{insight.detail}</Text>
       </View>
     </View>
@@ -60,10 +64,8 @@ export default function CorrelationsCard({ history }: CorrelationsCardProps) {
     <View style={styles.card}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>PATTERNS</Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>7 DAYS</Text>
-        </View>
+        <Text style={styles.title} accessibilityRole="header">PATTERNS</Text>
+        <Text style={styles.badgeText}>7 DAYS</Text>
       </View>
 
       {/* Insight rows */}
@@ -88,48 +90,27 @@ export default function CorrelationsCard({ history }: CorrelationsCardProps) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.bg.tertiary,
-    borderRadius:    radius.xl,
-    borderWidth:     1,
-    borderColor:     colors.border.subtle,
-    overflow:        'hidden',
-  },
+  // Flat on the page: nothing here is tappable.
+  card: {},
 
   header: {
-    flexDirection:   'row',
-    alignItems:      'center',
-    justifyContent:  'space-between',
-    paddingHorizontal: spacing[4],
-    paddingTop:      spacing[4],
-    paddingBottom:   spacing[3],
+    flexDirection:  'row',
+    alignItems:     'baseline',
+    justifyContent: 'space-between',
+    marginBottom:   spacing[1],
   },
   title: {
-    color:       colors.text.tertiary,
-    fontSize:    fontSize.xs,
-    fontWeight:  fontWeight.semiBold,
-    letterSpacing: 1.5,
-  },
-  badge: {
-    backgroundColor: colors.bg.elevated,
-    borderRadius:    radius.full,
-    paddingHorizontal: spacing[2.5],
-    paddingVertical: spacing[0.5],
-    borderWidth:     1,
-    borderColor:     colors.border.default,
+    ...typography.label,
   },
   badgeText: {
-    color:      colors.text.tertiary,
-    fontSize:   fontSize.xs,
-    fontWeight: fontWeight.semiBold,
-    letterSpacing: 0.8,
+    ...typography.label,
+    letterSpacing: 1,
   },
 
   insightRow: {
     flexDirection:   'row',
     alignItems:      'flex-start',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
+    paddingVertical: spacing[3.5],
     gap:             spacing[3],
   },
   insightRowBorder: {
@@ -137,36 +118,26 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border.subtle,
   },
   insightIcon: {
-    fontSize:   18,
-    lineHeight: 24,
-    marginTop:  1,
+    marginTop: 2,
   },
   insightBody: {
     flex: 1,
-    gap:  spacing[0.5],
+    gap:  spacing[1],
   },
   insightHeadline: {
-    fontSize:   fontSize.sm,
-    fontWeight: fontWeight.semiBold,
-    lineHeight: fontSize.sm * 1.4,
+    ...typography.title,
   },
   insightDetail: {
-    color:      colors.text.tertiary,
-    fontSize:   fontSize.xs,
-    lineHeight: fontSize.xs * 1.6,
+    ...typography.caption,
   },
 
   footer: {
-    paddingHorizontal: spacing[4],
-    paddingTop:        spacing[2],
-    paddingBottom:     spacing[4],
-    borderTopWidth:    1,
-    borderTopColor:    colors.border.subtle,
+    paddingTop:     spacing[3],
+    borderTopWidth: 1,
+    borderTopColor: colors.border.subtle,
   },
   footerText: {
-    color:     colors.text.tertiary,
-    fontSize:  fontSize.xs,
-    lineHeight: fontSize.xs * 1.5,
-    fontStyle: 'italic',
+    color:    colors.text.tertiary,
+    fontSize: fontSize.xs,
   },
 });

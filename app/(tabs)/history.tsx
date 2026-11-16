@@ -20,6 +20,7 @@ import Svg, {
   LinearGradient,
   Stop,
 } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import { useHistoryData } from '@hooks/useHistoryData';
 import type { DayHistory } from '@/types/index';
 import { useStreak } from '@hooks/useStreak';
@@ -32,10 +33,13 @@ import FirstLookModal from '@components/score/FirstLookModal';
 import { track } from '@services/analytics';
 import {
   colors,
+  fontFamily,
   fontSize,
   fontWeight,
   spacing,
   radius,
+  surface,
+  typography,
   getScoreColor,
   getScoreLabel,
 } from '@constants/theme';
@@ -190,7 +194,7 @@ function TrendChart({
         const r = p.isToday ? 6 : (data.length > 10 ? 3 : 4);
         return (
           <Circle key={i} cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} r={r}
-            fill={dotColor} stroke={colors.bg.secondary} strokeWidth={2} />
+            fill={dotColor} stroke={colors.bg.primary} strokeWidth={2} />
         );
       })}
 
@@ -198,7 +202,7 @@ function TrendChart({
         if (!p.isToday || p.y === null || p.score === null) return null;
         return (
           <SvgText key={`val-${i}`} x={p.x.toFixed(1)} y={(p.y - 12).toFixed(1)}
-            fontSize={11} fill={cfg.color} textAnchor="middle" fontWeight="600">
+            fontSize={15} fontFamily={fontFamily.numeral} fill={cfg.color} textAnchor="middle">
             {cfg.format(p.score)}
           </SvgText>
         );
@@ -228,20 +232,20 @@ function ComponentBars({
   components: { recovery: number; sleep: number; stress: number };
 }) {
   const bars = [
-    { label: 'Rec', value: components.recovery, color: colors.error   },
-    { label: 'Slp', value: components.sleep,    color: colors.info    },
-    { label: 'Str', value: components.stress,   color: colors.warning },
+    { label: 'Recovery', value: components.recovery },
+    { label: 'Sleep',    value: components.sleep    },
+    { label: 'Stress',   value: components.stress   },
   ];
   return (
     <View style={styles.compBarsRow}>
-      {bars.map(({ label, value, color }) => (
+      {bars.map(({ label, value }) => (
         <View key={label} style={styles.compBarWrap}>
-          <Text style={[styles.compBarLabel, { color }]}>{label}</Text>
+          <Text style={styles.compBarLabel}>{label}</Text>
           <View style={styles.compBarTrack}>
             <View
               style={[
                 styles.compBarFill,
-                { width: `${value}%` as any, backgroundColor: color + 'CC' },
+                { width: `${value}%` as any, backgroundColor: getScoreColor(value) },
               ]}
             />
           </View>
@@ -285,41 +289,27 @@ function StatChip({
 
 function DayRow({ day, isToday }: { day: DayHistory; isToday: boolean }) {
   const scoreColor = day.score !== null ? getScoreColor(day.score) : colors.text.tertiary;
+  const meta = [
+    shortDate(day.date),
+    day.sleepMinutes !== null ? `${formatDuration(day.sleepMinutes)} sleep` : null,
+    day.rhr !== null ? `${day.rhr} bpm` : null,
+    day.hrv !== null ? `HRV ${day.hrv} ms` : null,
+    day.score === null ? 'No data' : null,
+  ].filter(Boolean).join(' · ');
 
   return (
-    <View style={[styles.dayRow, isToday && styles.dayRowToday]}>
-      {/* Date */}
+    <View style={styles.dayRow}>
       <View style={styles.dayDateCol}>
         <Text style={[styles.dayName, isToday && styles.dayNameToday]}>
-          {day.dayLabel}{isToday ? '  ·  Today' : ''}
+          {day.dayLabel}{isToday ? ' · Today' : ''}
         </Text>
-        <Text style={styles.dayDate}>{shortDate(day.date)}</Text>
-        {/* Component breakdown bars */}
+        <Text style={styles.dayMeta}>{meta}</Text>
         {day.components && <ComponentBars components={day.components} />}
       </View>
 
-      {/* Score */}
       <Text style={[styles.dayScore, { color: scoreColor }]}>
         {day.score ?? '—'}
       </Text>
-
-      {/* Metrics */}
-      <View style={styles.dayMetricsCol}>
-        {day.sleepMinutes !== null && (
-          <Text style={styles.dayMetric}>
-            💤 {formatDuration(day.sleepMinutes)}
-          </Text>
-        )}
-        {day.rhr !== null && (
-          <Text style={styles.dayMetric}>❤️ {day.rhr} bpm</Text>
-        )}
-        {day.hrv !== null && (
-          <Text style={styles.dayMetric}>⚡ {day.hrv} ms</Text>
-        )}
-        {day.score === null && (
-          <Text style={styles.dayNoData}>No data</Text>
-        )}
-      </View>
     </View>
   );
 }
@@ -335,9 +325,9 @@ function DayDetailCard({ day }: { day: DayHistory }) {
 
   const bars = day.components
     ? [
-        { key: 'Recovery', value: day.components.recovery, color: colors.error   },
-        { key: 'Sleep',    value: day.components.sleep,    color: colors.info    },
-        { key: 'Stress',   value: day.components.stress,   color: colors.warning },
+        { key: 'Recovery', value: day.components.recovery },
+        { key: 'Sleep',    value: day.components.sleep    },
+        { key: 'Stress',   value: day.components.stress   },
       ]
     : [];
 
@@ -356,22 +346,22 @@ function DayDetailCard({ day }: { day: DayHistory }) {
       <View style={styles.dayDetailMetrics}>
         {day.sleepMinutes != null && (
           <View style={styles.dayDetailPill}>
-            <Text style={styles.dayDetailPillText}>💤 {formatDuration(day.sleepMinutes)}</Text>
+            <Text style={styles.dayDetailPillText}>Sleep {formatDuration(day.sleepMinutes)}</Text>
           </View>
         )}
         {day.rhr != null && (
           <View style={styles.dayDetailPill}>
-            <Text style={styles.dayDetailPillText}>❤️ {day.rhr} bpm</Text>
+            <Text style={styles.dayDetailPillText}>Resting HR {day.rhr} bpm</Text>
           </View>
         )}
         {day.hrv != null && (
           <View style={styles.dayDetailPill}>
-            <Text style={styles.dayDetailPillText}>⚡ HRV {day.hrv} ms</Text>
+            <Text style={styles.dayDetailPillText}>HRV {day.hrv} ms</Text>
           </View>
         )}
         {day.sleepEfficiency != null && (
           <View style={styles.dayDetailPill}>
-            <Text style={styles.dayDetailPillText}>🎯 {day.sleepEfficiency}% efficiency</Text>
+            <Text style={styles.dayDetailPillText}>Sleep efficiency {day.sleepEfficiency}%</Text>
           </View>
         )}
         {day.score === null && (
@@ -381,18 +371,18 @@ function DayDetailCard({ day }: { day: DayHistory }) {
 
       {bars.length > 0 && (
         <View style={styles.dayDetailBars}>
-          {bars.map(({ key, value, color }) => (
+          {bars.map(({ key, value }) => (
             <View key={key} style={styles.dayDetailBarRow}>
-              <Text style={[styles.dayDetailBarLabel, { color }]}>{key}</Text>
+              <Text style={styles.dayDetailBarLabel}>{key}</Text>
               <View style={styles.dayDetailBarTrack}>
                 <View
                   style={[
                     styles.dayDetailBarFill,
-                    { width: `${value}%` as any, backgroundColor: color },
+                    { width: `${value}%` as any, backgroundColor: getScoreColor(value) },
                   ]}
                 />
               </View>
-              <Text style={[styles.dayDetailBarValue, { color }]}>{value}</Text>
+              <Text style={styles.dayDetailBarValue}>{value}</Text>
             </View>
           ))}
         </View>
@@ -457,7 +447,7 @@ function CalendarHeatmap({
           accessibilityRole="button"
           accessibilityLabel="Previous month"
         >
-          <Text style={[styles.calNavArrow, !canGoPrev && styles.calNavArrowDisabled]}>‹</Text>
+          <Ionicons name="chevron-back" size={18} color={canGoPrev ? colors.amber[400] : colors.border.default} />
         </TouchableOpacity>
         <Text style={styles.calMonthTitle}>{monthName}</Text>
         <TouchableOpacity
@@ -468,7 +458,7 @@ function CalendarHeatmap({
           accessibilityRole="button"
           accessibilityLabel="Next month"
         >
-          <Text style={[styles.calNavArrow, !canGoNext && styles.calNavArrowDisabled]}>›</Text>
+          <Ionicons name="chevron-forward" size={18} color={canGoNext ? colors.amber[400] : colors.border.default} />
         </TouchableOpacity>
       </View>
 
@@ -569,21 +559,23 @@ function CalendarHeatmap({
 
 function WeeklyReportEntryCard({ onOpen }: { onOpen: () => void }) {
   return (
-    <TouchableOpacity style={styles.weeklyEntryCard} onPress={onOpen} activeOpacity={0.85}>
+    <TouchableOpacity
+      style={styles.weeklyEntryCard}
+      onPress={onOpen}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel="Weekly report. Score trends, component breakdown and actionable tip"
+    >
       <View style={styles.weeklyEntryLeft}>
         <View style={styles.weeklyEntryTitleRow}>
-          <Text style={styles.weeklyEntryTitle}>WEEKLY REPORT</Text>
-          <View style={styles.aiBadge}>
-            <Text style={styles.aiBadgeText}>✨ AI</Text>
-          </View>
+          <Text style={styles.weeklyEntryTitle}>Weekly report</Text>
+          <Text style={styles.aiTag}>AI</Text>
         </View>
         <Text style={styles.weeklyEntrySub}>
           Score trends, component breakdown & actionable tip
         </Text>
       </View>
-      <View style={styles.weeklyEntryChevron}>
-        <Text style={styles.weeklyEntryChevronText}>›</Text>
-      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
     </TouchableOpacity>
   );
 }
@@ -594,30 +586,20 @@ function TodayCard({ today }: { today: DayHistory | undefined }) {
   const score      = today?.score ?? null;
   const scoreColor = score !== null ? getScoreColor(score) : colors.text.tertiary;
   const label      = score !== null ? getScoreLabel(score) : 'No data yet';
+  const meta = [
+    today ? shortDate(today.date) : null,
+    today?.sleepMinutes != null ? `${formatDuration(today.sleepMinutes)} sleep` : null,
+    today?.rhr != null ? `${today.rhr} bpm` : null,
+  ].filter(Boolean).join(' · ');
 
   return (
     <View style={styles.todayCard}>
       <View style={styles.todayLeft}>
         <Text style={styles.todayEyebrow}>TODAY</Text>
         <Text style={styles.todayLabel}>{label}</Text>
-        {today && <Text style={styles.todayDate}>{shortDate(today.date)}</Text>}
-        <View style={styles.todayMetrics}>
-          {today?.sleepMinutes != null && (
-            <View style={styles.todayMetricPill}>
-              <Text style={styles.todayMetricText}>💤 {formatDuration(today.sleepMinutes)}</Text>
-            </View>
-          )}
-          {today?.rhr != null && (
-            <View style={styles.todayMetricPill}>
-              <Text style={styles.todayMetricText}>❤️ {today.rhr} bpm</Text>
-            </View>
-          )}
-        </View>
+        {meta !== '' && <Text style={styles.todayMeta}>{meta}</Text>}
       </View>
-      <View style={styles.todayScoreCol}>
-        <Text style={[styles.todayScore, { color: scoreColor }]}>{score ?? '—'}</Text>
-        <Text style={styles.todayScoreOf}>/100</Text>
-      </View>
+      <Text style={[styles.todayScore, { color: scoreColor }]}>{score ?? '—'}</Text>
     </View>
   );
 }
@@ -727,8 +709,9 @@ export default function HistoryScreen() {
   };
 
   const SCREEN_PAD = spacing[5];
-  const CARD_PAD   = spacing[4];
-  const chartWidth = width - SCREEN_PAD * 2 - CARD_PAD * 2;
+  // The chart and calendar sit flat on the page, so they span the full
+  // content width.
+  const chartWidth = width - SCREEN_PAD * 2;
   const calCellSize = Math.floor((chartWidth - 6 * CAL_GAP) / 7);
 
   const todayStr    = localDateStr(new Date());
@@ -785,8 +768,8 @@ export default function HistoryScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View>
-              <Text style={styles.title}>History</Text>
               {dateRangeText ? <Text style={styles.dateRange}>{dateRangeText}</Text> : null}
+              <Text style={styles.title}>History</Text>
             </View>
             <View style={styles.headerRight}>
               <RangeToggle value={rangeMode} onChange={setRangeMode} />
@@ -795,8 +778,11 @@ export default function HistoryScreen() {
                 onPress={handleExport}
                 disabled={exporting}
                 activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel="Export history as CSV"
               >
-                <Text style={styles.exportBtnText}>{exporting ? '…' : '↑ CSV'}</Text>
+                <Ionicons name="download-outline" size={14} color={colors.text.secondary} />
+                <Text style={styles.exportBtnText}>CSV</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -861,7 +847,6 @@ export default function HistoryScreen() {
 
           {/* Patterns / correlations */}
           <View style={styles.correlationsBlock}>
-            <Text style={styles.sectionTitle} accessibilityRole="header">INSIGHTS</Text>
             <CorrelationsCard history={history} />
           </View>
 
@@ -875,7 +860,7 @@ export default function HistoryScreen() {
           <View style={styles.dayList}>
             <Text style={styles.sectionTitle} accessibilityRole="header">DAILY LOG</Text>
             <Text style={styles.scoreBasis}>
-              Scores based on HRV, sleep and resting heart rate · coloured bars show recovery / sleep / stress
+              Scores based on HRV, sleep and resting heart rate. Bars show recovery, sleep and stress.
             </Text>
             {[...history].reverse().map(day => (
               <DayRow key={day.date} day={day} isToday={day.date === todayStr} />
@@ -893,7 +878,10 @@ export default function HistoryScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>History</Text>
+          <View>
+            {dateRangeText ? <Text style={styles.dateRange}>{dateRangeText}</Text> : null}
+            <Text style={styles.title}>History</Text>
+          </View>
         </View>
         {firstLookLink}
 
@@ -903,7 +891,9 @@ export default function HistoryScreen() {
             daily habit, and the habit is what conversion is downstream of. The
             deeper analysis below it stays Pro. */}
         <View style={styles.chartCard}>
-          <Text style={styles.chartLabel}>READINESS · 7 DAYS</Text>
+          <View style={styles.chartHeader}>
+            <Text style={styles.chartLabel}>READINESS · 7 DAYS</Text>
+          </View>
           {history.length > 0
             ? <TrendChart data={history} chartWidth={chartWidth} />
             : <View style={styles.chartEmpty}><Text style={styles.chartEmptyText}>No data yet</Text></View>
@@ -927,7 +917,7 @@ export default function HistoryScreen() {
           <View style={styles.dayList}>
             <Text style={styles.sectionTitle} accessibilityRole="header">DAILY LOG</Text>
             <Text style={styles.scoreBasis}>
-              Scores based on HRV, sleep and resting heart rate · coloured bars show recovery / sleep / stress
+              Scores based on HRV, sleep and resting heart rate. Bars show recovery, sleep and stress.
             </Text>
             {[...history].reverse().map(day => (
               <DayRow key={day.date} day={day} isToday={day.date === todayStr} />
@@ -968,19 +958,21 @@ const styles = StyleSheet.create({
   // Header
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
-    marginBottom: spacing[5],
+    marginBottom: spacing[2],
   },
   title: {
     color: colors.text.primary,
+    fontFamily: fontFamily.heading,
     fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
+    letterSpacing: -0.3,
   },
   dateRange: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
-    marginTop: spacing[0.5],
+    ...typography.label,
+    fontSize: 12,
+    letterSpacing: 1.6,
+    marginBottom: spacing[1],
   },
   headerRight: {
     flexDirection: 'row',
@@ -991,18 +983,20 @@ const styles = StyleSheet.create({
   // Range toggle (3 options)
   rangeToggle: {
     flexDirection: 'row',
-    backgroundColor: colors.bg.elevated,
+    backgroundColor: colors.bg.secondary,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border.default,
-    overflow: 'hidden',
+    borderColor: colors.border.subtle,
+    padding: 2,
   },
   rangeBtn: {
+    height: 30,
     paddingHorizontal: spacing[2.5],
-    paddingVertical: spacing[2],
+    justifyContent: 'center',
+    borderRadius: radius.sm,
   },
   rangeBtnActive: {
-    backgroundColor: colors.amber[400],
+    backgroundColor: colors.bg.elevated,
   },
   rangeBtnText: {
     color: colors.text.tertiary,
@@ -1011,38 +1005,38 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   rangeBtnTextActive: {
-    color: colors.text.inverse,
+    color: colors.text.primary,
   },
 
   // Export button
   exportBtn: {
-    backgroundColor: colors.bg.elevated,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+    height: 36,
+    paddingHorizontal: spacing[2.5],
     borderRadius: radius.md,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: colors.border.subtle,
   },
   exportBtnDisabled: {
     opacity: 0.5,
   },
   exportBtnText: {
-    color: colors.amber[400],
+    color: colors.text.secondary,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semiBold,
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
   },
 
-  // Weekly Report entry card
+  // Weekly report entry: tappable, so it keeps a card
   weeklyEntryCard: {
-    backgroundColor: colors.bg.secondary,
-    borderRadius: radius.xl,
-    padding: spacing[4],
-    marginBottom: spacing[5],
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
+    ...surface.card,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing[3],
+    padding: spacing[4],
+    marginBottom: spacing[7],
   },
   weeklyEntryLeft: {
     flex: 1,
@@ -1050,162 +1044,98 @@ const styles = StyleSheet.create({
   },
   weeklyEntryTitleRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
     gap: spacing[2],
   },
   weeklyEntryTitle: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semiBold,
-    letterSpacing: 1.5,
+    ...typography.title,
   },
   weeklyEntrySub: {
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
+    ...typography.caption,
   },
-  weeklyEntryChevron: {
-    paddingLeft: spacing[2],
-  },
-  weeklyEntryChevronText: {
-    color: colors.amber[400],
-    fontSize: 22,
-    fontWeight: fontWeight.bold,
-    lineHeight: 26,
-  },
-  aiBadge: {
-    backgroundColor: 'rgba(139, 92, 246, 0.18)',
-    borderRadius: radius.xs,
-    paddingHorizontal: spacing[1.5],
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.30)',
-  },
-  aiBadgeText: {
-    color: '#a78bfa',
+  aiTag: {
     fontSize: 11,
+    letterSpacing: 1.2,
     fontWeight: fontWeight.bold,
-    letterSpacing: 0.5,
+    color: colors.amber[400],
   },
 
-  // Today card (free)
+  // Today block (free)
   todayCard: {
-    backgroundColor: colors.bg.secondary,
-    borderRadius: radius.xl,
-    padding: spacing[5],
-    marginBottom: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: spacing[7],
   },
   todayLeft: {
     flex: 1,
     gap: spacing[1],
   },
   todayEyebrow: {
-    color: colors.amber[400],
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semiBold,
-    letterSpacing: 2,
+    ...typography.label,
   },
   todayLabel: {
     color: colors.text.primary,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.heading,
+    fontSize: fontSize.lg,
+    letterSpacing: -0.3,
   },
-  todayDate: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
-  },
-  todayMetrics: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[2],
-    marginTop: spacing[2],
-  },
-  todayMetricPill: {
-    backgroundColor: colors.bg.tertiary,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[1],
-  },
-  todayMetricText: {
-    color: colors.text.secondary,
-    fontSize: fontSize.xs,
-  },
-  todayScoreCol: {
-    alignItems: 'flex-end',
-    paddingLeft: spacing[4],
+  todayMeta: {
+    ...typography.caption,
   },
   todayScore: {
-    fontSize: fontSize['4xl'],
-    fontWeight: fontWeight.bold,
-    lineHeight: 52,
+    fontFamily: fontFamily.numeral,
+    fontSize: fontSize['5xl'],
+    lineHeight: 68,
+    letterSpacing: -1.5,
+    paddingLeft: spacing[4],
   },
-  todayScoreOf: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.sm,
-    textAlign: 'right',
-  },
-
-  // Teaser
 
   proGateBlock: {
     marginBottom: spacing[3],
   },
 
-  // Correlations
+  // Patterns
   correlationsBlock: {
-    gap: spacing[2],
-    marginBottom: spacing[5],
+    marginBottom: spacing[7],
   },
 
-  // Chart card
+  // Chart block: flat on the page
   chartCard: {
-    backgroundColor: colors.bg.secondary,
-    borderRadius: radius.xl,
-    padding: spacing[4],
-    marginBottom: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
+    marginBottom: spacing[5],
   },
   chartHeader: {
     flexDirection:  'row',
     alignItems:     'baseline',
     justifyContent: 'space-between',
-    marginBottom:   spacing[2],
+    marginBottom:   spacing[3],
   },
   chartLabel: {
-    color:         colors.text.tertiary,
-    fontSize:      fontSize.xs,
-    fontWeight:    fontWeight.semiBold,
-    letterSpacing: 1.5,
+    ...typography.label,
   },
   chartUnit: {
-    color:     colors.text.tertiary,
-    fontSize:  fontSize.xs,
-    opacity:   0.6,
+    color:         colors.text.tertiary,
+    fontSize:      fontSize['2xs'],
+    letterSpacing: 1,
   },
   // ── Metric toggle ────────────────────────────────────────────────────────
   metricToggle: {
     flexDirection:  'row',
-    gap:            spacing[1],
-    marginBottom:   spacing[3],
+    gap:            spacing[2],
+    marginBottom:   spacing[4],
   },
   metricBtn: {
     flex:              1,
+    height:            32,
     alignItems:        'center',
     justifyContent:    'center',
-    paddingVertical:   spacing[1],
-    borderRadius:      radius.md,
+    borderRadius:      radius.full,
     borderWidth:       1,
     borderColor:       colors.border.subtle,
-    backgroundColor:   colors.bg.tertiary,
     flexDirection:     'row',
     gap:               2,
   },
   metricBtnText: {
-    fontSize:   fontSize.xs,
+    fontSize:   13,
     color:      colors.text.secondary,
     fontWeight: fontWeight.medium,
   },
@@ -1230,20 +1160,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing[3],
   },
-  calNavArrow: {
-    color: colors.amber[400],
-    fontSize: 22,
-    fontWeight: fontWeight.bold,
-    lineHeight: 26,
-    paddingHorizontal: spacing[1],
-  },
-  calNavArrowDisabled: {
-    color: colors.border.default,
-  },
   calMonthTitle: {
-    color: colors.text.primary,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semiBold,
+    ...typography.title,
     textAlign: 'center',
     flex: 1,
   },
@@ -1256,7 +1174,7 @@ const styles = StyleSheet.create({
   },
   calHeaderText: {
     color: colors.text.tertiary,
-    fontSize: 12,
+    fontSize: fontSize['2xs'],
     fontWeight: fontWeight.semiBold,
     letterSpacing: 0.5,
   },
@@ -1277,9 +1195,9 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
   },
   calCellScore: {
-    fontSize: 11,
-    fontWeight: fontWeight.bold,
-    lineHeight: 15,
+    fontFamily: fontFamily.numeral,
+    fontSize: 14,
+    lineHeight: 16,
   },
   calLegend: {
     flexDirection: 'row',
@@ -1305,22 +1223,19 @@ const styles = StyleSheet.create({
 
   // ── Day detail card (calendar tap) ────────────────────────────────────────
   dayDetail: {
-    marginTop: spacing[3],
-    backgroundColor: colors.bg.tertiary,
-    borderRadius: radius.lg,
+    ...surface.card,
+    marginTop: spacing[4],
     padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
     gap: spacing[3],
   },
   dayDetailHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
   },
   dayDetailLabel: {
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
+    fontSize: 16,
+    fontWeight: fontWeight.semiBold,
   },
   dayDetailDate: {
     color: colors.text.tertiary,
@@ -1328,9 +1243,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   dayDetailScore: {
+    fontFamily: fontFamily.numeral,
     fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.bold,
-    lineHeight: 28,
+    letterSpacing: -0.5,
   },
   dayDetailMetrics: {
     flexDirection: 'row',
@@ -1338,7 +1253,7 @@ const styles = StyleSheet.create({
     gap: spacing[2],
   },
   dayDetailPill: {
-    backgroundColor: colors.bg.elevated,
+    backgroundColor: colors.bg.tertiary,
     borderRadius: radius.full,
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[1],
@@ -1356,36 +1271,36 @@ const styles = StyleSheet.create({
     gap: spacing[2],
   },
   dayDetailBarLabel: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semiBold,
-    width: 60,
+    color: colors.text.secondary,
+    fontSize: 13,
+    width: 64,
   },
   dayDetailBarTrack: {
     flex: 1,
-    height: 6,
+    height: 4,
     backgroundColor: colors.bg.elevated,
-    borderRadius: 3,
+    borderRadius: 2,
     overflow: 'hidden',
   },
   dayDetailBarFill: {
-    height: 6,
-    borderRadius: 3,
+    height: 4,
+    borderRadius: 2,
   },
   dayDetailBarValue: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semiBold,
+    color: colors.text.primary,
+    fontFamily: fontFamily.numeral,
+    fontSize: 16,
     width: 28,
     textAlign: 'right',
   },
 
-  // Stats row
+  // Stats row: flat, ruled above and below
   statsRow: {
     flexDirection: 'row',
-    backgroundColor: colors.bg.secondary,
-    borderRadius: radius.xl,
-    padding: spacing[4],
-    marginBottom: spacing[5],
-    borderWidth: 1,
+    paddingVertical: spacing[4],
+    marginBottom: spacing[7],
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
     borderColor: colors.border.subtle,
   },
   statChip: {
@@ -1399,15 +1314,14 @@ const styles = StyleSheet.create({
     marginVertical: spacing[1],
   },
   statLabel: {
-    color: colors.text.tertiary,
-    fontSize: 11,
-    fontWeight: fontWeight.semiBold,
-    letterSpacing: 1,
+    ...typography.label,
+    letterSpacing: 1.2,
   },
   statValue: {
+    fontFamily: fontFamily.numeral,
     fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.bold,
-    lineHeight: 32,
+    letterSpacing: -0.5,
+    lineHeight: 34,
   },
   statTrend: {
     fontSize: fontSize.xs,
@@ -1416,27 +1330,23 @@ const styles = StyleSheet.create({
 
   // Day list
   sectionTitle: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semiBold,
-    letterSpacing: 2,
+    ...typography.label,
     marginBottom: spacing[1],
   },
   firstLookLink: {
     alignSelf:    'flex-start',
-    marginTop:    -spacing[3],
-    marginBottom: spacing[4],
+    marginBottom: spacing[6],
   },
   firstLookLinkText: {
     color:      colors.amber[400],
-    fontSize:   fontSize.sm,
+    fontSize:   13,
     fontWeight: fontWeight.medium,
   },
   scoreBasis: {
     color: colors.text.tertiary,
     fontSize: fontSize.xs,
-    opacity: 0.65,
-    marginBottom: spacing[2],
+    lineHeight: 17,
+    marginBottom: spacing[1],
   },
   dayList: {
     gap: 0,
@@ -1444,47 +1354,42 @@ const styles = StyleSheet.create({
   dayRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing[3],
+    gap: spacing[3],
+    paddingVertical: spacing[3.5],
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
   },
-  dayRowToday: {},
   dayDateCol: {
     flex: 1,
-    gap: spacing[0.5],
+    gap: spacing[1],
   },
   dayName: {
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
+    ...typography.title,
   },
   dayNameToday: {
     color: colors.amber[400],
-    fontWeight: fontWeight.semiBold,
   },
-  dayDate: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
+  dayMeta: {
+    ...typography.caption,
   },
 
   // Component bars (in day row)
   compBarsRow: {
     flexDirection: 'row',
-    gap: 4,
-    marginTop: spacing[1.5],
+    gap: spacing[2],
+    marginTop: spacing[1],
   },
   compBarWrap: {
     flex: 1,
-    gap: 2,
+    gap: 3,
   },
   compBarLabel: {
+    color: colors.text.tertiary,
     fontSize: 11,
-    fontWeight: fontWeight.semiBold,
-    letterSpacing: 0.2,
   },
   compBarTrack: {
     height: 3,
-    backgroundColor: colors.bg.elevated,
+    backgroundColor: colors.bg.tertiary,
     borderRadius: 1.5,
     overflow: 'hidden',
   },
@@ -1494,24 +1399,15 @@ const styles = StyleSheet.create({
   },
 
   dayScore: {
-    width: 44,
-    textAlign: 'center',
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-  },
-  dayMetricsCol: {
-    flex: 1.1,
-    alignItems: 'flex-end',
-    gap: spacing[0.5],
-  },
-  dayMetric: {
-    color: colors.text.secondary,
-    fontSize: fontSize.xs,
+    fontFamily: fontFamily.numeral,
+    fontSize: 28,
+    letterSpacing: -0.5,
+    minWidth: 44,
+    textAlign: 'right',
   },
   dayNoData: {
     color: colors.text.tertiary,
     fontSize: fontSize.xs,
-    fontStyle: 'italic',
   },
 
   // Error

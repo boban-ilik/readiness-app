@@ -9,22 +9,14 @@
  *     <HistoryChart ... />
  *   </ProGate>
  *
- * The component renders `children` underneath at 12% opacity (acting as a
- * dim preview) and overlays a frosted upgrade panel on top.
+ * A free user sees one upgrade card in place of `children`: what is behind
+ * the lock, the bullets, the price line and the button that opens the paywall.
  * When the user is Pro, children render normally with zero overhead.
- *
- * ── Layout architecture ────────────────────────────────────────────────────
- * The overlay content is in NORMAL DOCUMENT FLOW — it controls the container
- * height so the upgrade panel is never clipped regardless of how tall or short
- * the gated children are.
- *
- * The dark background and dim preview are ABSOLUTELY POSITIONED behind the
- * overlay content and do not participate in layout.
  *
  * Props:
  *   feature      — human-readable name shown in the upgrade headline
  *   description  — optional one-liner below the headline
- *   children     — the content to gate (rendered as a dim preview behind the lock)
+ *   children     — the content to gate (rendered for Pro users only)
  *   style        — optional ViewStyle applied to the outer container
  */
 
@@ -36,8 +28,9 @@ import {
   ViewStyle,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useSubscription } from '@contexts/SubscriptionContext';
-import { colors, fontSize, fontWeight, radius, spacing } from '@constants/theme';
+import { colors, fontFamily, fontSize, fontWeight, radius, spacing, surface, typography } from '@constants/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -117,61 +110,45 @@ export function ProGate({ feature, description, children, style }: ProGateProps)
 
   return (
     <View style={[styles.container, style]}>
-
-      {/* ── Layer 1: dark tinted background (absolute, behind everything) ── */}
-      <View style={[StyleSheet.absoluteFill, styles.overlayBg]} pointerEvents="none" />
-
-      {/* ── Layer 2: dim preview of the gated content (absolute, behind panel) ── */}
-      <View style={[StyleSheet.absoluteFill, styles.previewDim]} pointerEvents="none">
-        {children}
+      <View style={styles.eyebrowRow}>
+        <Ionicons name="lock-closed" size={12} color={colors.amber[400]} />
+        <Text style={styles.eyebrow}>Readiness Pro</Text>
       </View>
 
-      {/* ── Layer 3: upgrade panel — NORMAL FLOW so it defines the container height ── */}
-      <View style={styles.overlay}>
+      <Text style={styles.headline}>
+        Unlock {displayName}
+      </Text>
 
-        {/* Crown icon */}
-        <Text style={styles.crown}>♛</Text>
+      {description ? (
+        <Text style={styles.description}>{description}</Text>
+      ) : null}
 
-        <Text style={styles.headline}>
-          Unlock {displayName}
-        </Text>
-
-        {description ? (
-          <Text style={styles.description}>{description}</Text>
-        ) : null}
-
-        {/* Bullet list */}
-        <View style={styles.bullets}>
-          {bullets.map((b, i) => (
-            <View key={i} style={styles.bulletRow}>
-              <Text style={styles.bulletDot}>✦</Text>
-              <Text style={styles.bulletText}>{b}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Price pill */}
-        <View style={styles.pricePill}>
-          <Text style={styles.priceText}>Readiness Pro · $9.99 / month</Text>
-        </View>
-
-        {/* CTA */}
-        <TouchableOpacity
-          style={styles.ctaButton}
-          activeOpacity={0.85}
-          onPress={() => router.push('/paywall')}
-        >
-          <Text style={styles.ctaText}>Upgrade to Pro</Text>
-        </TouchableOpacity>
-
-        {/* The introductory offer exists on the annual subscription only, so
-            this used to advertise a free trial directly above a monthly price
-            that does not carry one. */}
-        <Text style={styles.footerNote}>
-          14-day free trial on the annual plan · Cancel anytime
-        </Text>
-
+      <View style={styles.bullets}>
+        {bullets.map((b, i) => (
+          <View key={i} style={styles.bulletRow}>
+            <Ionicons name="checkmark" size={16} color={colors.amber[400]} style={styles.bulletIcon} />
+            <Text style={styles.bulletText}>{b}</Text>
+          </View>
+        ))}
       </View>
+
+      <TouchableOpacity
+        style={styles.ctaButton}
+        activeOpacity={0.85}
+        onPress={() => router.push('/paywall')}
+        accessibilityRole="button"
+      >
+        <Text style={styles.ctaText}>Upgrade to Pro</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.priceText}>Readiness Pro · $9.99 / month</Text>
+
+      {/* The introductory offer exists on the annual subscription only, so
+          this used to advertise a free trial directly above a monthly price
+          that does not carry one. */}
+      <Text style={styles.footerNote}>
+        14-day free trial on the annual plan · Cancel anytime
+      </Text>
     </View>
   );
 }
@@ -179,58 +156,36 @@ export function ProGate({ feature, description, children, style }: ProGateProps)
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-
-  // Outer wrapper — overflow:hidden clips the absoluteFill layers to the border radius
   container: {
-    position: 'relative',
-    overflow: 'hidden',
-    borderRadius: radius.lg,
+    ...surface.card,
+    padding: spacing[5],
   },
 
-  // Dark tinted background — fills the container, sits behind everything
-  overlayBg: {
-    backgroundColor: 'rgba(13, 15, 20, 0.92)',
-  },
-
-  // Gated content at low opacity — fills the container, sits behind the panel
-  previewDim: {
-    opacity: 0.12,
-  },
-
-  // Upgrade panel — in NORMAL FLOW so it controls the container height.
-  // No flex:1, no justifyContent:center — content always starts at top and
-  // the container grows to fit it.
-  overlay: {
+  eyebrowRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing[6],
-    paddingVertical: spacing[8],
+    gap: spacing[1.5],
+    marginBottom: spacing[2],
   },
-
-  crown: {
-    fontSize: 28,
+  eyebrow: {
+    ...typography.label,
     color: colors.amber[400],
-    marginBottom: spacing[3],
   },
 
   headline: {
+    fontFamily: fontFamily.heading,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    letterSpacing: -0.3,
     color: colors.text.primary,
-    textAlign: 'center',
-    marginBottom: spacing[2],
+    marginBottom: spacing[1.5],
   },
 
   description: {
-    fontSize: fontSize.sm,
-    color: colors.text.secondary,
-    textAlign: 'center',
+    ...typography.caption,
     marginBottom: spacing[4],
-    lineHeight: fontSize.sm * 1.5,
   },
 
-  // Bullet list
   bullets: {
-    alignSelf: 'stretch',
     marginBottom: spacing[5],
     gap: spacing[2],
   },
@@ -239,50 +194,37 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing[2],
   },
-  bulletDot: {
-    fontSize: fontSize.xs,
-    color: colors.amber[400],
+  bulletIcon: {
     marginTop: 2,
   },
   bulletText: {
     flex: 1,
     fontSize: fontSize.sm,
     color: colors.text.secondary,
-    lineHeight: fontSize.sm * 1.5,
+    lineHeight: 21,
   },
 
-  // Price pill
-  pricePill: {
-    backgroundColor: colors.bg.elevated,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[1.5],
-    marginBottom: spacing[4],
-  },
-  priceText: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
-    color: colors.text.secondary,
-    letterSpacing: 0.3,
-  },
-
-  // CTA button
   ctaButton: {
-    backgroundColor: colors.amber[400],
+    height: 48,
     borderRadius: radius.md,
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[10],
+    backgroundColor: colors.amber[400],
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: spacing[3],
   },
   ctaText: {
     fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
     color: colors.text.inverse,
-    textAlign: 'center',
   },
 
+  priceText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: spacing[0.5],
+  },
   footerNote: {
     fontSize: fontSize.xs,
     color: colors.text.tertiary,
