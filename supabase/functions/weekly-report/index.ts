@@ -47,8 +47,12 @@ function daysBefore(dateStr: string, days: number): string {
   return new Date(Date.UTC(y, m - 1, d - days)).toISOString().split('T')[0];
 }
 
+// Mirrors MIN_DAYS_FOR_TREND in src/utils/trendChart.ts: with three days the two
+// halves are one day each, and one day against another is not a trend.
+const MIN_DAYS_FOR_TREND = 4;
+
 function trend(scores: number[]): 'improving' | 'declining' | 'stable' {
-  if (scores.length < 3) return 'stable';
+  if (scores.length < MIN_DAYS_FOR_TREND) return 'stable';
   const half   = Math.floor(scores.length / 2);
   const first  = scores.slice(0, half).reduce((a, b) => a + b, 0) / half;
   const second = scores.slice(-half).reduce((a, b) => a + b, 0) / half;
@@ -145,7 +149,8 @@ Deno.serve(async (req: Request) => {
       return `${r.date} (${dayLabel(r.date)}): overall ${r.score} (recovery ${r.recovery_score}, sleep ${r.sleep_score}, stress ${r.stress_score})${hrvNote}${rhrNote}`;
     }).join('\n');
 
-    const trendNote = trendDir === 'improving' ? 'an upward trend'
+    const trendNote = rows.length < MIN_DAYS_FOR_TREND ? 'too few days to call a trend'
+                    : trendDir === 'improving' ? 'an upward trend'
                     : trendDir === 'declining' ? 'a downward trend'
                     : 'a stable trend';
 
@@ -160,6 +165,10 @@ Deno.serve(async (req: Request) => {
       `  "tip": "one specific, actionable sentence for the coming week based on the weakest area"\n` +
       `}\n\n` +
       `How to read the scores: ${SCORE_SCALE_RULE}\n` +
+      (rows.length < 7
+        ? `Coverage: only ${rows.length} of the last 7 days have a saved score. The missing days are days with no data, not low days. Describe the ${rows.length} days you were given. Do not say the score fell or rose "over the past week" or over a number of days you have no data for` +
+          (rows.length < MIN_DAYS_FOR_TREND ? `, and do not describe a trend or a direction at all: compare the days by name instead.\n` : `.\n`)
+        : '') +
       `Tone: encouraging, evidence-based, personal. No generic platitudes.\n` +
       `Spelling: British English. Punctuation: never use em dashes or en dashes; use a comma, a full stop or a colon.`;
 

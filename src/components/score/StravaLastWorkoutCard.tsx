@@ -163,7 +163,6 @@ export function StravaLastWorkoutSection({ isConnected, activities, isLoading }:
       {/* Section header with Strava branding */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionLabel}>LAST STRAVA WORKOUT</Text>
-        <Text style={styles.source}>via Strava</Text>
       </View>
       <StravaLastWorkoutCard activity={latest} />
     </View>
@@ -186,10 +185,6 @@ const styles = StyleSheet.create({
     ...typography.label,
   },
   // Where the data came from: quiet text, not a badge
-  source: {
-    fontSize: fontSize['2xs'],
-    color:    colors.text.tertiary,
-  },
   card: {
     ...surface.card,
     flexDirection:     'row',

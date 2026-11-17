@@ -705,7 +705,7 @@ function buildActivity(score: number, h: HealthData | null): BreakdownDetail {
       : steps >= 7_500
       ? `${steps.toLocaleString()} steps: approaching the research-backed 7,500–10,000 range for cardiovascular health`
       : steps >= 5_000
-      ? `${steps.toLocaleString()} steps: a moderate day; 7,500+ is where most health benefits accelerate`
+      ? `${steps.toLocaleString()} steps: a lighter day; 7,500+ is where most health benefits accelerate`
       : `${steps.toLocaleString()} steps: a low-movement day; even a short walk adds meaningful benefit`;
     metrics.push({
       label:  'Steps',
@@ -720,7 +720,7 @@ function buildActivity(score: number, h: HealthData | null): BreakdownDetail {
     const sub = activeCalories >= 500
       ? `${activeCalories} kcal: high active burn; reflects significant movement or structured exercise`
       : activeCalories >= 300
-      ? `${activeCalories} kcal: solid active burn in line with a moderately active day`
+      ? `${activeCalories} kcal: a solid active burn`
       : `${activeCalories} kcal: light burn; more movement or a dedicated workout session would raise this`;
     metrics.push({
       label:  'Active Calories',
@@ -758,14 +758,20 @@ function buildActivity(score: number, h: HealthData | null): BreakdownDetail {
     if (exerciseMinutes != null) signals.push(exerciseMinutes >= 20);
 
     const met = signals.filter(Boolean).length;
+    // The same bands as the Steps row above: under 5,000 is low, 5,000 to
+    // 7,499 is a lighter day. This row used to call a 5,007-step day "Low,
+    // sedentary" directly under a Steps row calling it "moderate".
+    const lighter = met === 0 && steps != null && steps >= 5_000;
     const sub = met === signals.length
       ? 'Good movement volume: activity load from yesterday is a positive context signal for today\'s recovery'
+      : lighter
+      ? 'A lighter day: yesterday\'s movement was under the level where the benefits build'
       : met === 0
       ? 'Low movement day: a sedentary pattern can gradually reduce baseline fitness and slow recovery adaptation'
       : 'Mixed: one aspect of yesterday\'s activity is below target, but the other looks good';
     metrics.push({
       label:  'Overall Activity',
-      value:  met === signals.length ? 'Active' : met > 0 ? 'Moderate' : 'Low',
+      value:  met === signals.length ? 'Active' : met > 0 ? 'Moderate' : lighter ? 'Light' : 'Low',
       sub,
       status: score >= 65 ? 'good' : score >= 40 ? 'ok' : 'poor',
     });
@@ -789,7 +795,7 @@ function buildActivity(score: number, h: HealthData | null): BreakdownDetail {
     } else if (steps >= 7_500) {
       parts.push(`Yesterday's ${steps.toLocaleString()} steps puts you in the research-backed range for cardiovascular benefit. Studies show the biggest risk reduction comes between 4,000–8,000 steps, with diminishing returns above that. You hit the zone that matters most.`);
     } else if (steps >= 5_000) {
-      parts.push(`Yesterday's ${steps.toLocaleString()} steps is a moderately active day. The health and recovery benefits of walking start to accelerate meaningfully above 7,500 steps. An extra 20-minute walk would have put you there.`);
+      parts.push(`Yesterday's ${steps.toLocaleString()} steps is a lighter day. The health and recovery benefits of walking start to accelerate meaningfully above 7,500 steps. An extra 20-minute walk would have put you there.`);
     } else {
       parts.push(`Yesterday was a low-movement day at ${steps.toLocaleString()} steps. Sedentary days don't just mean fewer benefits. Prolonged sitting independently raises cortisol and blunts insulin sensitivity, which can show up in today's heart rate variability and resting heart rate readings.`);
     }
@@ -818,7 +824,7 @@ function buildActivity(score: number, h: HealthData | null): BreakdownDetail {
     ? `Strong activity yesterday. Today's focus should be on quality recovery. Prioritise sleep timing and protein intake to maximise the adaptation from that effort. Active movement like walking is still beneficial even on rest days.`
     : score >= 50
     ? `Moderate activity day. Aim for 7,500–10,000 steps today and at least 20–30 minutes of brisk walking or exercise. Breaking it into two 15-minute walks is just as effective as one continuous bout.`
-    : `Low activity day yesterday. Today is a good opportunity to move more. Even a 30-minute walk in natural daylight improves insulin sensitivity, reduces cortisol, and meaningfully boosts tomorrow's recovery metrics. You don't need a structured workout to get the benefit.`;
+    : `A lighter day yesterday. Today is a good opportunity to move more. Even a 30-minute walk in natural daylight improves insulin sensitivity, reduces cortisol, and meaningfully boosts tomorrow's recovery metrics. You don't need a structured workout to get the benefit.`;
 
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);

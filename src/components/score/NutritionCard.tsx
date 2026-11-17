@@ -401,16 +401,16 @@ const styles = StyleSheet.create({
   },
 
   // Rationale box
+  // The numbers behind the advice: a ruled-off note, not a filled box.
   rationaleBox: {
-    backgroundColor: colors.bg.elevated,
-    borderRadius: radius.md,
-    padding: spacing[4],
-    borderLeftWidth: 3,
+    paddingLeft: spacing[3],
+    paddingVertical: 2,
+    borderLeftWidth: 2,
   },
   rationaleText: {
     color: colors.text.secondary,
-    fontSize: fontSize.sm,
-    lineHeight: fontSize.sm * 1.6,
+    fontSize: 13,
+    lineHeight: 19,
   },
 
   // Footer

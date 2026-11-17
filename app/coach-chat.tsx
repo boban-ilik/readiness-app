@@ -128,6 +128,9 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
   const composerBottom = embedded ? spacing[3] : Math.max(insets.bottom, spacing[3]);
   const { readiness, isLoading: isHealthLoading, error: healthError, rhrBaseline, hrvBaseline } = useHealthData();
   const [session, setSession] = useState<CoachSessionContext | null>(() => getCoachSession());
+  // Today's score, for starter questions that fit the day: "Why is my score
+  // low today?" used to be offered on a Good to Go day.
+  const starterScore = session?.readiness?.score ?? readiness?.score ?? null;
   const [isContextLoading, setIsContextLoading] = useState(() => !getCoachSession());
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const [history, setHistory] = useState<ChatMessage[]>([]);
@@ -378,9 +381,13 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
               </Text>
               <View style={styles.promptRow}>
                 {[
-                  'Why is my score low today?',
+                  starterScore !== null && starterScore < 55
+                    ? 'Why is my score low today?'
+                    : starterScore !== null && starterScore >= 75
+                    ? 'What is working for me today?'
+                    : 'What is holding my score back today?',
                   'Can I train hard today?',
-                  'What should I prioritize tonight?',
+                  'What should I prioritise tonight?',
                 ].map(prompt => (
                   <TouchableOpacity
                     key={prompt}

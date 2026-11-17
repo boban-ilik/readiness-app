@@ -222,7 +222,8 @@ function SportBreakdown({ topSports }: { topSports: TrainingTrend['topSports'] }
         <View key={s.sport} style={sportStyles.item}>
           <View style={[sportStyles.dot, { backgroundColor: SPORT_COLORS[i] ?? SPORT_COLORS[0] }]} />
           <Text style={sportStyles.text}>
-            {s.sport} <Text style={sportStyles.pct}>{s.pct}%</Text>
+            {/* Strava names are run together ("WeightTraining"): space them */}
+            {s.sport.replace(/([a-z])([A-Z])/g, '$1 $2')} <Text style={sportStyles.pct}>{s.pct}%</Text>
           </Text>
         </View>
       ))}
@@ -293,7 +294,7 @@ const statStyles = StyleSheet.create({
   },
   unit: {
     fontFamily: 'System',
-    fontSize:   fontSize.xs,
+    fontSize:   14,
     color:      colors.text.secondary,
   },
   label: {

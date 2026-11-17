@@ -23,6 +23,7 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MIN_DAYS_FOR_TREND } from '@utils/trendChart';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchWeeklyReport, type WeeklyReport, type WeeklyReportScore } from '@services/weeklyReport';
 import {
@@ -292,7 +293,10 @@ export default function WeeklyReportModal({ visible, onClose }: WeeklyReportModa
               <View style={styles.card}>
                 <View style={styles.summaryRow}>
                   <View style={styles.summaryLeft}>
-                    <Text style={styles.sectionLabel}>WEEK AVERAGE</Text>
+                    {/* A 3-day average is not a week's: say how many days it covers. */}
+                    <Text style={styles.sectionLabel}>
+                      {scores.length > 0 && scores.length < 7 ? `AVERAGE · ${scores.length} OF 7 DAYS` : 'WEEK AVERAGE'}
+                    </Text>
                     <Text style={[styles.bigScore, { color: avgColor }]}>
                       {avgScore ?? '-'}
                     </Text>
@@ -301,7 +305,9 @@ export default function WeeklyReportModal({ visible, onClose }: WeeklyReportModa
                     </Text>
                   </View>
                   <View style={styles.summaryRight}>
-                    <TrendBadge trend={report.trend} />
+                    {/* No direction from fewer than four days, whatever the
+                        server or an older cached report says. */}
+                    {scores.length >= MIN_DAYS_FOR_TREND && <TrendBadge trend={report.trend} />}
                     <View style={styles.dayStats}>
                       {report.bestDay && (
                         <View style={styles.dayStat}>
