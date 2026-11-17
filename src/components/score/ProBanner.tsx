@@ -22,9 +22,9 @@ interface Props {
 export default function ProBanner({ mode, daysLeft, onPress, onDismiss }: Props) {
   const text = mode === 'trial'
     ? (daysLeft <= 1
-        ? 'Last day of your free Pro week. Keep the breakdown, trend and coach.'
-        : `${daysLeft} days left of your free Pro week. Keep the breakdown, trend and coach.`)
-    : 'Recovery detail, nutrition, trends and the coach.';
+        ? 'Last day of your free Pro week. Keep AI insights, trend and coach.'
+        : `${daysLeft} days left of your free Pro week. Keep AI insights, trend and coach.`)
+    : 'AI insights, nutrition, trends and the coach.';
 
   return (
     <View style={styles.banner}>
