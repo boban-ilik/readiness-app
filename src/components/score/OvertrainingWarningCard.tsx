@@ -200,7 +200,7 @@ export function OvertrainingWarningCard({ warning }: Props) {
           ))}
 
           <Text style={styles.disclaimer}>
-            These signals are based on your personal baselines and recent training data. Always listen to your body.
+            These signals are based on your personal baselines and your recent data. Always listen to your body.
           </Text>
         </View>
       )}
