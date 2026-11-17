@@ -31,12 +31,16 @@ import { useSubscription } from '@contexts/SubscriptionContext';
 import type { ReadinessResult } from '@utils/readiness';
 import type { HealthData } from '@/types/index';
 import { supabase } from '@services/supabase';
+import { Ionicons } from '@expo/vector-icons';
 import {
   colors,
+  fontFamily,
   fontSize,
   fontWeight,
   spacing,
   radius,
+  surface,
+  typography,
   getScoreColor,
   getScoreLabel,
 } from '@constants/theme';
@@ -123,7 +127,7 @@ function SkeletonContent() {
 function ComponentPill({ label, score }: { label: string; score: number }) {
   const color = getScoreColor(score);
   return (
-    <View style={[styles.pill, { borderColor: color + '44', backgroundColor: color + '15' }]}>
+    <View style={styles.pill}>
       <Text style={[styles.pillScore, { color }]}>{score}</Text>
       <Text style={styles.pillLabel}>{label}</Text>
     </View>
@@ -131,7 +135,7 @@ function ComponentPill({ label, score }: { label: string; score: number }) {
 }
 
 // ─── Briefing feedback row ────────────────────────────────────────────────────
-// Shows "Was this helpful?" with 👍 / 👎 thumbs. On tap, saves to AsyncStorage
+// Shows "Was this helpful?" with thumbs up and down. On tap, saves to AsyncStorage
 // and shows a one-line acknowledgement. Feedback is sent to the edge function
 // the next morning so the AI can calibrate specificity.
 
@@ -148,8 +152,8 @@ function BriefingFeedbackRow({ date }: { date: string }) {
       <View style={styles.feedbackRow}>
         <Text style={styles.feedbackThanks}>
           {rating === 'helpful'
-            ? '👍 Glad it helped, keep the feedback coming'
-            : "👎 Got it, I'll be more specific next time"}
+            ? 'Glad it helped, keep the feedback coming'
+            : "Got it, I'll be more specific next time"}
         </Text>
       </View>
     );
@@ -164,16 +168,20 @@ function BriefingFeedbackRow({ date }: { date: string }) {
           onPress={() => handleRate('helpful')}
           activeOpacity={0.7}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Helpful briefing"
         >
-          <Text style={styles.feedbackBtnText}>👍</Text>
+          <Ionicons name="thumbs-up-outline" size={16} color={colors.text.secondary} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.feedbackBtn}
           onPress={() => handleRate('unhelpful')}
           activeOpacity={0.7}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Not helpful"
         >
-          <Text style={styles.feedbackBtnText}>👎</Text>
+          <Ionicons name="thumbs-down-outline" size={16} color={colors.text.secondary} />
         </TouchableOpacity>
       </View>
     </View>
@@ -297,7 +305,7 @@ export default function DailyBriefingModal({
             <View style={styles.headerLeft}>
               <Text style={[styles.headerScore, { color: scoreColor }]}>{score}</Text>
               <View>
-                <Text style={styles.headerLabel}>{scoreLabel.toUpperCase()}</Text>
+                <Text style={[styles.headerLabel, { color: scoreColor }]}>{scoreLabel.toUpperCase()}</Text>
                 <Text style={styles.headerSub}>Today's readiness</Text>
               </View>
             </View>
@@ -312,7 +320,7 @@ export default function DailyBriefingModal({
                   accessibilityRole="button"
                   accessibilityLabel="Regenerate briefing"
                 >
-                  <Text style={styles.iconBtnText}>↻</Text>
+                  <Ionicons name="refresh" size={18} color={colors.text.secondary} />
                 </TouchableOpacity>
               )}
               <TouchableOpacity
@@ -322,7 +330,7 @@ export default function DailyBriefingModal({
                 accessibilityRole="button"
                 accessibilityLabel="Close"
               >
-                <Text style={styles.iconBtnText}>✕</Text>
+                <Ionicons name="close" size={18} color={colors.text.secondary} />
               </TouchableOpacity>
             </View>
           </View>
@@ -349,7 +357,8 @@ export default function DailyBriefingModal({
 
             {!isLoading && error && (
               <View style={styles.errorBox}>
-                <Text style={styles.errorText}>⚠️  {error}</Text>
+                <Ionicons name="warning" size={20} color={colors.text.tertiary} />
+                <Text style={styles.errorText}>{error}</Text>
                 <TouchableOpacity onPress={() => load(true)} style={styles.retryBtn}>
                   <Text style={styles.retryText}>Try again</Text>
                 </TouchableOpacity>
@@ -358,10 +367,11 @@ export default function DailyBriefingModal({
 
             {!isLoading && briefing && (
               <View style={styles.content}>
-                {/* AI badge + headline */}
-                <View style={styles.headlineRow}>
-                  <View style={styles.aiBadge}>
-                    <Text style={styles.aiBadgeText}>✦ AI</Text>
+                {/* Label + AI tag, then the headline */}
+                <View style={styles.section}>
+                  <View style={styles.headlineRow}>
+                    <Text style={styles.sectionLabel}>TODAY'S BRIEFING</Text>
+                    <Text style={styles.aiBadgeText}>AI</Text>
                   </View>
                   <Text style={styles.headline}>{briefing.headline}</Text>
                 </View>
@@ -377,7 +387,7 @@ export default function DailyBriefingModal({
                   <Text style={styles.sectionLabel}>DO TODAY</Text>
                   {briefing.doToday.map((item, i) => (
                     <View key={i} style={styles.bulletRow}>
-                      <Text style={[styles.bullet, { color: scoreColor }]}>●</Text>
+                      <View style={[styles.bullet, { backgroundColor: scoreColor }]} />
                       <Text style={styles.bulletText}>{item}</Text>
                     </View>
                   ))}
@@ -394,7 +404,7 @@ export default function DailyBriefingModal({
                 {protocol && (
                   <View style={styles.protocolCard}>
                     <View style={styles.protocolHeader}>
-                      <Text style={styles.protocolIcon}>🫶</Text>
+                      <Ionicons name="heart-outline" size={20} color={colors.amber[400]} style={styles.protocolIcon} />
                       <View>
                         <Text style={styles.protocolTitle}>Recovery Protocol</Text>
                         <Text style={styles.protocolSub}>Your body is asking for care today</Text>
@@ -402,7 +412,7 @@ export default function DailyBriefingModal({
                     </View>
                     {protocol.map((item, i) => (
                       <View key={i} style={styles.protocolItem}>
-                        <Text style={styles.protocolNum}>{i + 1}</Text>
+                        <View style={styles.protocolNumWrap}><Text style={styles.protocolNum}>{i + 1}</Text></View>
                         <Text style={styles.protocolText}>{item}</Text>
                       </View>
                     ))}
@@ -434,12 +444,12 @@ export default function DailyBriefingModal({
                         accessibilityRole="button"
                       >
                         <Text style={styles.followUpText}>{q}</Text>
-                        <Text style={styles.followUpArrow}>›</Text>
+                        <Ionicons name="chevron-forward" size={16} color={colors.text.tertiary} />
                       </TouchableOpacity>
                     ))}
                   </View>
                 )}
-                <TouchableOpacity style={styles.chatOpenBtn} onPress={() => handleOpenCoach()} activeOpacity={0.8}>
+                <TouchableOpacity style={styles.chatOpenBtn} onPress={() => handleOpenCoach()} activeOpacity={0.8} accessibilityRole="button">
                   <Text style={styles.chatOpenBtnText}>Ask your own question</Text>
                 </TouchableOpacity>
                 {!isPro && (
@@ -476,63 +486,58 @@ const styles = StyleSheet.create({
   headerLeft: {
     flexDirection: 'row',
     alignItems:    'center',
-    gap:           spacing[3],
+    gap:           spacing[3.5],
   },
   headerScore: {
-    fontSize:   64,
-    fontWeight: fontWeight.bold,
-    lineHeight: 68,
+    fontFamily:    fontFamily.numeral,
+    fontSize:      fontSize['5xl'],
+    letterSpacing: -1.5,
+    lineHeight:    68,
   },
   headerLabel: {
-    fontSize:      fontSize.base,
-    fontWeight:    fontWeight.semiBold,
-    color:         colors.text.primary,
-    letterSpacing: 0.5,
+    fontSize:      13,
+    fontWeight:    fontWeight.bold,
+    letterSpacing: 1.6,
   },
   headerSub: {
-    fontSize:  fontSize.xs,
-    color:     colors.text.tertiary,
+    ...typography.caption,
     marginTop: 2,
   },
   headerActions: {
     flexDirection: 'row',
+    alignItems:    'center',
     gap:           spacing[2],
   },
   iconBtn: {
     width:           36,
     height:          36,
     borderRadius:    18,
-    backgroundColor: colors.bg.elevated,
+    backgroundColor: colors.bg.secondary,
     alignItems:      'center',
     justifyContent:  'center',
   },
-  iconBtnText: {
-    fontSize: fontSize.base,
-    color:    colors.text.secondary,
-  },
 
-  // Pills
+  // Component scores: flat, ruled, coloured by their own level
   pills: {
     flexDirection:     'row',
-    gap:               spacing[2],
-    paddingHorizontal: spacing[5],
-    paddingBottom:     spacing[3],
+    marginHorizontal:  spacing[5],
+    paddingVertical:   spacing[3],
+    borderTopWidth:    1,
+    borderTopColor:    colors.border.subtle,
   },
   pill: {
-    flex:            1,
-    borderRadius:    radius.md,
-    borderWidth:     1,
-    paddingVertical: spacing[2],
-    alignItems:      'center',
-    gap:             2,
+    flex:       1,
+    alignItems: 'center',
+    gap:        2,
   },
   pillScore: {
-    fontSize:   fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily:    fontFamily.numeral,
+    fontSize:      fontSize.xl,
+    letterSpacing: -0.5,
   },
   pillLabel: {
-    fontSize: fontSize.xs,
-    color:    colors.text.tertiary,
+    ...typography.label,
+    letterSpacing: 1.2,
   },
 
   divider: {
@@ -545,161 +550,138 @@ const styles = StyleSheet.create({
   scroll:        { flex: 1 },
   scrollContent: {
     paddingHorizontal: spacing[5],
-    paddingTop:        spacing[5],
+    paddingTop:        spacing[6],
     paddingBottom:     spacing[4],
   },
 
   // Content
-  content: { gap: spacing[5] },
+  content: { gap: spacing[6] },
 
   headlineRow: {
-    flexDirection: 'row',
-    gap:           spacing[2],
-    alignItems:    'flex-start',
-  },
-  aiBadge: {
-    borderRadius:      radius.sm,
-    backgroundColor:   '#6C4BEF22',
-    borderWidth:       1,
-    borderColor:       '#6C4BEF55',
-    paddingHorizontal: spacing[2],
-    paddingVertical:   3,
-    marginTop:         1,
+    flexDirection:  'row',
+    alignItems:     'baseline',
+    justifyContent: 'space-between',
   },
   aiBadgeText: {
-    fontSize:   11,
-    fontWeight: fontWeight.semiBold,
-    color:      '#A78BFA',
+    fontSize:      11,
+    letterSpacing: 1.2,
+    fontWeight:    fontWeight.bold,
+    color:         colors.amber[400],
   },
   headline: {
-    flex:       1,
-    fontSize:   fontSize.md,
-    fontWeight: fontWeight.semiBold,
-    color:      colors.text.primary,
-    lineHeight: 24,
+    fontFamily:    fontFamily.heading,
+    fontSize:      22,
+    lineHeight:    28,
+    letterSpacing: -0.4,
+    color:         colors.text.primary,
   },
 
   section:      { gap: spacing[2] },
-  // text.tertiary on the near-black canvas measures ~3.2:1, under the 4.5:1
-  // WCAG AA floor for small text — and these labels are the reading scaffold.
   sectionLabel: {
-    fontSize:      fontSize.xs,
-    fontWeight:    fontWeight.semiBold,
-    color:         colors.text.secondary,
-    letterSpacing: 0.8,
+    ...typography.label,
   },
-  // Paragraph text sits at base, not sm: this is prose read every morning,
-  // not a metric label.
+  // Paragraph text sits at base, not sm: this is prose read every morning.
   body: {
     fontSize:   fontSize.base,
-    color:      colors.text.secondary,
-    lineHeight: 23,
+    lineHeight: 26,
+    color:      colors.text.primary,
   },
-
   bulletRow: {
     flexDirection: 'row',
-    gap:           spacing[2],
     alignItems:    'flex-start',
+    gap:           spacing[3],
+    paddingTop:    spacing[1],
   },
   bullet: {
-    fontSize:  11,
-    marginTop: 8,
+    width:        6,
+    height:       6,
+    borderRadius: 3,
+    marginTop:    10,
   },
   bulletText: {
     flex:       1,
     fontSize:   fontSize.base,
-    color:      colors.text.secondary,
-    lineHeight: 23,
+    lineHeight: 26,
+    color:      colors.text.primary,
   },
-
   disclaimer: {
     fontSize:  fontSize.xs,
     color:     colors.text.tertiary,
     textAlign: 'center',
-    marginTop: spacing[2],
+    lineHeight: 17,
   },
 
-  // Briefing feedback
+  // Recovery protocol (low score only)
+  protocolCard: {
+    ...surface.card,
+    padding: spacing[4],
+    gap:     spacing[3],
+  },
+  protocolHeader: {
+    flexDirection: 'row',
+    alignItems:    'flex-start',
+    gap:           spacing[3],
+  },
+  protocolIcon: {
+    marginTop: 2,
+  },
+  protocolTitle: {
+    ...typography.title,
+  },
+  protocolSub: {
+    ...typography.caption,
+    marginTop: 2,
+  },
+  protocolItem: {
+    flexDirection: 'row',
+    alignItems:    'flex-start',
+    gap:           spacing[3],
+  },
+  protocolNumWrap: {
+    width:          22,
+    height:         22,
+    borderRadius:   11,
+    borderWidth:    1,
+    borderColor:    colors.amber[400],
+    alignItems:     'center',
+    justifyContent: 'center',
+    marginTop:      2,
+  },
+  protocolNum: {
+    fontFamily: fontFamily.numeral,
+    fontSize:   14,
+    color:      colors.amber[400],
+  },
+  protocolText: {
+    flex: 1,
+    ...typography.body,
+  },
+
+  // Feedback
   feedbackRow: {
     flexDirection:  'row',
     alignItems:     'center',
     justifyContent: 'center',
     gap:            spacing[3],
-    paddingVertical: spacing[1],
   },
   feedbackPrompt: {
-    fontSize: fontSize.xs,
-    color:    colors.text.tertiary,
+    ...typography.caption,
   },
   feedbackBtns: {
     flexDirection: 'row',
     gap:           spacing[2],
   },
   feedbackBtn: {
-    width:           34,
-    height:          34,
-    borderRadius:    17,
-    backgroundColor: colors.bg.elevated,
-    borderWidth:     1,
-    borderColor:     colors.border.subtle,
+    width:           36,
+    height:          36,
+    borderRadius:    18,
+    backgroundColor: colors.bg.secondary,
     alignItems:      'center',
     justifyContent:  'center',
   },
-  feedbackBtnText: {
-    fontSize: 16,
-  },
   feedbackThanks: {
-    fontSize:  fontSize.xs,
-    color:     colors.text.tertiary,
+    ...typography.caption,
     textAlign: 'center',
-  },
-
-  // Recovery Protocol
-  protocolCard: {
-    backgroundColor: '#0F172A',
-    borderRadius:    radius.lg,
-    borderWidth:     1,
-    borderColor:     '#1E293B',
-    padding:         spacing[4],
-    gap:             spacing[3],
-  },
-  protocolHeader: {
-    flexDirection: 'row',
-    alignItems:    'center',
-    gap:           spacing[3],
-  },
-  protocolIcon: { fontSize: 24 },
-  protocolTitle: {
-    fontSize:   fontSize.sm,
-    fontWeight: fontWeight.semiBold,
-    color:      colors.text.primary,
-  },
-  protocolSub: {
-    fontSize:  fontSize.xs,
-    color:     colors.text.tertiary,
-    marginTop: 2,
-  },
-  protocolItem: {
-    flexDirection: 'row',
-    gap:           spacing[3],
-    alignItems:    'flex-start',
-  },
-  protocolNum: {
-    fontSize:          fontSize.xs,
-    fontWeight:        fontWeight.bold,
-    color:             '#60A5FA',
-    backgroundColor:   '#1E3A5F',
-    width:             20,
-    height:            20,
-    borderRadius:      10,
-    textAlign:         'center',
-    lineHeight:        20,
-  },
-  protocolText: {
-    flex:       1,
-    fontSize:   fontSize.sm,
-    color:      colors.text.secondary,
-    lineHeight: 20,
   },
 
   // Skeleton
@@ -707,7 +689,7 @@ const styles = StyleSheet.create({
   skeletonLine: {
     height:          12,
     borderRadius:    radius.sm,
-    backgroundColor: colors.bg.elevated,
+    backgroundColor: colors.bg.tertiary,
   },
 
   // Error
@@ -717,25 +699,27 @@ const styles = StyleSheet.create({
     paddingTop: spacing[10],
   },
   errorText: {
+    ...typography.caption,
     fontSize:  fontSize.sm,
-    color:     colors.text.secondary,
     textAlign: 'center',
   },
   retryBtn: {
     paddingHorizontal: spacing[4],
-    paddingVertical:   spacing[2],
-    backgroundColor:   colors.bg.elevated,
+    height:            40,
+    justifyContent:    'center',
     borderRadius:      radius.md,
+    borderWidth:       1,
+    borderColor:       colors.border.subtle,
   },
   retryText: {
     fontSize:   fontSize.sm,
     color:      colors.text.accent,
-    fontWeight: fontWeight.medium,
+    fontWeight: fontWeight.semiBold,
   },
 
-  // ── Coach Chat ──
+  // Coach hand-off
   chatSection: {
-    marginTop: spacing[6],
+    marginTop: spacing[7],
     gap:       spacing[4],
   },
   chatHeader: { gap: 4 },
@@ -745,198 +729,47 @@ const styles = StyleSheet.create({
     alignItems:     'center',
   },
   chatTitle: {
-    fontSize:   fontSize.base,
-    fontWeight: fontWeight.semiBold,
-    color:      colors.text.primary,
-  },
-  clearBtn: {
-    fontSize:  fontSize.xs,
-    color:     colors.text.tertiary,
-    textDecorationLine: 'underline' as const,
+    fontFamily:    fontFamily.heading,
+    fontSize:      fontSize.lg,
+    letterSpacing: -0.3,
+    color:         colors.text.primary,
   },
   chatSub: {
-    fontSize: fontSize.xs,
-    color:    colors.text.tertiary,
-  },
-  chatPreviewCard: {
-    backgroundColor: colors.bg.secondary,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    borderRadius: radius.lg,
-    padding: spacing[4],
-    gap: spacing[3],
-  },
-  chatPreviewTitle: {
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semiBold,
-    color: colors.text.primary,
-  },
-  chatPreviewBody: {
-    fontSize: fontSize.sm,
-    lineHeight: 20,
-    color: colors.text.secondary,
+    ...typography.caption,
   },
   followUps: {
     gap: spacing[2],
-    marginBottom: spacing[3],
   },
+  // Tappable, so each question keeps a card.
   followUpChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing[2],
-    backgroundColor: colors.bg.tertiary,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border.default,
+    ...surface.card,
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'space-between',
+    gap:               spacing[3],
     paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
+    paddingVertical:   spacing[3.5],
   },
   followUpText: {
     flex: 1,
-    color: colors.text.primary,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-  },
-  followUpArrow: {
-    color: colors.amber[400],
-    fontSize: fontSize.lg,
+    ...typography.title,
+    lineHeight: 22,
   },
   followUpNote: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
+    fontSize:  fontSize.xs,
+    color:     colors.text.tertiary,
     textAlign: 'center',
-    marginTop: spacing[2],
   },
   chatOpenBtn: {
-    alignSelf: 'flex-start',
+    height:          48,
+    borderRadius:    radius.md,
     backgroundColor: colors.amber[400],
-    borderRadius: radius.full,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2.5],
-  },
-  chatOpenBtnText: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
-    color: colors.bg.primary,
-  },
-  sessionSeparator: {
-    flexDirection:  'row',
-    alignItems:     'center',
-    gap:            spacing[2],
-    marginVertical: spacing[1],
-  },
-  sessionLine: {
-    flex:            1,
-    height:          1,
-    backgroundColor: colors.border.subtle,
-  },
-  sessionLabel: {
-    fontSize:  11,
-    color:     colors.text.tertiary,
-    opacity:   0.6,
-    letterSpacing: 0.5,
-  },
-
-  suggestionsRow: {
-    gap:            spacing[2],
-    paddingVertical: spacing[1],
-  },
-  suggestionChip: {
-    paddingHorizontal: spacing[3],
-    paddingVertical:   spacing[2],
-    borderRadius:      radius.full ?? 99,
-    backgroundColor:   colors.bg.elevated,
-    borderWidth:       1,
-    borderColor:       colors.border.subtle,
-  },
-  suggestionText: {
-    fontSize: fontSize.xs,
-    color:    colors.text.secondary,
-  },
-
-  bubble: {
-    maxWidth:     '85%',
-    borderRadius: radius.lg,
-    padding:      spacing[3],
-    gap:          4,
-  },
-  bubbleUser: {
-    alignSelf:       'flex-end',
-    backgroundColor: colors.text.accent + '20',
-    borderWidth:     1,
-    borderColor:     colors.text.accent + '40',
-  },
-  bubbleCoach: {
-    alignSelf:       'flex-start',
-    backgroundColor: colors.bg.elevated,
-    borderWidth:     1,
-    borderColor:     colors.border.subtle,
-  },
-  bubbleLabel: {
-    fontSize:   11,
-    fontWeight: fontWeight.semiBold,
-    color:      colors.text.tertiary,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase' as const,
-  },
-  bubbleText: {
-    fontSize:   fontSize.sm,
-    color:      colors.text.secondary,
-    lineHeight: 20,
-  },
-  bubbleTextUser: {
-    color: colors.text.primary,
-  },
-
-  chatError: {
-    fontSize:  fontSize.xs,
-    color:     '#F87171',
-    textAlign: 'center',
-    marginTop: spacing[2],
-  },
-
-  // Input bar
-  inputBar: {
-    position:          'absolute',
-    left:              0,
-    right:             0,
-    bottom:            0,
-    flexDirection:     'row',
-    alignItems:        'center',
-    gap:               spacing[2],
-    paddingHorizontal: spacing[4],
-    paddingVertical:   spacing[3],
-    borderTopWidth:    1,
-    borderTopColor:    colors.border.subtle,
-    backgroundColor:   colors.bg.primary,
-  },
-  input: {
-    flex:              1,
-    backgroundColor:   colors.bg.elevated,
-    borderRadius:      radius.full ?? 99,
-    borderWidth:       1,
-    borderColor:       colors.border.subtle,
-    paddingHorizontal: spacing[4],
-    paddingVertical:   spacing[2],
-    fontSize:          fontSize.sm,
-    color:             colors.text.primary,
-    maxHeight:         80,
-  },
-  sendBtn: {
-    width:           36,
-    height:          36,
-    borderRadius:    18,
-    backgroundColor: colors.text.accent,
     alignItems:      'center',
     justifyContent:  'center',
   },
-  sendBtnDisabled: {
-    backgroundColor: colors.bg.elevated,
-  },
-  sendBtnText: {
+  chatOpenBtnText: {
     fontSize:   fontSize.base,
     fontWeight: fontWeight.bold,
-    color:      colors.text.primary,
+    color:      colors.text.inverse,
   },
 });

@@ -6,19 +6,16 @@
  *
  * States:
  *   • streak = 0  → "Start your streak today" nudge
- *   • streak 1–6  → "🔥 N-day streak" + best if applicable
- *   • streak 7+   → same but with a subtle celebration treatment
+ *   • streak 1–6  → flame icon, "N-day streak" + best if applicable
+ *   • streak 7+   → same in amber
+ *
+ * Nothing here is tappable, so it is a flat row, not a card.
  */
 
 import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useStreak } from '@hooks/useStreak';
-import {
-  colors,
-  fontSize,
-  fontWeight,
-  spacing,
-  radius,
-} from '@constants/theme';
+import { colors, fontFamily, spacing, typography } from '@constants/theme';
 
 interface StreakBannerProps {
   score: number;   // hide banner if score = 0 (no data)
@@ -36,7 +33,7 @@ export default function StreakBanner({ score }: StreakBannerProps) {
   if (current === 0) {
     return (
       <View style={styles.nudgeBanner}>
-        <Text style={styles.nudgeIcon}>🌱</Text>
+        <Ionicons name="flame-outline" size={18} color={colors.text.tertiary} />
         <Text style={styles.nudgeText}>Check in daily to build your streak</Text>
       </View>
     );
@@ -44,11 +41,11 @@ export default function StreakBanner({ score }: StreakBannerProps) {
 
   // ── Active streak ────────────────────────────────────────────────────────────
   return (
-    <View style={[styles.banner, isStrong && styles.bannerStrong]}>
+    <View style={styles.banner}>
 
       {/* Flame + count */}
       <View style={styles.left}>
-        <Text style={styles.flame}>{isMilestone ? '🎉' : '🔥'}</Text>
+        <Ionicons name={isMilestone ? 'trophy-outline' : 'flame-outline'} size={20} color={isStrong ? colors.amber[400] : colors.text.secondary} />
         <View style={styles.textBlock}>
           <Text style={[styles.streakCount, isStrong && styles.streakCountStrong]}>
             {current}-day streak
@@ -76,89 +73,58 @@ export default function StreakBanner({ score }: StreakBannerProps) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-
-  // Active streak banner
+  // Active streak row
   banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection:  'row',
+    alignItems:     'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.bg.secondary,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2.5],
-    marginBottom: spacing[4],
+    paddingVertical: spacing[1],
+    marginBottom:   spacing[4],
   },
-  bannerStrong: {
-    backgroundColor: colors.amber[900] + '33',
-    borderColor: colors.amber[700] + '66',
-  },
-
   left: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-    flex: 1,
-  },
-  flame: {
-    fontSize: 22,
+    alignItems:    'center',
+    gap:           spacing[3],
+    flex:          1,
   },
   textBlock: {
     gap: 2,
   },
   streakCount: {
-    color: colors.text.primary,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semiBold,
+    ...typography.title,
   },
   streakCountStrong: {
     color: colors.amber[400],
   },
   milestoneText: {
-    color: colors.text.secondary,
-    fontSize: fontSize.xs,
+    ...typography.caption,
   },
 
-  // Best streak badge
+  // Best streak
   bestBadge: {
-    alignItems: 'center',
-    gap: 1,
-    paddingLeft: spacing[3],
-    borderLeftWidth: 1,
-    borderLeftColor: colors.border.subtle,
+    flexDirection: 'row',
+    alignItems:    'baseline',
+    gap:           spacing[2],
   },
   bestLabel: {
-    color: colors.text.tertiary,
-    fontSize: 11,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 1,
+    ...typography.label,
+    letterSpacing: 1.2,
   },
   bestValue: {
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.numeral,
+    fontSize:   20,
+    color:      colors.text.primary,
   },
 
   // No-streak nudge
   nudgeBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    backgroundColor: colors.bg.secondary,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2.5],
-    marginBottom: spacing[4],
-  },
-  nudgeIcon: {
-    fontSize: 16,
+    flexDirection:   'row',
+    alignItems:      'center',
+    gap:             spacing[3],
+    paddingVertical: spacing[1],
+    marginBottom:    spacing[4],
   },
   nudgeText: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
+    ...typography.caption,
   },
 });

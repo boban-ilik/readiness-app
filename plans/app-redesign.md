@@ -31,6 +31,8 @@ History was added to scope on 2026-11-16 at Boban's request, after build 84. It 
 
 Profile and Coach got a light pass the same day, after build 85: Archivo titles, icons and words in place of emoji, the card token on Profile, and no fixed price on the Profile upgrade button. Their layouts are unchanged.
 
+After Boban's device checks on 2026-11-17 the same rules were applied to the recovery alert, the trend and forecast cards, the trend sheet, the daily briefing sheet, the weekly report sheet, the training load cards, the streak row and the Tag my day button. Still in the old style: the tag sheet and its emoji tags, the 30-day picture sheet, the share image.
+
 ## Open
 
 - Archivo widths: the mock uses the variable font at 75 to 85 percent width. React Native needs static faces, so the condensed numeral uses Archivo Narrow Bold and headings use Archivo Bold or SemiBold. Confirm on device that the pairing reads as one family.

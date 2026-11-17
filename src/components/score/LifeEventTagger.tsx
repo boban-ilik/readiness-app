@@ -26,6 +26,7 @@ import {
   type EventType,
   type LifeEvent,
 } from '@services/lifeEvents';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
 import { localDateStr } from '@utils/index';
 
@@ -81,8 +82,10 @@ export default function LifeEventTagger({ events, onTagged, onSickTagged, onSick
           style={styles.tagBtn}
           onPress={() => setModalVisible(true)}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Tag my day"
         >
-          <Text style={styles.tagBtnPlus}>+</Text>
+          <Ionicons name="add" size={16} color={colors.amber[400]} />
           <Text style={styles.tagBtnLabel}>Tag my day</Text>
         </TouchableOpacity>
 
@@ -104,7 +107,7 @@ export default function LifeEventTagger({ events, onTagged, onSickTagged, onSick
 
       {todayEvents.length > 0 && (
         <Text style={styles.hint}>
-          ✦ Your coach will factor these in · long-press a tag to remove it
+          Your coach will factor these in · long-press a tag to remove it
         </Text>
       )}
 
@@ -219,33 +222,28 @@ const styles = StyleSheet.create({
     flexDirection:     'row',
     alignItems:        'center',
     gap:               spacing[1],
-    paddingHorizontal: spacing[3],
-    paddingVertical:   spacing[1],
+    // A real button: solid outline and a 36pt target. It used to be a faint
+    // dashed pill that read as a placeholder.
+    height:            36,
+    paddingHorizontal: spacing[3.5],
     borderRadius:      radius.full ?? 99,
     borderWidth:       1,
-    borderStyle:       'dashed' as const,
-    borderColor:       colors.border.subtle,
-  },
-  tagBtnPlus: {
-    fontSize:   fontSize.sm,
-    lineHeight: 18,
-    color:      colors.text.tertiary,
-    fontWeight: fontWeight.medium,
+    borderColor:       colors.amber[400],
   },
   tagBtnLabel: {
-    fontSize:   fontSize.xs,
-    lineHeight: 18,
-    color:      colors.text.tertiary,
+    fontSize:   13,
+    fontWeight: fontWeight.semiBold,
+    color:      colors.amber[400],
   },
 
   chip: {
     flexDirection:     'row',
     alignItems:        'center',
     gap:               4,
+    height:            36,
     paddingHorizontal: spacing[3],
-    paddingVertical:   spacing[1],
     borderRadius:      radius.full ?? 99,
-    backgroundColor:   colors.bg.elevated,
+    backgroundColor:   colors.bg.secondary,
     borderWidth:       1,
     borderColor:       colors.border.subtle,
     // Wide enough for every label; a label that still does not fit shrinks
@@ -263,7 +261,6 @@ const styles = StyleSheet.create({
   hint: {
     fontSize:  11,
     color:     colors.text.tertiary,
-    opacity:   0.6,
     marginLeft: spacing[1],
   },
 
