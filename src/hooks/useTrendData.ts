@@ -8,6 +8,9 @@
  * We split the 7 days into two windows:
  *   recent  = last 3 days (days 5–7)
  *   prior   = first 4 days (days 1–4)
+ * On a week with missed days the windows shrink but never overlap (see
+ * splitTrendWindows), and with fewer than MIN_DAYS_FOR_TREND scored days the
+ * card makes no directional call at all.
  *
  * delta = mean(recent) − mean(prior)
  *   delta >  5  → improving
@@ -27,6 +30,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { onScoreSaved } from '@services/scoreSync';
 import { supabase } from '@services/supabase';
 import { localDateStr } from '@utils/index';
+import { MIN_DAYS_FOR_TREND, splitTrendWindows } from '@utils/trendChart';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -88,9 +92,8 @@ function componentTrend(
   key:       'recovery' | 'sleep' | 'stress',
 ): ComponentTrend {
   const vals  = rows.map(r => r[key]);
-  const prior  = vals.slice(0, 4);
-  const recent = vals.slice(-3);
-  if (recent.length === 0 || prior.length === 0) return { direction: 'stable', delta: 0 };
+  const { prior, recent } = splitTrendWindows(vals);
+  if (recent.length === 0 || prior.length === 0 || vals.length < MIN_DAYS_FOR_TREND) return { direction: 'stable', delta: 0 };
   const delta = Math.round((mean(recent) - mean(prior)) * 10) / 10;
   return { direction: classify(delta), delta };
 }
@@ -99,7 +102,11 @@ function buildInsight(
   direction: TrendDirection,
   delta:     number,
   weakLink:  'recovery' | 'sleep' | 'stress' | null,
+  scoredDays: number,
 ): string {
+  if (scoredDays < MIN_DAYS_FOR_TREND) {
+    return `Only ${scoredDays} scored days this week, so there is no clear trend yet.`;
+  }
   if (direction === 'improving') {
     if (delta >= 15) return 'Big jump this week. Your body is responding well. Great time for a quality session.';
     return 'Recovery trending up this week. Build on the momentum with a solid training block.';
@@ -108,7 +115,7 @@ function buildInsight(
     if (weakLink === 'sleep') return 'Sleep quality has been pulling scores down. Prioritise an early night before any hard session.';
     if (weakLink === 'recovery') return 'Heart rate variability and resting heart rate are dipping. Consider a recovery-focused day.';
     if (weakLink === 'stress') return 'Stress signals are elevated this week. Dial back intensity and focus on recovery.';
-    return '3-day dip in readiness: consider keeping this week lighter than planned.';
+    return `The last few days average ${Math.abs(Math.round(delta))} points below earlier in the week. Consider keeping this week lighter than planned.`;
   }
   // stable
   return 'Readiness is consistent this week. Solid base to build on. Keep the rhythm going.';
@@ -159,10 +166,10 @@ async function fetchTrend(): Promise<TrendData> {
 
   const scores  = data.map(r => r.score as number);
   const dates   = data.map(r => r.date as string);
-  const prior   = scores.slice(0, Math.max(1, scores.length - 3));
-  const recent  = scores.slice(-3);
+  const { prior, recent } = splitTrendWindows(scores);
   const delta   = Math.round((mean(recent) - mean(prior)) * 10) / 10;
-  const direction = classify(delta);
+  // A direction from two or three scattered days is noise, not a trend.
+  const direction = scores.length < MIN_DAYS_FOR_TREND ? 'stable' : classify(delta);
 
   const components = {
     recovery: componentTrend(rows, 'recovery'),
@@ -170,7 +177,7 @@ async function fetchTrend(): Promise<TrendData> {
     stress:   componentTrend(rows, 'stress'),
   };
   const weakLink = deriveWeakLink(components);
-  const insight  = buildInsight(direction, delta, weakLink);
+  const insight  = buildInsight(direction, delta, weakLink, scores.length);
 
   return { scores, dates, direction, delta, components, insight, weakLink };
 }

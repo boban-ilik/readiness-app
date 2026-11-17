@@ -11,7 +11,8 @@ import { useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet, ScrollView, LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Line, Path, Circle, Polygon, Text as SvgText } from 'react-native-svg';
-import { colors, fontSize, fontWeight, spacing, radius, getScoreColor } from '@constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, fontFamily, fontSize, spacing, surface, typography, getScoreColor } from '@constants/theme';
 import { buildTrendChart, type TrendPoint, type ForecastPoint } from '@utils/trendChart';
 import { localDateStr } from '@utils/index';
 
@@ -58,8 +59,8 @@ export default function TrendChartModal({ visible, onClose, past, forecast }: Pr
             <Text style={styles.navTitle}>Readiness trend</Text>
             <Text style={styles.navSub}>Last 7 days and the next 3</Text>
           </View>
-          <TouchableOpacity onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel="Close">
-            <Text style={styles.close}>✕</Text>
+          <TouchableOpacity style={styles.close} onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel="Close">
+            <Ionicons name="close" size={18} color={colors.text.secondary} />
           </TouchableOpacity>
         </View>
 
@@ -85,10 +86,10 @@ export default function TrendChartModal({ visible, onClose, past, forecast }: Pr
 
                 {chart.past.map(p => (
                   <Circle key={p.date} cx={p.x} cy={p.y} r={p.date === today ? 6 : 4}
-                          fill={getScoreColor(p.score)} stroke={colors.bg.tertiary} strokeWidth={2} />
+                          fill={getScoreColor(p.score)} stroke={colors.bg.secondary} strokeWidth={2} />
                 ))}
                 {chart.future.map(f => (
-                  <Circle key={f.date} cx={f.x} cy={f.y} r={4} fill={colors.bg.tertiary}
+                  <Circle key={f.date} cx={f.x} cy={f.y} r={4} fill={colors.bg.secondary}
                           stroke={PROJECTION} strokeWidth={2} />
                 ))}
 
@@ -167,15 +168,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[5],
     paddingVertical:   spacing[4],
   },
-  navTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.text.primary },
-  navSub:   { fontSize: fontSize.sm, color: colors.text.tertiary, marginTop: 2 },
-  close:    { fontSize: fontSize.lg, color: colors.text.secondary },
+  navTitle: { ...typography.heading },
+  navSub:   { ...typography.caption, marginTop: 2 },
+  close: {
+    width:           36,
+    height:          36,
+    borderRadius:    18,
+    backgroundColor: colors.bg.secondary,
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
   content:  { paddingHorizontal: spacing[5], paddingBottom: spacing[8], gap: spacing[4] },
   card: {
-    backgroundColor: colors.bg.tertiary,
-    borderRadius:    radius.lg,
-    borderWidth:     1,
-    borderColor:     colors.border.subtle,
+    ...surface.card,
     paddingVertical: spacing[4],
     gap:             spacing[3],
   },
@@ -190,10 +195,7 @@ const styles = StyleSheet.create({
   swatch:      { width: 18, height: 3, borderRadius: 2 },
   swatchBand:  { width: 18, height: 10, borderRadius: 2, opacity: 0.3 },
   sectionLabel: {
-    fontSize:          fontSize.xs,
-    fontWeight:        fontWeight.semiBold,
-    color:             colors.text.secondary,
-    letterSpacing:     1.0,
+    ...typography.label,
     paddingHorizontal: spacing[4],
   },
   row: {
@@ -202,13 +204,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     gap:               spacing[3],
   },
-  rowDay:   { flex: 1, fontSize: fontSize.base, color: colors.text.primary },
-  rowScore: { fontSize: fontSize.lg, fontWeight: fontWeight.bold },
-  rowRange: { fontSize: fontSize.sm, color: colors.text.tertiary, minWidth: 110, textAlign: 'right' },
+  rowDay:   { flex: 1, ...typography.title },
+  rowScore: { fontFamily: fontFamily.numeral, fontSize: 24, letterSpacing: -0.5 },
+  rowRange: { ...typography.caption, minWidth: 110, textAlign: 'right' },
   note: {
-    fontSize:          fontSize.sm,
-    color:             colors.text.tertiary,
-    lineHeight:        21,
+    ...typography.caption,
     paddingHorizontal: spacing[4],
   },
 });

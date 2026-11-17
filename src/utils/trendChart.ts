@@ -82,6 +82,23 @@ export function buildTrendChart(
   };
 }
 
+/** Fewer scored days than this in the week and the trend card makes no directional call. */
+export const MIN_DAYS_FOR_TREND = 4;
+
+/**
+ * The "recent" and "earlier" halves the weekly trend compares. On a full week
+ * that is the last 3 days against the first 4. On a short week the recent
+ * window shrinks so the two never share a day: with 3 scores, slicing the
+ * last 3 put every score in "recent", including the one it was compared with.
+ */
+export function splitTrendWindows<T>(values: T[]): { prior: T[]; recent: T[] } {
+  const recentCount = Math.min(3, Math.floor(values.length / 2));
+  return {
+    prior:  values.slice(0, values.length - recentCount),
+    recent: values.slice(values.length - recentCount),
+  };
+}
+
 /** Bar height for the 7-day strip, on a fixed 30 to 100 scale so a low day isn't drawn as nothing. */
 export function stripBarHeight(score: number, maxHeight: number, minHeight = 4): number {
   const share = (Math.min(100, Math.max(30, score)) - 30) / 70;

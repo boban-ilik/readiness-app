@@ -1,4 +1,4 @@
-import { buildTrendChart, stripBarHeight } from '../trendChart';
+import { buildTrendChart, stripBarHeight, splitTrendWindows } from '../trendChart';
 
 const box = { width: 320, height: 200, padLeft: 30, padRight: 10, padTop: 10, padBottom: 20 };
 const past = [
@@ -58,5 +58,25 @@ describe('stripBarHeight', () => {
   });
   it('never goes below the minimum sliver', () => {
     expect(stripBarHeight(10, 44)).toBe(4);
+  });
+});
+
+describe('splitTrendWindows', () => {
+  it('compares the last 3 days with the first 4 on a full week', () => {
+    expect(splitTrendWindows([1, 2, 3, 4, 5, 6, 7])).toEqual({ prior: [1, 2, 3, 4], recent: [5, 6, 7] });
+  });
+
+  it('never puts a day in both windows on a short week', () => {
+    for (let n = 2; n <= 7; n++) {
+      const days = Array.from({ length: n }, (_, i) => i);
+      const { prior, recent } = splitTrendWindows(days);
+      expect([...prior, ...recent]).toEqual(days);
+      expect(prior.length).toBeGreaterThan(0);
+      expect(recent.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('with 3 scores, compares the newest with the two before it', () => {
+    expect(splitTrendWindows([74, 58, 63])).toEqual({ prior: [74, 58], recent: [63] });
   });
 });

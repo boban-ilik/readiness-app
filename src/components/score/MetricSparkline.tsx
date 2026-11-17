@@ -122,8 +122,10 @@ export default function MetricSparkline({
     { i: n - 1,  label: 'Today',                       anchor: 'end'    as const },
   ];
 
-  // Avg label position — sits just left of the dashed line, vertically centred
-  const avgLabelY = avgY - 3;
+  // The average label is a legend in the top padding, above the plot area.
+  // It used to sit on the dashed line itself, where it collided with the
+  // data line whenever the first few days were close to the average.
+  const avgLegendY = 9;
 
   return (
     <View
@@ -161,13 +163,22 @@ export default function MetricSparkline({
           strokeOpacity={0.35}
         />
 
-        {/* ── Avg value label (left side, inline with dashed line) ── */}
+        {/* ── Average legend: a dash sample and the value, clear of the data ── */}
+        <Line
+          x1={PAD_H}
+          y1={avgLegendY - 3}
+          x2={PAD_H + 14}
+          y2={avgLegendY - 3}
+          stroke={colors.text.tertiary}
+          strokeWidth={1}
+          strokeDasharray="4,4"
+          strokeOpacity={0.6}
+        />
         <SvgText
-          x={PAD_H + 2}
-          y={avgLabelY}
-          fontSize={9}
+          x={PAD_H + 19}
+          y={avgLegendY}
+          fontSize={10}
           fill={colors.text.tertiary}
-          fillOpacity={0.55}
         >
           avg {Math.round(avg)}
         </SvgText>
@@ -192,7 +203,7 @@ export default function MetricSparkline({
           cy={todayY}
           r={5.5}
           fill={scoreColor}
-          stroke={colors.bg.secondary}
+          stroke={colors.bg.primary}
           strokeWidth={2}
         />
 
