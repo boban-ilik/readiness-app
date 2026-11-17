@@ -30,6 +30,7 @@ import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import { gate } from '../_shared/entitlement.ts';
 import { postClaude, CLAUDE_HAIKU } from '../_shared/anthropic.ts';
 import { CORS_HEADERS } from '../_shared/cors.ts';
+import { SCORE_SCALE_RULE } from '../_shared/promptFacts.ts';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -76,6 +77,7 @@ Rules:
 - Be specific: cite the actual numbers, not vague generalisations
 - Be encouraging even for poor scores: frame it as useful information, not a judgement
 - Do NOT repeat the score or status label
+- ${SCORE_SCALE_RULE}
 - Keep INTERPRETATION under 60 words, ADVICE under 35 words
 - Spelling: British English. Punctuation: never use em dashes or en dashes. Use a comma, a full stop or a colon instead.
 - Format your response EXACTLY as two lines:

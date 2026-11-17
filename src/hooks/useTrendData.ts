@@ -105,7 +105,10 @@ function buildInsight(
   scoredDays: number,
 ): string {
   if (scoredDays < MIN_DAYS_FOR_TREND) {
-    return `Only ${scoredDays} scored days this week, so there is no clear trend yet.`;
+    // Rows exist only for days the app was opened (the score is saved from the
+    // phone), while History recalculates every day from health data. So this is
+    // about saved days, never "scored" days.
+    return `A trend needs ${MIN_DAYS_FOR_TREND} days of saved scores this week and there are ${scoredDays}. Scores are saved on days you open the app.`;
   }
   if (direction === 'improving') {
     if (delta >= 15) return 'Big jump this week. Your body is responding well. Great time for a quality session.';

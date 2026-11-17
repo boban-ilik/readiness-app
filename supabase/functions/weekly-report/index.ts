@@ -24,6 +24,7 @@ import { parseReport } from '../_shared/report.ts';
 import { gate } from '../_shared/entitlement.ts';
 import { postClaude, CLAUDE_HAIKU } from '../_shared/anthropic.ts';
 import { CORS_HEADERS as corsHeaders } from '../_shared/cors.ts';
+import { SCORE_SCALE_RULE } from '../_shared/promptFacts.ts';
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL') ?? '';
@@ -158,6 +159,7 @@ Deno.serve(async (req: Request) => {
       `  "summary": "2-3 sentences describing the week's trend and any standout days",\n` +
       `  "tip": "one specific, actionable sentence for the coming week based on the weakest area"\n` +
       `}\n\n` +
+      `How to read the scores: ${SCORE_SCALE_RULE}\n` +
       `Tone: encouraging, evidence-based, personal. No generic platitudes.\n` +
       `Spelling: British English. Punctuation: never use em dashes or en dashes; use a comma, a full stop or a colon.`;
 
