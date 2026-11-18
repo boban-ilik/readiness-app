@@ -167,8 +167,20 @@ function buildActionPlan(
   }
 
   // low
+  // The reason has to match the signal that fired. A single warning is never
+  // the training-load spike (that one is alert severity), so the old fixed
+  // line blamed "recent training load" on days with no training in the data.
+  const hasStress  = signals.some(s => s.label.includes('Stress'));
+  const hasDecline = signals.some(s => s.label.includes('Readiness declining'));
+  const lowReason =
+      hasTrainingLoad ? 'Your body hasn\'t fully absorbed recent training load yet.'
+    : hasSleepDebt    ? 'You have slept less than usual over the last few nights, so a hard effort will cost more than it normally does.'
+    : hasHRVDrop      ? 'Your HRV has been falling, which means recovery is running behind.'
+    : hasStress       ? 'Your stress score has slipped for several days, which means recovery is running behind.'
+    : hasDecline      ? 'Your readiness has been sliding for several days.'
+    :                   'An early fatigue signal is showing in your numbers.';
   return [
-    'Keep today\'s session easy (RPE ≤ 5). Your body hasn\'t fully absorbed recent training load yet.',
+    `Keep today's session easy (RPE ≤ 5). ${lowReason}`,
     hasSleepDebt
       ? 'Prioritise getting to bed on time tonight. Even 30 extra minutes consistently helps clear accumulated sleep debt.'
       : 'Monitor how your energy and mood trend over the next 2–3 days before returning to high-intensity work.',

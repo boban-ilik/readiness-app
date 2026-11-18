@@ -10,7 +10,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
+import { colors, spacing, surface, typography } from '@constants/theme';
 
 interface Props {
   children: React.ReactNode;
@@ -47,45 +47,41 @@ export function LockedPlanRow({ title, body, onPress }: LockedRowProps) {
         <Text style={styles.lockedTitle}>{title}</Text>
         <Text style={styles.lockedBody}>{body}</Text>
       </View>
-      <Ionicons name="lock-closed-outline" size={16} color={colors.text.secondary} />
+      <Ionicons name="lock-closed-outline" size={16} color={colors.text.tertiary} />
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.bg.tertiary,
-    borderRadius:    radius.xl,
-    borderWidth:     1,
-    borderColor:     colors.border.subtle,
-    overflow:        'hidden',
+    ...surface.card,
+    overflow: 'hidden',
   },
   row: {
-    paddingHorizontal: spacing[5],
+    paddingHorizontal: spacing[4],
     paddingVertical:   spacing[4],
   },
   rowDivider: {
     borderTopWidth: 1,
     borderTopColor: colors.border.subtle,
   },
+  // Text starts where the other rows' titles do, past their 28 pt icon column.
   locked: {
     flexDirection: 'row',
     alignItems:    'center',
     gap:           spacing[3],
     minHeight:     44,
+    paddingLeft:   28 + spacing[3.5],
   },
   lockedText: {
     flex: 1,
     gap:  spacing[0.5],
   },
   lockedTitle: {
-    color:      colors.text.secondary,
-    fontSize:   fontSize.base,
-    fontWeight: fontWeight.semiBold,
+    ...typography.title,
+    color: colors.text.secondary,
   },
   lockedBody: {
-    color:      colors.text.secondary,
-    fontSize:   fontSize.sm,
-    lineHeight: 18,
+    ...typography.caption,
   },
 });

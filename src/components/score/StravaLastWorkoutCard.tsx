@@ -5,16 +5,13 @@
  * Only renders when Strava is connected and at least one activity exists.
  *
  * Displays: activity name, sport icon, time ago, duration, distance (if
- * relevant), suffer score badge, and average HR when available.
+ * relevant), suffer score with its effort word, and average HR when available.
  */
 
-import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, type StyleProp, type TextStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
+import { colors, fontFamily, fontSize, spacing, surface, typography } from '@constants/theme';
 import { sufferScoreToLoadTier, type StravaActivity } from '@services/strava';
-
-// ─── Strava brand orange ──────────────────────────────────────────────────────
-const STRAVA_ORANGE = '#FC4C02';
 
 // ─── Sport type → icon mapping ────────────────────────────────────────────────
 
@@ -62,16 +59,26 @@ function timeAgo(isoDate: string): string {
   return actDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-/** Suffer score → display label + colour */
-function sufferLabel(score: number): { text: string; color: string } {
+/** Suffer score → effort word + colour. The number itself is drawn in the numeral face. */
+function sufferLabel(score: number): { score: number; word: string | null; color: string } {
   const tier = sufferScoreToLoadTier(score);
   switch (tier) {
-    case 'light':    return { text: `${score} · Easy`,   color: colors.success };
-    case 'moderate': return { text: `${score} · Solid`,  color: colors.info    };
-    case 'heavy':    return { text: `${score} · Hard`,   color: colors.warning };
-    case 'peak':     return { text: `${score} · Epic`,   color: colors.error   };
-    default:         return { text: `${score}`,          color: colors.text.tertiary };
+    case 'light':    return { score, word: 'Easy',  color: colors.success };
+    case 'moderate': return { score, word: 'Solid', color: colors.info    };
+    case 'heavy':    return { score, word: 'Hard',  color: colors.warning };
+    case 'peak':     return { score, word: 'Epic',  color: colors.error   };
+    default:         return { score, word: null,    color: colors.text.tertiary };
   }
+}
+
+/**
+ * Sets the figures of a short line ("1h 24m", "5.2 km", "2d ago") in the
+ * numeral face. The words and units around them keep the parent's font.
+ */
+function withNumerals(text: string, numeralStyle: StyleProp<TextStyle>) {
+  return text.split(/(\d+(?:\.\d+)?)/).map((run, i) =>
+    /^\d/.test(run) ? <Text key={i} style={numeralStyle}>{run}</Text> : run,
+  );
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -101,30 +108,36 @@ export default function StravaLastWorkoutCard({ activity, onPress }: Props) {
       onPress={onPress}
       activeOpacity={onPress ? 0.75 : 1}
     >
-      {/* Left: sport icon bubble */}
-      <View style={styles.iconWrap}>
-        <Ionicons name={icon} size={20} color={STRAVA_ORANGE} />
-      </View>
+      {/* Left: sport icon */}
+      <Ionicons name={icon} size={22} color={colors.text.secondary} />
 
       {/* Centre: name + stats */}
       <View style={styles.body}>
         <View style={styles.titleRow}>
           <Text style={styles.activityName} numberOfLines={1}>{activity.name}</Text>
-          <Text style={styles.when}>{when}</Text>
+          <Text style={styles.when}>{withNumerals(when, styles.whenNumeral)}</Text>
         </View>
-        <Text style={styles.stats}>{stats.join('  ·  ')}</Text>
+        <Text style={styles.stats}>
+          {stats.map((stat, i) => (
+            <Text key={i}>
+              {i > 0 ? '  ·  ' : ''}
+              {withNumerals(stat, styles.statNumeral)}
+            </Text>
+          ))}
+        </Text>
       </View>
 
-      {/* Right: suffer score badge OR simple chevron */}
-      <View style={styles.right}>
-        {suffer ? (
-          <View style={[styles.sufferPill, { backgroundColor: suffer.color + '20' }]}>
-            <Text style={[styles.sufferText, { color: suffer.color }]}>{suffer.text}</Text>
-          </View>
-        ) : (
-          <Ionicons name="chevron-forward" size={14} color={colors.text.tertiary} />
-        )}
-      </View>
+      {/* Right: suffer score as plain text, or a chevron when the row opens something */}
+      {suffer ? (
+        <Text style={styles.sufferScore}>
+          {suffer.score}
+          {suffer.word && (
+            <Text style={[styles.sufferWord, { color: suffer.color }]}>{` · ${suffer.word}`}</Text>
+          )}
+        </Text>
+      ) : onPress ? (
+        <Ionicons name="chevron-forward" size={14} color={colors.text.tertiary} />
+      ) : null}
     </TouchableOpacity>
   );
 }
@@ -150,9 +163,6 @@ export function StravaLastWorkoutSection({ isConnected, activities, isLoading }:
       {/* Section header with Strava branding */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionLabel}>LAST STRAVA WORKOUT</Text>
-        <View style={styles.stravaBadge}>
-          <Text style={styles.stravaBadgeText}>via Strava</Text>
-        </View>
       </View>
       <StravaLastWorkoutCard activity={latest} />
     </View>
@@ -169,46 +179,19 @@ const styles = StyleSheet.create({
     flexDirection:  'row',
     alignItems:     'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing[1],
+    gap:            spacing[2],
   },
   sectionLabel: {
-    color:         colors.text.tertiary,
-    fontSize:      fontSize.xs,
-    fontWeight:    fontWeight.semiBold,
-    letterSpacing: 2,
+    ...typography.label,
   },
-  stravaBadge: {
+  // Where the data came from: quiet text, not a badge
+  card: {
+    ...surface.card,
     flexDirection:     'row',
     alignItems:        'center',
-    gap:               spacing[1],
-    backgroundColor:   STRAVA_ORANGE + '18',
-    borderRadius:      radius.full,
-    paddingHorizontal: spacing[2],
-    paddingVertical:   2,
-  },
-  stravaBadgeText: {
-    color:      STRAVA_ORANGE,
-    fontSize:   11,
-    fontWeight: fontWeight.semiBold,
-  },
-  card: {
-    flexDirection:   'row',
-    alignItems:      'center',
-    backgroundColor: colors.bg.secondary,
-    borderRadius:    radius.lg,
-    borderWidth:     1,
-    borderColor:     colors.border.subtle,
     paddingHorizontal: spacing[4],
     paddingVertical:   spacing[3],
-    gap:             spacing[3],
-  },
-  iconWrap: {
-    width:          40,
-    height:         40,
-    borderRadius:   radius.md,
-    backgroundColor: STRAVA_ORANGE + '18',
-    alignItems:     'center',
-    justifyContent: 'center',
+    gap:               spacing[3],
   },
   body: {
     flex: 1,
@@ -221,31 +204,36 @@ const styles = StyleSheet.create({
     gap:            spacing[2],
   },
   activityName: {
-    flex:       1,
-    color:      colors.text.primary,
-    fontSize:   fontSize.sm,
-    fontWeight: fontWeight.semiBold,
+    ...typography.title,
+    flex: 1,
   },
   when: {
+    ...typography.caption,
     color:      colors.text.tertiary,
-    fontSize:   fontSize.xs,
     flexShrink: 0,
+  },
+  whenNumeral: {
+    fontFamily: fontFamily.numeral,
+    fontSize:   14,
   },
   stats: {
-    color:    colors.text.secondary,
-    fontSize: fontSize.xs,
+    ...typography.caption,
   },
-  right: {
-    alignItems: 'center',
+  statNumeral: {
+    fontFamily: fontFamily.numeral,
+    fontSize:   fontSize.sm,
+    color:      colors.text.primary,
+  },
+
+  // Effort: the number in the numeral face, the word coloured by its tier
+  sufferScore: {
+    fontFamily: fontFamily.numeral,
+    fontSize:   fontSize.lg,
+    color:      colors.text.primary,
     flexShrink: 0,
   },
-  sufferPill: {
-    borderRadius:      radius.full,
-    paddingHorizontal: spacing[2],
-    paddingVertical:   2,
-  },
-  sufferText: {
-    fontSize:   11,
-    fontWeight: fontWeight.bold,
+  sufferWord: {
+    fontFamily: 'System',
+    fontSize:   13,
   },
 });

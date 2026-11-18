@@ -1,13 +1,12 @@
 /**
  * BreakdownModal
  *
- * Polished slide-up bottom sheet for Recovery / Sleep / Stress detail.
- *
- * Phase 2B additions:
- *  • useAIInsight hook — fetches personalised copy from Claude API (Pro only)
- *  • Skeleton loader — pulsing placeholder while AI content fetches
- *  • AI badge — "✨ AI" pill next to section headers when showing AI copy
- *  • Pro upsell card — shown to free-tier users beneath the static advice
+ * The score detail sheet for Recovery, Sleep, Stress and Activity (the 1.3
+ * design). One background and flat sections under 11 pt labels: what went
+ * in, the 30-day trend, what it means, today's recommendation. Pro users get
+ * the AI interpretation and advice in place of the static copy. Free users
+ * see the static copy and, at the end, a locked "why it moved" block that
+ * opens the paywall: the lock sits where they are most curious.
  */
 
 import {
@@ -22,18 +21,22 @@ import {
   Platform,
 } from 'react-native';
 import { useRef, useEffect } from 'react';
+import Svg, { Circle } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import type { HealthData } from '../../types/index';
 import { buildBreakdownDetail, recoveryStatus, type MetricRow } from '@utils/breakdown';
 import { startSkeletonPulse } from '@utils/motion';
-import { useAIInsight }                          from '@hooks/useAIInsight';
-import { useMetricHistory }                      from '@hooks/useMetricHistory';
-import MetricSparkline                           from '@components/score/MetricSparkline';
+import { useAIInsight }    from '@hooks/useAIInsight';
+import { useMetricHistory } from '@hooks/useMetricHistory';
+import MetricSparkline      from '@components/score/MetricSparkline';
 import {
   colors,
   fontSize,
   fontWeight,
   spacing,
   radius,
+  surface,
+  typography,
   getScoreColor,
 } from '@constants/theme';
 
@@ -49,11 +52,11 @@ interface BreakdownModalProps {
   hrvBaseline:        number;   // personal 30-day HRV baseline (ms)
   /** Whether the user has an active Pro subscription — enables AI insights */
   isPro?:             boolean;
-  /** Called when user taps "Enter HRV manually" on the Recovery modal */
+  /** Called when user taps "Enter heart rate variability" on the Recovery sheet */
   onEnterManualHRV?:  () => void;
   /** Called when user taps "Clear manual entry" to remove today's manual HRV */
   onClearManualHRV?:  () => void;
-  /** Called when a free user taps the upsell card — show the paywall */
+  /** Called when a free user taps the locked insight — show the paywall */
   onUpgrade?:         () => void;
 }
 
@@ -64,16 +67,7 @@ function statusValueColor(status: MetricRow['status']): string {
     case 'good':    return colors.score.optimal;
     case 'ok':      return colors.amber[400];
     case 'poor':    return colors.score.poor;
-    default:        return colors.text.tertiary;
-  }
-}
-
-function statusDotColor(status: MetricRow['status']): string {
-  switch (status) {
-    case 'good':    return colors.score.optimal;
-    case 'ok':      return colors.amber[400];
-    case 'poor':    return colors.score.poor;
-    default:        return colors.text.tertiary;
+    default:        return colors.text.secondary;
   }
 }
 
@@ -86,40 +80,55 @@ function scoreLabel(score: number): string {
   return 'Low';
 }
 
+const ARC_SIZE   = 88;
+const ARC_STROKE = 6;
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function SectionHeader({ title, aiActive }: { title: string; aiActive?: boolean }) {
+function HeaderArc({ score, color }: { score: number; color: string }) {
+  const r      = (ARC_SIZE - ARC_STROKE) / 2;
+  const c      = 2 * Math.PI * r;
+  const center = ARC_SIZE / 2;
+  const filled = c * Math.min(Math.max(score, 0), 100) / 100;
   return (
-    <View style={styles.sectionHeaderRow}>
-      <Text style={styles.sectionHeader} accessibilityRole="header">{title}</Text>
-      {aiActive && (
-        <View style={styles.aiBadge}>
-          <Text style={styles.aiBadgeText}>✨ AI</Text>
-        </View>
+    <Svg width={ARC_SIZE} height={ARC_SIZE}>
+      <Circle cx={center} cy={center} r={r} stroke={colors.bg.secondary} strokeWidth={ARC_STROKE} fill="none" />
+      {filled > 0 && (
+        <Circle
+          cx={center} cy={center} r={r}
+          stroke={color} strokeWidth={ARC_STROKE} fill="none"
+          strokeLinecap="round"
+          strokeDasharray={[filled, c]}
+          transform={`rotate(-90 ${center} ${center})`}
+        />
       )}
+    </Svg>
+  );
+}
+
+function SectionLabel({ title, tag }: { title: string; tag?: string }) {
+  return (
+    <View style={styles.sectionLabelRow}>
+      <Text style={styles.sectionLabel} accessibilityRole="header">{title}</Text>
+      {!!tag && <Text style={styles.sectionTag}>{tag}</Text>}
     </View>
   );
 }
 
-function MetricItem({ metric }: { metric: MetricRow }) {
-  const dotColor   = statusDotColor(metric.status);
-  const valueColor = statusValueColor(metric.status);
-
+function MetricItem({ metric, last, children }: { metric: MetricRow; last: boolean; children?: React.ReactNode }) {
   return (
-    <View style={styles.metricRow}>
-      {/* Status dot */}
-      <View style={[styles.metricDot, { backgroundColor: dotColor }]} />
-
-      {/* Labels */}
-      <View style={styles.metricLabels}>
-        <Text style={styles.metricLabel}>{metric.label}</Text>
-        {metric.sub ? <Text style={styles.metricSub}>{metric.sub}</Text> : null}
+    <View style={[styles.metricRow, !last && styles.metricDivider]}>
+      <View style={styles.metricMain}>
+        <View style={styles.metricText}>
+          <Text style={styles.metricLabel}>{metric.label}</Text>
+          {metric.sub ? <Text style={styles.metricSub}>{metric.sub}</Text> : null}
+        </View>
+        {/* Numbers in the numeral face; a word ("Moderate") in the text face. */}
+        <Text style={[/\d/.test(metric.value) ? styles.metricValue : styles.metricWord, { color: statusValueColor(metric.status) }]}>
+          {metric.value}
+        </Text>
       </View>
-
-      {/* Value — tinted by status */}
-      <Text style={[styles.metricValue, { color: valueColor }]}>
-        {metric.value}
-      </Text>
+      {children}
     </View>
   );
 }
@@ -147,26 +156,34 @@ function SkeletonLine({
   );
 }
 
-/** Upsell card shown to free-tier users */
-function ProUpsellCard({ onUpgrade }: { onUpgrade?: () => void }) {
+/**
+ * The Pro block a free user sees at the end of the sheet. The copy is honest
+ * about what is behind the lock; it shows no sample insight, because the
+ * insight function has no free allowance yet and a canned teaser would read
+ * as a trick the second day. When that allowance exists, the first line and
+ * a half of the real insight go here, the rest blurred.
+ */
+function LockedInsight({ componentLabel, onUpgrade }: { componentLabel: string; onUpgrade?: () => void }) {
   return (
-    <TouchableOpacity
-      style={styles.upsellCard}
-      activeOpacity={onUpgrade ? 0.75 : 1}
-      onPress={onUpgrade}
-    >
-      <Text style={styles.upsellIcon}>✨</Text>
-      <View style={styles.upsellText}>
-        <Text style={styles.upsellTitle}>AI-Powered Insights</Text>
-        <Text style={styles.upsellBody}>
-          Upgrade to Pro for personalised interpretation and daily recommendations
-          generated by AI from your own biometric patterns.
+    <View style={styles.block}>
+      <SectionLabel title="WHY IT MOVED" tag="PRO" />
+      <TouchableOpacity
+        style={styles.lockedCard}
+        activeOpacity={onUpgrade ? 0.75 : 1}
+        onPress={onUpgrade}
+        accessibilityRole="button"
+        accessibilityLabel={`The AI read on today's ${componentLabel}, a Pro feature. Opens Readiness Pro`}
+      >
+        <Text style={styles.lockedTitle}>The AI read on today's {componentLabel}</Text>
+        <Text style={styles.lockedBody}>
+          What moved your numbers since yesterday and what to do about it, written from your own data each morning.
         </Text>
-        {onUpgrade && (
-          <Text style={styles.upsellCta}>Upgrade to Pro →</Text>
-        )}
-      </View>
-    </TouchableOpacity>
+        <View style={styles.lockedButton}>
+          <Ionicons name="lock-closed" size={14} color={colors.bg.primary} />
+          <Text style={styles.lockedButtonText}>Read the full insight</Text>
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -186,26 +203,7 @@ export default function BreakdownModal({
   onUpgrade,
 }: BreakdownModalProps) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  const sheetHeight = Math.round(screenHeight * 0.74);
-
-  // ── Animated bar ──────────────────────────────────────────────────────────
-  const barAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (visible) {
-      barAnim.setValue(0);
-      Animated.timing(barAnim, {
-        toValue:         score,
-        duration:        600,
-        useNativeDriver: false,
-      }).start();
-    }
-  }, [visible, score, barAnim]);
-
-  const animatedBarWidth = barAnim.interpolate({
-    inputRange:  [0, 100],
-    outputRange: ['0%', '100%'],
-  });
+  const sheetHeight = Math.round(screenHeight * 0.86);
 
   // ── Skeleton pulse animation ───────────────────────────────────────────────
   const pulseAnim = useRef(new Animated.Value(0.35)).current;
@@ -258,6 +256,7 @@ export default function BreakdownModal({
   // Determine what to show in each text section:
   const showAIContent = isPro && !!aiInsight && !aiLoading;
   const showSkeleton  = isPro && aiLoading && component !== 'activity';
+  const weightLabel   = detail.weight.includes('%') ? `${detail.weight} of your score` : 'context only';
 
   return (
     <Modal
@@ -272,6 +271,8 @@ export default function BreakdownModal({
         style={styles.backdrop}
         activeOpacity={1}
         onPress={onClose}
+        accessibilityLabel="Close"
+        accessibilityRole="button"
       />
 
       {/* ── Bottom sheet ── */}
@@ -280,163 +281,122 @@ export default function BreakdownModal({
         {/* Drag handle */}
         <View style={styles.handle} />
 
-        {/* ── Header row ── */}
-        <View style={styles.cardHeader}>
-
-          {/* Left: icon + name + weight + status badge */}
-          <View style={styles.cardHeaderLeft}>
-            <Text style={styles.cardIcon}>{detail.icon}</Text>
-
-            <View style={styles.cardHeaderText}>
-              {/* Name + badge on the same row */}
-              <View style={styles.nameBadgeRow}>
-                <Text style={styles.cardName}>{detail.label}</Text>
-                <View style={[
-                  styles.badge,
-                  { backgroundColor: detail.statusColor + '25', borderColor: detail.statusColor + '60' },
-                ]}>
-                  <Text style={[styles.badgeText, { color: detail.statusColor }]}>
-                    {detail.statusLabel}
-                  </Text>
-                </View>
-              </View>
-
-              <Text style={styles.cardWeight}>
-                {detail.weight.includes('%')
-                  ? `${detail.weight} of readiness score`
-                  : detail.weight}
-              </Text>
-              {detail.dateContext && (
-                <Text style={styles.dateContext}>{detail.dateContext}</Text>
-              )}
-            </View>
-          </View>
-
-          {/* Right: score circle ring */}
-          <View style={[styles.scoreCircle, { borderColor: detail.statusColor }]}>
-            <Text style={[styles.scoreCircleNum, { color: detail.statusColor }]}>
-              {Math.round(score)}
-            </Text>
-          </View>
-        </View>
-
-        {/* ── Animated progress bar ── */}
-        <View style={styles.barTrack}>
-          <Animated.View
-            style={[
-              styles.barFill,
-              { width: animatedBarWidth, backgroundColor: detail.statusColor },
-            ]}
-          />
-        </View>
-
-        <View style={styles.divider} />
-
         {/* ── Scrollable content ── */}
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* ── Header: arc, label, numeral, status, date ── */}
+          <View style={styles.header}>
+            <HeaderArc score={score} color={detail.statusColor} />
+            <View style={styles.headerText}>
+              <Text style={styles.sectionLabel}>{detail.label}, {weightLabel}</Text>
+              <View style={styles.numeralRow}>
+                <Text style={styles.numeral}>{Math.round(score)}</Text>
+                <Text style={[styles.statusLabel, { color: detail.statusColor }]}>{detail.statusLabel}</Text>
+              </View>
+              {detail.dateContext && (
+                <Text style={styles.dateContext}>{detail.dateContext}</Text>
+              )}
+            </View>
+          </View>
 
-          {/* ── 30-Day Trend (Recovery / Sleep / Stress only) ── */}
+          {/* ── What went in ── */}
+          <View style={styles.block}>
+            <SectionLabel title="WHAT WENT IN" />
+            {detail.metrics.map((m, i) => {
+              const isHrvRow = component === 'recovery' && m.label.startsWith('Heart Rate Variability');
+              return (
+                <MetricItem key={i} metric={m} last={i === detail.metrics.length - 1}>
+                  {isHrvRow && healthData?.hrv === null && onEnterManualHRV && (
+                    <TouchableOpacity style={styles.linkRow} onPress={onEnterManualHRV} accessibilityRole="button">
+                      <Text style={styles.link}>Enter heart rate variability</Text>
+                    </TouchableOpacity>
+                  )}
+                  {isHrvRow && healthData?.hrvSource === 'manual' && (
+                    <View style={styles.linkRow}>
+                      {onEnterManualHRV && (
+                        <TouchableOpacity onPress={onEnterManualHRV} accessibilityRole="button">
+                          <Text style={styles.link}>Update heart rate variability</Text>
+                        </TouchableOpacity>
+                      )}
+                      {onClearManualHRV && (
+                        <TouchableOpacity onPress={onClearManualHRV} accessibilityRole="button">
+                          <Text style={styles.linkMuted}>Clear manual entry</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                </MetricItem>
+              );
+            })}
+          </View>
+
+          {/* ── 30-day trend (Recovery / Sleep / Stress only) ── */}
           {showSparkline && (
-            <>
-              <SectionHeader title="30-DAY TREND" />
+            <View style={styles.block}>
+              <SectionLabel title="LAST 30 DAYS" />
               <MetricSparkline
                 data={historyData}
                 scoreColor={getScoreColor(score)}
                 chartWidth={sparklineWidth}
                 isLoading={historyLoading}
               />
-            </>
+            </View>
           )}
 
-          {/* Metrics */}
-          <SectionHeader title="METRICS" />
-          {detail.metrics.map((m, i) => {
-            const isHrvRow = component === 'recovery'
-              && (m.label === 'Heart Rate Variability' || m.label === 'Heart Rate Variability (manual)');
-            return (
-              <View key={i}>
-                <MetricItem metric={m} />
-                {isHrvRow && healthData?.hrv === null && onEnterManualHRV && (
-                  <TouchableOpacity style={styles.manualBtn} onPress={onEnterManualHRV}>
-                    <Text style={styles.manualBtnText}>✏️  Enter heart rate variability</Text>
-                  </TouchableOpacity>
-                )}
-                {isHrvRow && healthData?.hrvSource === 'manual' && (
-                  <View style={styles.manualActions}>
-                    {onEnterManualHRV && (
-                      <TouchableOpacity style={styles.manualBtnSmall} onPress={onEnterManualHRV}>
-                        <Text style={styles.manualBtnTextSmall}>✏️  Update heart rate variability</Text>
-                      </TouchableOpacity>
-                    )}
-                    {onClearManualHRV && (
-                      <TouchableOpacity style={[styles.manualBtnSmall, styles.clearBtn]} onPress={onClearManualHRV}>
-                        <Text style={styles.clearBtnText}>✕  Clear manual entry</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
+          {/* ── Interpretation ── */}
+          <View style={styles.block}>
+            <SectionLabel title="WHAT THIS MEANS" tag={showAIContent ? 'AI' : undefined} />
+            {showSkeleton ? (
+              <View style={styles.skeletonBlock}>
+                <SkeletonLine pulseAnim={pulseAnim} width="95%" />
+                <SkeletonLine pulseAnim={pulseAnim} width="88%" style={{ marginTop: spacing[2] }} />
+                <SkeletonLine pulseAnim={pulseAnim} width="60%" style={{ marginTop: spacing[2] }} />
               </View>
-            );
-          })}
-
-          {/* ── Interpretation ─────────────────────────────────────────────── */}
-          <SectionHeader title="WHAT THIS MEANS" aiActive={showAIContent} />
-
-          {showSkeleton ? (
-            <View style={styles.skeletonBlock}>
-              <SkeletonLine pulseAnim={pulseAnim} width="95%" />
-              <SkeletonLine pulseAnim={pulseAnim} width="88%" style={{ marginTop: spacing[2] }} />
-              <SkeletonLine pulseAnim={pulseAnim} width="60%" style={{ marginTop: spacing[2] }} />
-            </View>
-          ) : (
-            <Text style={styles.bodyText}>
-              {showAIContent ? aiInsight!.interpretation : detail.interpretation}
-            </Text>
-          )}
-
-          {/* ── Recommendation ─────────────────────────────────────────────── */}
-          <SectionHeader title="TODAY'S RECOMMENDATION" aiActive={showAIContent} />
-
-          {showSkeleton ? (
-            <View style={[styles.adviceCard, styles.skeletonAdviceCard]}>
-              <SkeletonLine pulseAnim={pulseAnim} width={24} height={20} />
-              <View style={{ flex: 1 }}>
-                <SkeletonLine pulseAnim={pulseAnim} width="90%" />
-                <SkeletonLine pulseAnim={pulseAnim} width="65%" style={{ marginTop: spacing[2] }} />
-              </View>
-            </View>
-          ) : (
-            <View style={styles.adviceCard}>
-              <Text style={styles.adviceIcon}>💡</Text>
-              <Text style={styles.adviceText}>
-                {showAIContent ? aiInsight!.advice : detail.advice}
+            ) : (
+              <Text style={styles.body}>
+                {showAIContent ? aiInsight!.interpretation : detail.interpretation}
               </Text>
+            )}
+          </View>
+
+          {/* ── Recommendation ── */}
+          <View style={styles.block}>
+            <SectionLabel title="TODAY'S RECOMMENDATION" tag={showAIContent ? 'AI' : undefined} />
+            <View style={styles.adviceCard}>
+              <Ionicons name="bulb-outline" size={22} color={colors.amber[400]} style={styles.adviceIcon} />
+              {showSkeleton ? (
+                <View style={{ flex: 1 }}>
+                  <SkeletonLine pulseAnim={pulseAnim} width="90%" />
+                  <SkeletonLine pulseAnim={pulseAnim} width="65%" style={{ marginTop: spacing[2] }} />
+                </View>
+              ) : (
+                <Text style={styles.adviceText}>
+                  {showAIContent ? aiInsight!.advice : detail.advice}
+                </Text>
+              )}
             </View>
-          )}
+          </View>
 
-          {/* ── Pro upsell (free users, non-activity components) ─────────── */}
+          {/* ── The lock, for free users, on the components that have an AI read ── */}
           {!isPro && component !== 'activity' && (
-            <ProUpsellCard onUpgrade={onUpgrade} />
+            <LockedInsight componentLabel={detail.label.toLowerCase()} onUpgrade={onUpgrade} />
           )}
 
-          <View style={{ height: spacing[6] }} />
+          <TouchableOpacity
+            style={styles.closeBtn}
+            onPress={onClose}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+          >
+            <Text style={styles.closeBtnText}>Done</Text>
+          </TouchableOpacity>
+
+          {/* Safe area bottom padding on iOS */}
+          {Platform.OS === 'ios' && <View style={styles.iosBottom} />}
         </ScrollView>
-
-        {/* ── Done button ── */}
-        <TouchableOpacity
-          style={styles.closeBtn}
-          onPress={onClose}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.closeBtnText}>Done</Text>
-        </TouchableOpacity>
-
-        {/* Safe area bottom padding on iOS */}
-        {Platform.OS === 'ios' && <View style={styles.iosBottom} />}
       </View>
     </Modal>
   );
@@ -452,363 +412,208 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
 
-  // Bottom sheet panel
+  // Bottom sheet panel: the same background as the screen behind it
   sheet: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.bg.secondary,
-    borderTopLeftRadius:  radius['2xl'],
-    borderTopRightRadius: radius['2xl'],
-    paddingHorizontal: spacing[5],
-    paddingTop: spacing[3],
+    backgroundColor: colors.bg.primary,
+    borderTopLeftRadius:  radius.xl,
+    borderTopRightRadius: radius.xl,
     borderTopWidth: 1,
-    borderTopColor: colors.border.default,
+    borderTopColor: colors.border.subtle,
+    paddingTop: spacing[3],
   },
 
   // Drag handle pill
   handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: colors.border.strong,
+    width: 36,
+    height: 5,
+    backgroundColor: colors.border.default,
     borderRadius: radius.full,
     alignSelf: 'center',
     marginBottom: spacing[5],
   },
 
-  // ── Header ──────────────────────────────────────────────────────────────────
-
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing[3],
-  },
-  cardHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-    flex: 1,
-    marginRight: spacing[3],
-  },
-  cardIcon: {
-    fontSize: 30,
-    lineHeight: 38,
-  },
-  cardHeaderText: {
-    flex: 1,
-    gap: spacing[1],
-  },
-  nameBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    flexWrap: 'wrap',
-  },
-  cardName: {
-    color: colors.text.primary,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
-  },
-
-  // Status badge — inline with component name
-  badge: {
-    borderRadius: radius.full,
-    borderWidth: 1,
-    paddingHorizontal: spacing[2],
-    paddingVertical: 2,
-  },
-  badgeText: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semiBold,
-    letterSpacing: 0.4,
-  },
-
-  cardWeight: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
-  },
-
-  dateContext: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
-    marginTop: 1,
-    opacity: 0.75,
-  },
-
-  // Score ring — coloured border circle, score number inside
-  scoreCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.full,
-    borderWidth: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
-  scoreCircleNum: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    lineHeight: 24,
-  },
-
-  // ── Progress bar ─────────────────────────────────────────────────────────────
-
-  barTrack: {
-    height: 6,
-    backgroundColor: colors.bg.elevated,
-    borderRadius: radius.full,
-    overflow: 'hidden',
-    marginBottom: spacing[4],
-  },
-  barFill: {
-    height: '100%',
-    borderRadius: radius.full,
-  },
-
-  // ── Divider ──────────────────────────────────────────────────────────────────
-
-  divider: {
-    height: 1,
-    backgroundColor: colors.border.subtle,
-    marginBottom: spacing[4],
-  },
-
-  // ── Scrollable body ───────────────────────────────────────────────────────────
-
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: spacing[2],
+    paddingHorizontal: spacing[5],
+    gap: spacing[7],
   },
 
-  // Section header row — title + optional AI badge
-  sectionHeaderRow: {
+  // ── Header ──
+  header: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    marginBottom: spacing[3],
-    marginTop: spacing[4],
+    alignItems:    'center',
+    gap:           18,
   },
-  sectionHeader: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
+  headerText: {
+    flex: 1,
+    gap:  spacing[1],
+  },
+  numeralRow: {
+    flexDirection: 'row',
+    alignItems:    'baseline',
+    gap:           spacing[2.5],
+  },
+  numeral: {
+    ...typography.displayNumeral,
+    fontSize:      56,
+    letterSpacing: -1.5,
+  },
+  statusLabel: {
+    fontSize:   14,
     fontWeight: fontWeight.semiBold,
-    letterSpacing: 1.5,
+  },
+  dateContext: {
+    fontSize: 13,
+    color:    colors.text.secondary,
   },
 
-  // "✨ AI" pill — shown when AI content is active
-  aiBadge: {
-    backgroundColor: colors.amber[900] + '55',
-    borderWidth: 1,
-    borderColor: colors.amber[700] + '80',
-    borderRadius: radius.full,
-    paddingHorizontal: spacing[1.5],
-    paddingVertical: 1,
+  // ── Sections ──
+  block: {
+    gap: spacing[2.5],
   },
-  aiBadgeText: {
-    color: colors.amber[400],
-    fontSize: 11,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 0.5,
+  sectionLabelRow: {
+    flexDirection:  'row',
+    alignItems:     'baseline',
+    justifyContent: 'space-between',
+  },
+  sectionLabel: {
+    ...typography.label,
+  },
+  sectionTag: {
+    fontSize:      11,
+    letterSpacing: 1.2,
+    fontWeight:    fontWeight.bold,
+    color:         colors.amber[400],
   },
 
-  // ── Metric rows ───────────────────────────────────────────────────────────────
-
+  // ── Metric rows ──
   metricRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing[2.5],
+    paddingVertical: spacing[3.5],
+    gap:             spacing[2],
+  },
+  metricDivider: {
     borderBottomWidth: 1,
     borderBottomColor: colors.border.subtle,
-    gap: spacing[3],
   },
-  metricDot: {
-    width: 8,
-    height: 8,
-    borderRadius: radius.full,
-    flexShrink: 0,
+  metricMain: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           spacing[3.5],
   },
-  metricLabels: {
+  metricText: {
     flex: 1,
-    gap: 2,
+    gap:  2,
   },
   metricLabel: {
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
+    ...typography.title,
   },
   metricSub: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
+    fontSize:   13,
+    lineHeight: 17,
+    color:      colors.text.secondary,
   },
   metricValue: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semiBold,
-    textAlign: 'right',
+    ...typography.rowNumeral,
+    fontSize: fontSize.xl,
   },
-
-  // ── Manual HRV actions ────────────────────────────────────────────────────────
-
-  manualBtn: {
-    marginTop: spacing[2],
-    marginBottom: spacing[1],
-    alignSelf: 'flex-start',
-    backgroundColor: colors.amber[900] + '55',
-    borderWidth: 1,
-    borderColor: colors.amber[700] + '80',
-    borderRadius: radius.md,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
+  metricWord: {
+    ...typography.title,
   },
-  manualBtnText: {
-    color: colors.amber[400],
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semiBold,
-  },
-
-  manualActions: {
+  linkRow: {
     flexDirection: 'row',
-    gap: spacing[2],
-    marginTop: spacing[2],
-    marginBottom: spacing[1],
+    gap:           spacing[4],
   },
-  manualBtnSmall: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.amber[900] + '55',
-    borderWidth: 1,
-    borderColor: colors.amber[700] + '80',
-    borderRadius: radius.md,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[1.5],
-  },
-  manualBtnTextSmall: {
-    color: colors.amber[400],
-    fontSize: fontSize.xs,
+  link: {
+    fontSize:   13,
     fontWeight: fontWeight.semiBold,
+    color:      colors.amber[400],
   },
-  clearBtn: {
-    backgroundColor: 'transparent',
-    borderColor: colors.border.default,
-  },
-  clearBtnText: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
+  linkMuted: {
+    fontSize:   13,
+    fontWeight: fontWeight.semiBold,
+    color:      colors.text.secondary,
   },
 
-  // ── Skeleton loader ───────────────────────────────────────────────────────────
-
-  skeletonLine: {
-    backgroundColor: colors.bg.elevated,
-    borderRadius: radius.sm,
+  // ── Body copy ──
+  body: {
+    ...typography.body,
   },
   skeletonBlock: {
-    marginBottom: spacing[2],
+    gap: 0,
   },
-  skeletonAdviceCard: {
-    flexDirection: 'row',
-    gap: spacing[3],
-    alignItems: 'flex-start',
-  },
-
-  // ── Body text (interpretation) ────────────────────────────────────────────────
-
-  bodyText: {
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
-    lineHeight: fontSize.sm * 1.65,
-    marginBottom: spacing[2],
+  skeletonLine: {
+    backgroundColor: colors.bg.tertiary,
+    borderRadius:    radius.sm,
   },
 
-  // ── Advice card ───────────────────────────────────────────────────────────────
-
+  // ── Recommendation card ──
   adviceCard: {
-    backgroundColor: colors.amber[900] + '55',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.amber[700] + '80',
-    borderLeftWidth: 3,
-    borderLeftColor: colors.amber[400],
-    padding: spacing[4],
+    ...surface.card,
     flexDirection: 'row',
-    gap: spacing[3],
-    alignItems: 'flex-start',
+    alignItems:    'flex-start',
+    gap:           spacing[3.5],
+    padding:       spacing[4],
   },
   adviceIcon: {
-    fontSize: fontSize.base,
-    lineHeight: fontSize.sm * 1.65,
-    flexShrink: 0,
+    width:     28,
+    textAlign: 'center',
+    marginTop: 1,
   },
   adviceText: {
     flex: 1,
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
-    lineHeight: fontSize.sm * 1.65,
+    ...typography.body,
   },
 
-  // ── Pro upsell card ───────────────────────────────────────────────────────────
-
-  upsellCard: {
-    marginTop: spacing[4],
-    backgroundColor: 'rgba(139, 92, 246, 0.08)',
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.25)',
-    borderLeftWidth: 3,
-    borderLeftColor: 'rgba(139, 92, 246, 0.7)',
+  // ── Locked insight ──
+  lockedCard: {
+    ...surface.card,
     padding: spacing[4],
-    flexDirection: 'row',
-    gap: spacing[3],
-    alignItems: 'flex-start',
+    gap:     spacing[2],
   },
-  upsellIcon: {
-    fontSize: fontSize.xl,
-    flexShrink: 0,
+  lockedTitle: {
+    ...typography.title,
   },
-  upsellText: {
-    flex: 1,
-    gap: spacing[1],
+  lockedBody: {
+    ...typography.caption,
   },
-  upsellTitle: {
-    color: 'rgba(196, 168, 255, 0.95)',
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semiBold,
+  lockedButton: {
+    alignSelf:         'flex-start',
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:               spacing[2],
+    height:            38,
+    paddingHorizontal: spacing[4],
+    borderRadius:      radius.md,
+    backgroundColor:   colors.amber[400],
+    marginTop:         spacing[1.5],
   },
-  upsellBody: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
-    lineHeight: fontSize.xs * 1.6,
-    marginTop: 2,
-  },
-  upsellCta: {
-    color: 'rgba(196, 168, 255, 0.9)',
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semiBold,
-    marginTop: spacing[2],
+  lockedButtonText: {
+    fontSize:   14,
+    fontWeight: fontWeight.bold,
+    color:      colors.bg.primary,
   },
 
-  // ── Done button ───────────────────────────────────────────────────────────────
-
+  // ── Done ──
   closeBtn: {
-    backgroundColor: colors.bg.elevated,
-    borderRadius: radius.md,
-    paddingVertical: spacing[3],
-    alignItems: 'center',
-    marginTop: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border.default,
+    height:          48,
+    borderRadius:    14,
+    borderWidth:     1,
+    borderColor:     colors.border.subtle,
+    alignItems:      'center',
+    justifyContent:  'center',
   },
   closeBtnText: {
-    color: colors.text.primary,
-    fontSize: fontSize.base,
+    fontSize:   fontSize.sm,
     fontWeight: fontWeight.semiBold,
+    color:      colors.text.secondary,
   },
-
   iosBottom: {
-    height: spacing[6],
+    height: spacing[5],
   },
 });

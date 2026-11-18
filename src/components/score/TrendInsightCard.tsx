@@ -15,17 +15,21 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import { useTrendData, type TrendDirection } from '@hooks/useTrendData';
 import TrendChartModal from '@components/score/TrendChartModal';
 import { markFeatureOpened } from '@services/openedFeatures';
-import { stripBarHeight } from '@utils/trendChart';
+import { stripBarHeight, MIN_DAYS_FOR_TREND } from '@utils/trendChart';
 import type { ReadinessForecast } from '@services/readinessForecast';
 import {
   colors,
+  fontFamily,
   fontSize,
   fontWeight,
   spacing,
   radius,
+  surface,
+  typography,
   getScoreColor,
 } from '@constants/theme';
 
@@ -86,23 +90,26 @@ function Sparkline({ scores, width, height }: SparklineProps) {
 
 // ─── Trend arrow + delta ──────────────────────────────────────────────────────
 
+const DIRECTION_ICON: Record<TrendDirection, 'arrow-up' | 'arrow-down' | 'remove'> = {
+  improving: 'arrow-up',
+  declining: 'arrow-down',
+  stable:    'remove',
+};
+
+function directionColor(direction: TrendDirection): string {
+  return direction === 'improving' ? colors.score.good
+       : direction === 'declining' ? colors.score.poor
+       : colors.text.tertiary;
+}
+
 function TrendBadge({ direction, delta }: { direction: TrendDirection; delta: number }) {
-  const arrow =
-    direction === 'improving' ? '↑' :
-    direction === 'declining' ? '↓' : '→';
-
-  const badgeColor =
-    direction === 'improving' ? colors.score.good    :
-    direction === 'declining' ? colors.score.poor    :
-    colors.text.tertiary;
-
-  const sign = delta > 0 ? '+' : '';
+  const color = directionColor(direction);
+  const sign  = delta > 0 ? '+' : '';
 
   return (
-    <View style={[styles.badge, { backgroundColor: badgeColor + '22' }]}>
-      <Text style={[styles.badgeText, { color: badgeColor }]}>
-        {arrow} {sign}{delta.toFixed(1)}
-      </Text>
+    <View style={styles.badge}>
+      <Ionicons name={DIRECTION_ICON[direction]} size={13} color={color} />
+      <Text style={[styles.badgeText, { color }]}>{sign}{delta.toFixed(1)}</Text>
     </View>
   );
 }
@@ -128,18 +135,10 @@ function ComponentPills({
     <View style={styles.pills}>
       {items.map(({ label, key }) => {
         const dir = components[key].direction;
-        const icon =
-          dir === 'improving' ? '↑' :
-          dir === 'declining' ? '↓' : '→';
-        const color =
-          dir === 'improving' ? colors.score.good :
-          dir === 'declining' ? colors.score.poor :
-          colors.text.tertiary;
         return (
           <View key={key} style={styles.pill}>
-            <Text style={[styles.pillText, { color }]}>
-              {icon} {label}
-            </Text>
+            <Ionicons name={DIRECTION_ICON[dir]} size={12} color={directionColor(dir)} />
+            <Text style={styles.pillText}>{label}</Text>
           </View>
         );
       })}
@@ -182,6 +181,11 @@ export default function TrendInsightCard({ forecast = null }: { forecast?: Readi
     );
   }
 
+  // With too few scored days the hook makes no directional call, so the card
+  // shows no delta and no component arrows either: a "-2.0" beside "no clear
+  // trend yet" would be the same contradiction in a smaller font.
+  const hasTrend = trend.scores.length >= MIN_DAYS_FOR_TREND;
+
   // ── Full card ─────────────────────────────────────────────────────────────
   return (
     <TouchableOpacity
@@ -194,7 +198,7 @@ export default function TrendInsightCard({ forecast = null }: { forecast?: Readi
       {/* Header row */}
       <View style={styles.header}>
         <Text style={styles.title}>READINESS TREND · 7 DAYS</Text>
-        <TrendBadge direction={trend.direction} delta={trend.delta} />
+        {hasTrend && <TrendBadge direction={trend.direction} delta={trend.delta} />}
       </View>
 
       {/* Sparkline */}
@@ -223,7 +227,7 @@ export default function TrendInsightCard({ forecast = null }: { forecast?: Readi
       </View>
 
       {/* Per-component pills */}
-      <ComponentPills components={trend.components} />
+      {hasTrend && <ComponentPills components={trend.components} />}
 
       {/* Insight line */}
       <Text style={styles.insight}>{trend.insight}</Text>
@@ -245,13 +249,11 @@ export default function TrendInsightCard({ forecast = null }: { forecast?: Readi
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  // Tappable (opens the chart), so it keeps a card.
   card: {
-    backgroundColor: colors.bg.tertiary,
-    borderRadius:    radius.lg,
-    borderWidth:     1,
-    borderColor:     colors.border.subtle,
-    padding:         spacing[4],   // 16
-    gap:             spacing[3],   // 12
+    ...surface.card,
+    padding: spacing[4],
+    gap:     spacing[3],
   },
 
   // Header
@@ -261,21 +263,18 @@ const styles = StyleSheet.create({
     alignItems:     'center',
   },
   title: {
-    fontSize:      fontSize.xs,
-    fontWeight:    fontWeight.semiBold,
-    color:         colors.text.secondary,
-    letterSpacing: 0.8,
+    ...typography.label,
   },
 
-  // Badge
+  // Direction and delta: plain text, not a pill
   badge: {
-    borderRadius:      radius.sm,
-    paddingHorizontal: spacing[2],   // 8
-    paddingVertical:   2,
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           2,
   },
   badgeText: {
-    fontSize:   fontSize.xs,
-    fontWeight: fontWeight.semiBold,
+    fontFamily: fontFamily.numeral,
+    fontSize:   16,
   },
 
   // Sparkline
@@ -288,7 +287,7 @@ const styles = StyleSheet.create({
   dayLabels: {
     flexDirection:  'row',
     justifyContent: 'space-between',
-    marginTop:      -spacing[1],   // -4
+    marginTop:      -spacing[1],
   },
   dayLabel: {
     fontSize:  11,
@@ -301,34 +300,32 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
   },
 
-  // Component pills
+  // Component directions
   pills: {
     flexDirection: 'row',
-    gap:           spacing[2],   // 8
+    gap:           spacing[4],
     flexWrap:      'wrap',
-    marginTop:     spacing[1],   // 4
+    marginTop:     spacing[1],
   },
   pill: {
-    borderRadius:      radius.sm,
-    paddingHorizontal: spacing[2],   // 8
-    paddingVertical:   2,
-    backgroundColor:   colors.bg.elevated,
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           spacing[1],
   },
   pillText: {
-    fontSize:   fontSize.xs,
-    fontWeight: fontWeight.medium,
+    fontSize: 13,
+    color:    colors.text.secondary,
   },
 
   // Insight
   insight: {
+    ...typography.caption,
     fontSize:   fontSize.sm,
-    color:      colors.text.secondary,
-    lineHeight: 18,
-    marginTop:  spacing[1],   // 4
+    lineHeight: 21,
   },
   chartHint: {
-    fontSize:   fontSize.sm,
-    fontWeight: fontWeight.medium,
+    fontSize:   13,
+    fontWeight: fontWeight.semiBold,
     color:      colors.amber[400],
   },
 
@@ -336,18 +333,16 @@ const styles = StyleSheet.create({
   skeletonChart: {
     height:          44,
     borderRadius:    radius.sm,
-    backgroundColor: colors.bg.elevated,
+    backgroundColor: colors.bg.tertiary,
   },
   skeletonLine: {
     height:          12,
     width:           '70%',
     borderRadius:    radius.sm,
-    backgroundColor: colors.bg.elevated,
-    marginTop:       spacing[1],   // 4
+    backgroundColor: colors.bg.tertiary,
+    marginTop:       spacing[1],
   },
   emptyText: {
-    fontSize:   fontSize.sm,
-    color:      colors.text.tertiary,
-    lineHeight: 18,
+    ...typography.caption,
   },
 });

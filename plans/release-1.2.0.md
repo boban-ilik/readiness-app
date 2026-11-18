@@ -117,3 +117,20 @@ Also: rebuilt on a newer foundation for current iOS, and today's activity update
 - Step 13 owed on 5 November: scores save for real users, Garmin data arrives overnight for the connected account, morning notification fires.
 - Next release from the claude/garmin tip is 1.2.2: bump app.json before the next build, create the 1.2.2 version in App Store Connect, and attach a build with that version string. Build 82 (1.2.1) stays a TestFlight-only build.
 - Website: the Body Battery post's direct-Garmin paragraph restored (2bc2716); the garmin-hrv-apple-health post still describes the pre-1.2 situation and needs an update.
+
+## 1.2.2 staged (4 November 2026)
+
+- App Store version 1.2.2 created (ec81aef5-94ca-459d-b3c0-17fe55b72f93), automatic release, inherited description, keywords, screenshots and review notes from 1.2.1; What's New written. Build 83 (commit 7d4b089) attached. Not submitted: Boban chose to submit on 5 November after the morning check of 1.2.1.
+- 5 November plan: morning check (scores saved overnight, Garmin data for the connected account, morning notification), then "submit" creates the 1.2.2 review submission.
+
+## 1.2.2 submitted (9 November 2026)
+
+- Review submission 73a0ca1a-5ff4-430a-a209-492b659b278e created through the API (fresh version, so no Update Review step was needed), version 1.2.2 build 83, Waiting for Review at 15:39 UTC. Automatic release on approval.
+- Health check the same day: 1.2.1 live, scores saving daily, Garmin HRV arriving, no edge function errors in 48 hours. Sales 1 to 7 November: 1 unit, no proceeds.
+- On approval: tag v1.2.2 at 7d4b089 (the build 83 commit), merge into main.
+
+## 1.2.2 approved (10 November 2026)
+
+- Approved on the first submission, Ready for Sale with automatic release. Tag v1.2.2 at 7d4b089 (build 83); main merged to it.
+- Live now: audit fixes 1 to 8, the Today redesign, the forecast fix, the hardening PR (CI gate, accessibility, Keychain session and Strava tokens with migrations, typed Supabase client, storage keys owner), the This week spacing fix.
+- Next: watch Day-7 retention and search traffic for the eight-week test; Garmin HRV and Apple Health blog post still to update; RevenueCat anonymous customers still open.

@@ -23,14 +23,18 @@ import {
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MIN_DAYS_FOR_TREND } from '@utils/trendChart';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchWeeklyReport, type WeeklyReport, type WeeklyReportScore } from '@services/weeklyReport';
 import {
   colors,
+  fontFamily,
   fontSize,
   fontWeight,
   spacing,
   radius,
+  surface,
+  typography,
   getScoreColor,
   getScoreLabel,
 } from '@constants/theme';
@@ -72,21 +76,21 @@ function SkeletonBlock({ lines = 3 }: { lines?: number }) {
   );
 }
 
-// ─── Trend badge ──────────────────────────────────────────────────────────────
+// ─── Trend status ─────────────────────────────────────────────────────────────
+// Plain coloured text with an arrow: a computed status, not a control.
 
 function TrendBadge({ trend }: { trend?: 'improving' | 'declining' | 'stable' }) {
   if (!trend) return null;
-  const cfg = {
-    improving: { icon: '↑', label: 'Improving', bg: colors.success + '22', color: colors.success },
-    declining: { icon: '↓', label: 'Declining',  bg: colors.error   + '22', color: colors.error   },
-    stable:    { icon: '→', label: 'Stable',      bg: colors.warning + '22', color: colors.warning },
-  }[trend];
+  const cfg = ({
+    improving: { icon: 'arrow-up',   label: 'Improving', color: colors.score.good    },
+    declining: { icon: 'arrow-down', label: 'Declining', color: colors.score.poor    },
+    stable:    { icon: 'remove',     label: 'Stable',    color: colors.text.tertiary },
+  } as const)[trend];
 
   return (
-    <View style={[styles.trendBadge, { backgroundColor: cfg.bg }]}>
-      <Text style={[styles.trendBadgeText, { color: cfg.color }]}>
-        {cfg.icon} {cfg.label}
-      </Text>
+    <View style={styles.trend}>
+      <Ionicons name={cfg.icon} size={14} color={cfg.color} />
+      <Text style={[styles.trendText, { color: cfg.color }]}>{cfg.label}</Text>
     </View>
   );
 }
@@ -134,27 +138,27 @@ function MiniBarChart({ scores }: { scores: WeeklyReportScore[] }) {
 function ComponentBar({
   label,
   value,
-  color,
   isTop,
   isWeak,
 }: {
   label:  string;
   value:  number;
-  color:  string;
   isTop:  boolean;
   isWeak: boolean;
 }) {
   return (
     <View style={styles.compRow}>
-      <View style={styles.compLabelWrap}>
-        <Text style={[styles.compLabel, isTop && { color }]}>{label}</Text>
-        {isTop  && <Text style={[styles.compBadge, { color, borderColor: color + '44' }]}>TOP</Text>}
-        {isWeak && <Text style={[styles.compBadge, { color: colors.warning, borderColor: colors.warning + '44' }]}>FOCUS</Text>}
+      <View style={styles.compHead}>
+        <View style={styles.compLabelWrap}>
+          <Text style={styles.compLabel}>{label}</Text>
+          {isTop  && <Text style={styles.compTag}>TOP</Text>}
+          {isWeak && <Text style={styles.compTag}>FOCUS</Text>}
+        </View>
+        <Text style={styles.compValue}>{value}</Text>
       </View>
       <View style={styles.compBarTrack}>
-        <View style={[styles.compBarFill, { width: `${value}%` as any, backgroundColor: color }]} />
+        <View style={[styles.compBarFill, { width: `${value}%` as any, backgroundColor: getScoreColor(value) }]} />
       </View>
-      <Text style={[styles.compValue, { color }]}>{value}</Text>
     </View>
   );
 }
@@ -199,7 +203,7 @@ export default function WeeklyReportModal({ visible, onClose }: WeeklyReportModa
   // ── Computed display values ──────────────────────────────────────────────────
   const avgScore  = report?.avgScore ?? null;
   const avgColor  = avgScore !== null ? getScoreColor(avgScore) : colors.text.tertiary;
-  const avgLabel  = avgScore !== null ? getScoreLabel(avgScore) : '—';
+  const avgLabel  = avgScore !== null ? getScoreLabel(avgScore) : '-';
   const scores    = report?.scores ?? [];
   const rangeText = scores.length > 0 ? weekRangeLabel(scores) : (report?.weekOf ? shortDate(report.weekOf) : '');
 
@@ -229,20 +233,22 @@ export default function WeeklyReportModal({ visible, onClose }: WeeklyReportModa
                 style={styles.navBtn}
                 onPress={handleRefresh}
                 activeOpacity={0.7}
+                hitSlop={4}
                 accessibilityRole="button"
                 accessibilityLabel="Refresh report"
               >
-                <Ionicons name="refresh-outline" size={20} color={colors.text.secondary} />
+                <Ionicons name="refresh" size={18} color={colors.text.secondary} />
               </TouchableOpacity>
             )}
             <TouchableOpacity
               style={styles.navBtn}
               onPress={onClose}
               activeOpacity={0.7}
+              hitSlop={4}
               accessibilityRole="button"
               accessibilityLabel="Close"
             >
-              <Ionicons name="close" size={22} color={colors.text.secondary} />
+              <Ionicons name="close" size={18} color={colors.text.secondary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -287,33 +293,38 @@ export default function WeeklyReportModal({ visible, onClose }: WeeklyReportModa
               <View style={styles.card}>
                 <View style={styles.summaryRow}>
                   <View style={styles.summaryLeft}>
-                    <Text style={styles.eyebrow}>WEEK AVERAGE</Text>
+                    {/* A 3-day average is not a week's: say how many days it covers. */}
+                    <Text style={styles.sectionLabel}>
+                      {scores.length > 0 && scores.length < 7 ? `AVERAGE · ${scores.length} OF 7 DAYS` : 'WEEK AVERAGE'}
+                    </Text>
                     <Text style={[styles.bigScore, { color: avgColor }]}>
-                      {avgScore ?? '—'}
+                      {avgScore ?? '-'}
                     </Text>
                     <Text style={[styles.bigScoreLabel, { color: avgColor }]}>
                       {avgLabel}
                     </Text>
                   </View>
                   <View style={styles.summaryRight}>
-                    <TrendBadge trend={report.trend} />
-                    <View style={styles.dayChips}>
+                    {/* No direction from fewer than four days, whatever the
+                        server or an older cached report says. */}
+                    {scores.length >= MIN_DAYS_FOR_TREND && <TrendBadge trend={report.trend} />}
+                    <View style={styles.dayStats}>
                       {report.bestDay && (
-                        <View style={styles.dayChip}>
-                          <Text style={styles.dayChipLabel}>BEST</Text>
-                          <Text style={[styles.dayChipScore, { color: getScoreColor(report.bestDay.score) }]}>
+                        <View style={styles.dayStat}>
+                          <Text style={styles.sectionLabel}>BEST</Text>
+                          <Text style={[styles.dayStatScore, { color: getScoreColor(report.bestDay.score) }]}>
                             {report.bestDay.score}
                           </Text>
-                          <Text style={styles.dayChipDay}>{report.bestDay.dayLabel}</Text>
+                          <Text style={styles.dayStatDay}>{report.bestDay.dayLabel}</Text>
                         </View>
                       )}
                       {report.worstDay && report.worstDay.date !== report.bestDay?.date && (
-                        <View style={styles.dayChip}>
-                          <Text style={styles.dayChipLabel}>LOWEST</Text>
-                          <Text style={[styles.dayChipScore, { color: getScoreColor(report.worstDay.score) }]}>
+                        <View style={styles.dayStat}>
+                          <Text style={styles.sectionLabel}>LOWEST</Text>
+                          <Text style={[styles.dayStatScore, { color: getScoreColor(report.worstDay.score) }]}>
                             {report.worstDay.score}
                           </Text>
-                          <Text style={styles.dayChipDay}>{report.worstDay.dayLabel}</Text>
+                          <Text style={styles.dayStatDay}>{report.worstDay.dayLabel}</Text>
                         </View>
                       )}
                     </View>
@@ -337,21 +348,18 @@ export default function WeeklyReportModal({ visible, onClose }: WeeklyReportModa
                     <ComponentBar
                       label="Recovery"
                       value={avgRecovery}
-                      color={colors.error}
                       isTop={report.topComponent === 'recovery'}
                       isWeak={report.weakComponent === 'recovery'}
                     />
                     <ComponentBar
                       label="Sleep"
                       value={avgSleep}
-                      color={colors.info}
                       isTop={report.topComponent === 'sleep'}
                       isWeak={report.weakComponent === 'sleep'}
                     />
                     <ComponentBar
                       label="Stress"
                       value={avgStress}
-                      color={colors.warning}
                       isTop={report.topComponent === 'stress'}
                       isWeak={report.weakComponent === 'stress'}
                     />
@@ -361,18 +369,16 @@ export default function WeeklyReportModal({ visible, onClose }: WeeklyReportModa
 
               {/* 4. AI narrative */}
               <View style={styles.card}>
-                <View style={styles.aiHeaderRow}>
+                <View style={styles.sectionLabelRow}>
                   <Text style={styles.sectionLabel}>THIS WEEK</Text>
-                  <View style={styles.aiBadge}>
-                    <Text style={styles.aiBadgeText}>✨ AI</Text>
-                  </View>
+                  <Text style={styles.sectionTag}>AI</Text>
                 </View>
                 <Text style={styles.summary}>{report.summary}</Text>
               </View>
 
               {/* 5. Actionable tip */}
               {!!report.tip && (
-                <View style={styles.tipCard}>
+                <View style={styles.card}>
                   <View style={styles.tipHeader}>
                     <Ionicons name="bulb-outline" size={16} color={colors.amber[400]} />
                     <Text style={styles.tipLabel}>THIS WEEK'S FOCUS</Text>
@@ -410,29 +416,30 @@ const styles = StyleSheet.create({
     alignItems:       'center',
     justifyContent:   'space-between',
     paddingHorizontal: spacing[5],
-    paddingVertical:   spacing[3],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.subtle,
+    paddingVertical:   spacing[4],
   },
   navLeft: {
-    gap: 2,
+    flex: 1,
   },
   navTitle: {
-    color:      colors.text.primary,
-    fontSize:   fontSize.lg,
-    fontWeight: fontWeight.bold,
+    ...typography.heading,
   },
   navSub: {
-    color:    colors.text.tertiary,
-    fontSize: fontSize.xs,
+    ...typography.caption,
+    marginTop: 2,
   },
   navRight: {
     flexDirection: 'row',
     alignItems:    'center',
-    gap:           spacing[1],
+    gap:           spacing[2],
   },
   navBtn: {
-    padding: spacing[2],
+    width:           36,
+    height:          36,
+    borderRadius:    18,
+    backgroundColor: colors.bg.secondary,
+    alignItems:      'center',
+    justifyContent:  'center',
   },
 
   // Scroll
@@ -441,7 +448,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: spacing[5],
-    paddingTop:        spacing[4],
     gap:               spacing[3],
   },
 
@@ -461,13 +467,10 @@ const styles = StyleSheet.create({
 
   // Error
   errCard: {
-    backgroundColor: colors.bg.secondary,
-    borderRadius:    radius.xl,
-    padding:         spacing[5],
-    alignItems:      'center',
-    gap:             spacing[3],
-    borderWidth:     1,
-    borderColor:     colors.error + '44',
+    ...surface.card,
+    padding:    spacing[5],
+    alignItems: 'center',
+    gap:        spacing[3],
   },
   errText: {
     color:      colors.text.secondary,
@@ -489,18 +492,23 @@ const styles = StyleSheet.create({
 
   // Generic card
   card: {
-    backgroundColor: colors.bg.secondary,
-    borderRadius:    radius.xl,
-    padding:         spacing[5],
-    borderWidth:     1,
-    borderColor:     colors.border.subtle,
-    gap:             spacing[3],
+    ...surface.card,
+    padding: spacing[4],
+    gap:     spacing[3],
+  },
+  sectionLabelRow: {
+    flexDirection:  'row',
+    alignItems:     'baseline',
+    justifyContent: 'space-between',
   },
   sectionLabel: {
-    color:       colors.text.tertiary,
-    fontSize:    fontSize.xs,
-    fontWeight:  fontWeight.semiBold,
-    letterSpacing: 1.5,
+    ...typography.label,
+  },
+  sectionTag: {
+    fontSize:      11,
+    letterSpacing: 1.2,
+    fontWeight:    fontWeight.bold,
+    color:         colors.amber[400],
   },
 
   // Score summary
@@ -512,64 +520,44 @@ const styles = StyleSheet.create({
     flex: 1,
     gap:  spacing[0.5],
   },
-  eyebrow: {
-    color:        colors.text.tertiary,
-    fontSize:     fontSize.xs,
-    fontWeight:   fontWeight.semiBold,
-    letterSpacing: 1.5,
-  },
   bigScore: {
-    fontSize:   52,
-    fontWeight: fontWeight.bold,
-    lineHeight: 56,
+    fontFamily:    fontFamily.numeral,
+    fontSize:      fontSize['5xl'],
+    lineHeight:    68,
+    letterSpacing: -1.5,
   },
   bigScoreLabel: {
-    fontSize:   fontSize.base,
-    fontWeight: fontWeight.medium,
-    marginTop:  -spacing[1],
+    fontSize:   14,
+    fontWeight: fontWeight.semiBold,
   },
   summaryRight: {
     alignItems: 'flex-end',
-    gap:        spacing[3],
+    gap:        spacing[4],
   },
-  trendBadge: {
-    borderRadius:    radius.full,
-    paddingVertical:   spacing[1],
-    paddingHorizontal: spacing[3],
-  },
-  trendBadgeText: {
-    fontSize:   fontSize.xs,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 0.5,
-  },
-  dayChips: {
+  trend: {
     flexDirection: 'row',
-    gap:           spacing[2],
+    alignItems:    'center',
+    gap:           spacing[1],
   },
-  dayChip: {
-    backgroundColor: colors.bg.tertiary,
-    borderRadius:    radius.md,
-    paddingVertical:   spacing[2],
-    paddingHorizontal: spacing[3],
-    alignItems:      'center',
-    gap:             2,
-    borderWidth:     1,
-    borderColor:     colors.border.subtle,
+  trendText: {
+    fontSize:   13,
+    fontWeight: fontWeight.semiBold,
   },
-  dayChipLabel: {
-    color:        colors.text.tertiary,
-    fontSize:     11,
-    fontWeight:   fontWeight.semiBold,
-    letterSpacing: 0.8,
+  dayStats: {
+    flexDirection: 'row',
+    gap:           spacing[5],
   },
-  dayChipScore: {
-    fontSize:   fontSize.lg,
-    fontWeight: fontWeight.bold,
-    lineHeight: 22,
+  dayStat: {
+    alignItems: 'flex-end',
+    gap:        2,
   },
-  dayChipDay: {
-    color:    colors.text.tertiary,
-    fontSize: fontSize.xs,
+  dayStatScore: {
+    fontFamily:    fontFamily.numeral,
+    fontSize:      fontSize.xl,
+    letterSpacing: -0.5,
+  },
+  dayStatDay: {
+    ...typography.caption,
   },
 
   // Mini bar chart
@@ -585,8 +573,8 @@ const styles = StyleSheet.create({
     gap:        spacing[1],
   },
   barScore: {
-    fontSize:   11,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.numeral,
+    fontSize:   13,
   },
   barTrackWrap: {
     width:      '70%',
@@ -595,7 +583,7 @@ const styles = StyleSheet.create({
   },
   barTrack: {
     width:           '100%',
-    backgroundColor: colors.bg.elevated,
+    backgroundColor: colors.bg.tertiary,
     borderRadius:    3,
     overflow:        'hidden',
     justifyContent:  'flex-end',
@@ -613,103 +601,68 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
   },
 
-  // Component bars
+  // Component bars: label and value on one line, a thin track under them
   compList: {
-    gap: spacing[3],
+    gap: spacing[4],
   },
   compRow: {
-    flexDirection: 'row',
-    alignItems:    'center',
-    gap:           spacing[3],
+    gap: spacing[2],
+  },
+  compHead: {
+    flexDirection:  'row',
+    alignItems:     'baseline',
+    justifyContent: 'space-between',
   },
   compLabelWrap: {
     flexDirection: 'row',
-    alignItems:    'center',
-    gap:           spacing[1.5],
-    width:         82,
+    alignItems:    'baseline',
+    gap:           spacing[2],
   },
   compLabel: {
     color:      colors.text.secondary,
     fontSize:   fontSize.sm,
     fontWeight: fontWeight.medium,
   },
-  compBadge: {
+  compTag: {
     fontSize:      11,
+    letterSpacing: 1.2,
     fontWeight:    fontWeight.bold,
-    letterSpacing: 0.5,
-    borderWidth:   1,
-    borderRadius:  radius.xs,
-    paddingHorizontal: 4,
-    paddingVertical:   1,
+    color:         colors.amber[400],
   },
   compBarTrack: {
-    flex:            1,
-    height:          8,
-    backgroundColor: colors.bg.elevated,
-    borderRadius:    4,
+    height:          4,
+    backgroundColor: colors.bg.tertiary,
+    borderRadius:    2,
     overflow:        'hidden',
   },
   compBarFill: {
-    height:       8,
-    borderRadius: 4,
+    height:       4,
+    borderRadius: 2,
   },
   compValue: {
-    width:      28,
-    fontSize:   fontSize.sm,
-    fontWeight: fontWeight.semiBold,
-    textAlign:  'right',
+    fontFamily:    fontFamily.numeral,
+    fontSize:      fontSize.lg,
+    letterSpacing: -0.5,
+    color:         colors.text.primary,
   },
 
-  // AI section
-  aiHeaderRow: {
-    flexDirection: 'row',
-    alignItems:    'center',
-    gap:           spacing[2],
-  },
-  aiBadge: {
-    backgroundColor: 'rgba(139, 92, 246, 0.18)',
-    borderRadius:    radius.xs,
-    paddingHorizontal: spacing[1.5],
-    paddingVertical:   2,
-    borderWidth:     1,
-    borderColor:     'rgba(139, 92, 246, 0.30)',
-  },
-  aiBadgeText: {
-    color:      '#a78bfa',
-    fontSize:   11,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 0.5,
-  },
+  // AI narrative
   summary: {
-    color:      colors.text.primary,
-    fontSize:   fontSize.base,
-    lineHeight: 26,
+    ...typography.body,
   },
 
   // Tip card
-  tipCard: {
-    backgroundColor: colors.amber[900],
-    borderRadius:    radius.xl,
-    padding:         spacing[5],
-    borderWidth:     1,
-    borderColor:     colors.amber[400] + '55',
-    gap:             spacing[2],
-  },
   tipHeader: {
     flexDirection: 'row',
     alignItems:    'center',
     gap:           spacing[1.5],
   },
   tipLabel: {
-    color:        colors.amber[400],
-    fontSize:     fontSize.xs,
-    fontWeight:   fontWeight.semiBold,
-    letterSpacing: 1.5,
+    ...typography.label,
+    color: colors.amber[400],
   },
   tipText: {
-    color:      colors.text.primary,
-    fontSize:   fontSize.base,
-    lineHeight: 24,
+    ...typography.body,
   },
 
   footer: {
@@ -721,7 +674,7 @@ const styles = StyleSheet.create({
 
   skeletonLine: {
     height:          13,
-    backgroundColor: colors.bg.elevated,
+    backgroundColor: colors.bg.tertiary,
     borderRadius:    radius.xs,
   },
 

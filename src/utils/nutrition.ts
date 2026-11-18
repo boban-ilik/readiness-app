@@ -12,6 +12,7 @@
 
 import { baselinePhrase, type ReadinessResult } from '@utils/readiness';
 import type { HealthData }       from '@/types/index';
+import { formatDuration }        from '@utils/index';
 
 // ─── Output type ──────────────────────────────────────────────────────────────
 
@@ -117,10 +118,15 @@ export function getNutritionRecommendation(
   // "gut integrity", "cortisol is lower at lunch") that the app can't source,
   // and the rationale states only the user's own numbers.
 
+  // "+0 vs your baseline" read like a rounding slip; say it is level.
   const hrvLine = hrv !== null && hrvDelta !== null
-    ? `HRV ${hrv} ms, ${hrvDelta >= 0 ? '+' : ''}${hrvDelta} vs ${baselinePhrase('hrv', hrvBaseline)}.`
+    ? (hrvDelta === 0
+        ? `HRV ${hrv} ms, level with ${baselinePhrase('hrv', hrvBaseline)}.`
+        : `HRV ${hrv} ms, ${hrvDelta > 0 ? '+' : ''}${hrvDelta} vs ${baselinePhrase('hrv', hrvBaseline)}.`)
     : '';
-  const sleepLine = sleepH !== null ? `${sleepH.toFixed(1)} h of sleep last night.` : '';
+  // Hours and minutes, the same way the sleep detail shows the night. "5.8 h"
+  // sat beside "5h 46m" elsewhere and reads as 5 hours 8 minutes at a glance.
+  const sleepLine = sleepMins !== null ? `${formatDuration(Math.round(sleepMins))} of sleep last night.` : '';
 
   if (clampedScore >= 75) {
     // ── Tier A — Performance fuelling ─────────────────────────────────────────

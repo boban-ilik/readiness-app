@@ -13,6 +13,7 @@
 
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { getTrainingRecommendation } from '@utils/training';
 import type { ReadinessResult } from '@utils/readiness';
 import {
@@ -21,6 +22,7 @@ import {
   fontWeight,
   spacing,
   radius,
+  typography,
 } from '@constants/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -64,9 +66,51 @@ export default function TrainingLoadCard({
   const durationText =
     rec.durationMin === 0
       ? 'Rest today'
-      : `${rec.durationMin}–${rec.durationMax} min`;
+      : `${rec.durationMin} to ${rec.durationMax} min`;
 
   const isRest = rec.durationMin === 0;
+
+  // Inside Today's plan: one row, the reasoning behind the tap.
+  if (flat) {
+    const zoneText = rec.zone === 0 ? 'REST' : `Z${rec.zone}`;
+    const subtitle = isRest ? rec.doThis : `${durationText}, effort ${rec.rpe} of 10. ${rec.doThis}`;
+    return (
+      <View style={styles.flat}>
+        <TouchableOpacity
+          style={styles.flatRow}
+          onPress={() => setShowWhy(v => !v)}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: showWhy }}
+          accessibilityLabel={`${rec.headline}. ${subtitle}`}
+          accessibilityHint={showWhy ? 'Hides the reasoning' : 'Shows the reasoning'}
+        >
+          <Text style={[styles.flatZone, { color: rec.zoneColor }]}>{zoneText}</Text>
+          <View style={styles.flatText}>
+            <Text style={styles.flatTitle}>{rec.headline}</Text>
+            <Text style={styles.flatSub} numberOfLines={showWhy ? undefined : 2}>{subtitle}</Text>
+          </View>
+          <Ionicons name={showWhy ? 'chevron-up' : 'chevron-forward'} size={16} color={colors.text.tertiary} />
+        </TouchableOpacity>
+        {showWhy && (
+          <View style={styles.flatDetail}>
+            <Text style={styles.sectionBody}>{rec.rationale}</Text>
+            {!isRest && (
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>WHAT {rec.rpe}/10 FEELS LIKE</Text>
+                <Text style={styles.sectionBody}>{rec.effortDescription}</Text>
+              </View>
+            )}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>{isRest ? 'TODAY' : 'IDEAS'}</Text>
+              <Text style={styles.sectionBody}>{rec.suggestedActivities}</Text>
+            </View>
+            {illnessCap && <Text style={styles.footerText}>Held at Easy Day while you recover</Text>}
+          </View>
+        )}
+      </View>
+    );
+  }
 
   return (
     <View style={flat ? styles.flat : styles.card}>
@@ -158,6 +202,33 @@ const styles = StyleSheet.create({
   },
   flat: {
     gap: spacing[3],
+  },
+  flatRow: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           spacing[3.5],
+  },
+  flatZone: {
+    ...typography.rowNumeral,
+    fontSize:      15,
+    letterSpacing: 0,
+    minWidth:      28,
+  },
+  flatText: {
+    flex: 1,
+    gap:  2,
+  },
+  flatTitle: {
+    ...typography.title,
+  },
+  flatSub: {
+    fontSize:   13,
+    lineHeight: 17,
+    color:      colors.text.secondary,
+  },
+  flatDetail: {
+    gap:         spacing[3],
+    paddingLeft: 28 + spacing[3.5],
   },
 
   // Top row

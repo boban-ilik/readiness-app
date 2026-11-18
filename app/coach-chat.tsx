@@ -25,7 +25,8 @@ import { analyzePatterns } from '@services/patternAnalysis';
 import { analyzeWorkload } from '@services/workloadAnalysis';
 import { fetchRecentEvents } from '@services/lifeEvents';
 import { supabase } from '@services/supabase';
-import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
+import { colors, fontFamily, fontSize, fontWeight, spacing, radius } from '@constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { track } from '@services/analytics';
 import { markFeatureOpened } from '@services/openedFeatures';
 
@@ -88,7 +89,11 @@ function MessageBubble({ message, onRate }: { message: ChatMessage; onRate?: (r:
               accessibilityLabel={r === 'up' ? 'Helpful answer' : 'Not helpful'}
               style={[styles.rateBtn, message.rating === r && styles.rateBtnActive, message.rating && message.rating !== r && styles.rateBtnDim]}
             >
-              <Text style={styles.rateText}>{r === 'up' ? '👍' : '👎'}</Text>
+              <Ionicons
+                name={r === 'up' ? 'thumbs-up-outline' : 'thumbs-down-outline'}
+                size={14}
+                color={message.rating === r ? colors.amber[400] : colors.text.secondary}
+              />
             </TouchableOpacity>
           ))}
         </View>
@@ -123,6 +128,9 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
   const composerBottom = embedded ? spacing[3] : Math.max(insets.bottom, spacing[3]);
   const { readiness, isLoading: isHealthLoading, error: healthError, rhrBaseline, hrvBaseline } = useHealthData();
   const [session, setSession] = useState<CoachSessionContext | null>(() => getCoachSession());
+  // Today's score, for starter questions that fit the day: "Why is my score
+  // low today?" used to be offered on a Good to Go day.
+  const starterScore = session?.readiness?.score ?? readiness?.score ?? null;
   const [isContextLoading, setIsContextLoading] = useState(() => !getCoachSession());
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const [history, setHistory] = useState<ChatMessage[]>([]);
@@ -373,9 +381,13 @@ export default function CoachChatScreen({ embedded = false }: { embedded?: boole
               </Text>
               <View style={styles.promptRow}>
                 {[
-                  'Why is my score low today?',
+                  starterScore !== null && starterScore < 55
+                    ? 'Why is my score low today?'
+                    : starterScore !== null && starterScore >= 75
+                    ? 'What is working for me today?'
+                    : 'What is holding my score back today?',
                   'Can I train hard today?',
-                  'What should I prioritize tonight?',
+                  'What should I prioritise tonight?',
                 ].map(prompt => (
                   <TouchableOpacity
                     key={prompt}
@@ -487,8 +499,9 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     color: colors.text.primary,
+    fontFamily: fontFamily.heading,
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.semiBold,
+    letterSpacing: -0.3,
   },
   messages: {
     paddingHorizontal: spacing[4],
@@ -626,15 +639,14 @@ const styles = StyleSheet.create({
     marginTop: spacing[2],
   },
   rateBtn: {
-    paddingHorizontal: spacing[2],
-    paddingVertical: 2,
+    paddingHorizontal: spacing[2.5],
+    paddingVertical: spacing[1],
     borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.border.subtle,
   },
   rateBtnActive: { borderColor: colors.amber[400] },
   rateBtnDim: { opacity: 0.35 },
-  rateText: { fontSize: fontSize.sm },
   freeNote: {
     color: colors.text.tertiary,
     fontSize: fontSize.xs,

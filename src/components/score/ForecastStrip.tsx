@@ -9,7 +9,8 @@
 
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { colors, fontSize, fontWeight, spacing, radius, getScoreColor } from '@constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, fontFamily, fontSize, fontWeight, spacing, surface, typography, getScoreColor } from '@constants/theme';
 import { forecastBaseline, type ReadinessForecast, type DayForecast } from '@services/readinessForecast';
 import { useForecastTrackRecord, TRACK_RECORD_DAYS } from '@hooks/useForecastTrackRecord';
 import { trackRecordLine } from '@utils/forecastTrackRecord';
@@ -36,10 +37,13 @@ function trainingRec(score: number): TrainingRec {
   return 'rest';
 }
 
-const REC_META: Record<TrainingRec, { emoji: string; label: string; bg: string; fg: string }> = {
-  push:     { emoji: '🟢', label: 'Ready to push',    bg: '#16A34A22', fg: '#4ADE80' },
-  moderate: { emoji: '🟡', label: 'Take it easier',   bg: '#CA8A0422', fg: '#FCD34D' },
-  rest:     { emoji: '🔴', label: 'Prioritise rest',  bg: '#DC262622', fg: '#F87171' },
+// Status lines on the forecast cards are plain text with a dot or an arrow.
+// They are computed, so nothing here is drawn as a pill that looks tappable.
+
+const REC_META: Record<TrainingRec, { label: string; fg: string }> = {
+  push:     { label: 'Ready to push',   fg: colors.score.good },
+  moderate: { label: 'Take it easier',  fg: colors.score.fair },
+  rest:     { label: 'Prioritise rest', fg: colors.score.poor },
 };
 
 function TrainingPill({ score, capped }: { score: number; capped: boolean }) {
@@ -47,90 +51,67 @@ function TrainingPill({ score, capped }: { score: number; capped: boolean }) {
   const rec  = capped && raw === 'push' ? 'moderate' : raw;
   const meta = REC_META[rec];
   return (
-    <View style={[pillStyles.pill, { backgroundColor: meta.bg }]}>
-      <Text style={pillStyles.emoji}>{meta.emoji}</Text>
-      <Text style={[pillStyles.label, { color: meta.fg }]}>{meta.label}</Text>
+    <View style={statusStyles.row}>
+      <View style={[statusStyles.dot, { backgroundColor: meta.fg }]} />
+      <Text style={[statusStyles.strong, { color: meta.fg }]}>{meta.label}</Text>
     </View>
   );
 }
 
-const pillStyles = StyleSheet.create({
-  pill: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    gap:               spacing[1],
-    paddingHorizontal: spacing[2],
-    paddingVertical:   spacing[1],
-    borderRadius:      radius.full,
-    alignSelf:         'flex-start',
-  },
-  emoji: { fontSize: 11 },
-  label: {
-    fontSize:   11,
-    fontWeight: fontWeight.semiBold,
-    letterSpacing: 0.2,
-  },
-});
-
 // ─── Trend badge ──────────────────────────────────────────────────────────────
 
-const TREND_META: Record<DayForecast['trend'], { arrow: string; label: string; fg: string; bg: string }> = {
-  up:   { arrow: '↑', label: 'Rising',  fg: '#4ADE80', bg: '#16A34A22' },
-  down: { arrow: '↓', label: 'Dropping', fg: '#F87171', bg: '#DC262622' },
-  flat: { arrow: '→', label: 'Stable',  fg: colors.text.tertiary, bg: colors.bg.elevated },
+const TREND_META: Record<DayForecast['trend'], { icon: 'arrow-up' | 'arrow-down' | 'remove'; label: string; fg: string }> = {
+  up:   { icon: 'arrow-up',   label: 'Rising',   fg: colors.score.good },
+  down: { icon: 'arrow-down', label: 'Dropping', fg: colors.score.poor },
+  flat: { icon: 'remove',     label: 'Stable',   fg: colors.text.tertiary },
 };
 
 function TrendBadge({ trend }: { trend: DayForecast['trend'] }) {
   const meta = TREND_META[trend];
   return (
-    <View style={[trendStyles.pill, { backgroundColor: meta.bg }]}>
-      <Text style={[trendStyles.text, { color: meta.fg }]}>
-        {meta.arrow} {meta.label}
-      </Text>
+    <View style={statusStyles.row}>
+      <Ionicons name={meta.icon} size={12} color={meta.fg} />
+      <Text style={[statusStyles.strong, { color: meta.fg }]}>{meta.label}</Text>
     </View>
   );
 }
 
-const trendStyles = StyleSheet.create({
-  pill: {
-    paddingHorizontal: spacing[2],
-    paddingVertical:   3,
-    borderRadius:      99,
-  },
-  text: {
-    fontSize:   11,
-    fontWeight: fontWeight.semiBold,
-    letterSpacing: 0.2,
-  },
-});
-
 function ConfidenceBadge({ confidence }: { confidence: DayForecast['confidence'] }) {
-  const meta = confidence === 'high'
-    ? { label: 'Higher confidence', fg: '#86EFAC', bg: '#14532D55' }
-    : confidence === 'medium'
-    ? { label: 'Moderate confidence', fg: '#FCD34D', bg: '#713F1255' }
-    : { label: 'Lower confidence', fg: colors.text.tertiary, bg: colors.bg.elevated };
-
-  return (
-    <View style={[trendStyles.pill, { backgroundColor: meta.bg }]}>
-      <Text style={[trendStyles.text, { color: meta.fg }]}>{meta.label}</Text>
-    </View>
-  );
+  const label = confidence === 'high'   ? 'Higher confidence'
+              : confidence === 'medium' ? 'Moderate confidence'
+              :                           'Lower confidence';
+  return <Text style={statusStyles.quiet}>{label}</Text>;
 }
 
 function DeltaPill({ delta }: { delta: number }) {
   const isFlat = Math.abs(delta) < 3;
   const isUp = delta > 0;
-  const bg = isFlat ? colors.bg.elevated : isUp ? '#16A34A22' : '#DC262622';
-  const fg = isFlat ? colors.text.tertiary : isUp ? '#4ADE80' : '#F87171';
+  const fg = isFlat ? colors.text.tertiary : isUp ? colors.score.good : colors.score.poor;
   const label = isFlat ? 'Steady' : `${isUp ? '+' : ''}${delta}`;
-
-  return (
-    <View style={[trendStyles.pill, { backgroundColor: bg }]}>
-      <Text style={[trendStyles.text, { color: fg }]}>{label}</Text>
-    </View>
-  );
+  return <Text style={[statusStyles.strong, { color: fg }]}>{label}</Text>;
 }
+
+const statusStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           spacing[1],
+  },
+  dot: {
+    width:        6,
+    height:       6,
+    borderRadius: 3,
+    marginRight:  2,
+  },
+  strong: {
+    fontSize:   fontSize.xs,
+    fontWeight: fontWeight.semiBold,
+  },
+  quiet: {
+    fontSize: fontSize['2xs'],
+    color:    colors.text.tertiary,
+  },
+});
 
 // ─── Forecast card ────────────────────────────────────────────────────────────
 
@@ -157,9 +138,6 @@ function ForecastCard({
     // the cards ballooned to several screens tall.
     <Animated.View style={styles.cardWrap} entering={FadeInDown.delay(index * 100).duration(400).springify()}>
       <View style={[styles.card, { opacity }]}>
-
-        {/* Score-coloured top accent */}
-        <View style={[styles.accent, { backgroundColor: scoreColor }]} />
 
         {/* Row 1: day labels + confidence */}
         <View style={styles.headerRow}>
@@ -289,38 +267,32 @@ const styles = StyleSheet.create({
     gap: spacing[2],
   },
   summaryCard: {
-    backgroundColor: colors.bg.secondary,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    borderRadius: radius.lg,
+    ...surface.card,
     paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    gap: spacing[2],
+    paddingVertical:   spacing[4],
+    gap:               spacing[2],
   },
   summaryHeader: {
     gap: spacing[1],
   },
   summaryEyebrow: {
-    fontSize: 11,
+    ...typography.label,
     color: colors.text.accent,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
   },
   summaryTitle: {
-    fontSize: fontSize.md,
-    color: colors.text.primary,
-    fontWeight: fontWeight.bold,
+    fontFamily:    fontFamily.heading,
+    fontSize:      fontSize.md,
+    letterSpacing: -0.3,
+    color:         colors.text.primary,
   },
   summaryBody: {
-    fontSize: fontSize.sm,
-    color: colors.text.secondary,
-    lineHeight: 20,
+    ...typography.caption,
+    fontSize:   fontSize.sm,
+    lineHeight: 21,
   },
   sectionNote: {
-    fontSize:          11,
+    fontSize:          fontSize['2xs'],
     color:             colors.text.tertiary,
-    opacity:           0.75,
     paddingHorizontal: spacing[1],
   },
   strip: {
@@ -332,24 +304,12 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   card: {
-    flexGrow:        1,
-    width:           192,
-    backgroundColor: colors.bg.tertiary,
-    borderRadius:    radius.lg,
-    padding:         spacing[4],
-    paddingTop:      spacing[3],
-    gap:             spacing[2],
-    borderWidth:     1,
-    borderColor:     colors.border.subtle,
-    overflow:        'hidden',
-  },
-  accent: {
-    position:     'absolute',
-    top:          0,
-    left:         0,
-    right:        0,
-    height:       3,
-    borderRadius: 0,
+    ...surface.card,
+    flexGrow: 1,
+    width:    192,
+    padding:  spacing[4],
+    gap:      spacing[2.5],
+    overflow: 'hidden',
   },
   headerRow: {
     flexDirection:  'row',
@@ -357,16 +317,13 @@ const styles = StyleSheet.create({
     alignItems:     'flex-start',
     // The card is a fixed 192 wide: with the larger 1.0.4 text (or iOS
     // Larger Text) "Moderate confidence" no longer fits beside the day name
-    // and was cropped. Let the badge drop under it instead.
+    // and was cropped. Let the line drop under it instead.
     flexWrap:       'wrap',
     columnGap:      spacing[2],
     rowGap:         spacing[1],
-    marginTop:      spacing[2],
   },
   dayLabel: {
-    fontSize:   fontSize.base,
-    fontWeight: fontWeight.semiBold,
-    color:      colors.text.primary,
+    ...typography.title,
   },
   relLabel: {
     fontSize:  fontSize.xs,
@@ -374,9 +331,10 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   score: {
-    fontSize:   28,
-    fontWeight: fontWeight.bold,
-    lineHeight: 32,
+    fontFamily:    fontFamily.numeral,
+    fontSize:      fontSize['2xl'],
+    letterSpacing: -0.5,
+    lineHeight:    34,
   },
   scoreRow: {
     flexDirection: 'row',
@@ -385,12 +343,12 @@ const styles = StyleSheet.create({
     gap: spacing[2],
   },
   scoreCaption: {
-    fontSize: 11,
+    fontSize: fontSize['2xs'],
     color: colors.text.tertiary,
     marginTop: 2,
   },
-  // The card is 192 wide: "Projected readiness" plus a "↓ Dropping" pill
-  // does not fit on one line, so the caption wraps and the pills never clip.
+  // The card is 192 wide: "Projected readiness" plus "Dropping" does not fit
+  // on one line, so the caption wraps and the status lines never clip.
   scoreBlock: {
     flexShrink: 1,
   },
@@ -400,33 +358,24 @@ const styles = StyleSheet.create({
     gap: spacing[1],
   },
 
-  // Key factor gets a subtle inset treatment so it reads as "the reason"
+  // The reason behind the number: ruled off, not boxed
   factorBox: {
-    flexGrow: 1,
-    backgroundColor: colors.bg.elevated,
-    borderRadius:    radius.sm,
-    paddingHorizontal: spacing[2],
-    paddingVertical:   spacing[1.5],
-    borderLeftWidth:   2,
-    borderLeftColor:   colors.border.default,
-    gap: spacing[1],
+    flexGrow:       1,
+    paddingTop:     spacing[2.5],
+    borderTopWidth: 1,
+    borderTopColor: colors.border.subtle,
+    gap:            spacing[1],
   },
   factorLabel: {
-    fontSize: 11,
-    color: colors.text.tertiary,
-    fontWeight: fontWeight.semiBold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    ...typography.label,
+    letterSpacing: 1.2,
   },
   factor: {
-    fontSize:   fontSize.xs,
-    color:      colors.text.secondary,
-    lineHeight: 17,
+    ...typography.caption,
   },
 
   rangeNote: {
-    fontSize: 11,
+    fontSize: fontSize['2xs'],
     color:    colors.text.tertiary,
-    opacity:  0.7,
   },
 });

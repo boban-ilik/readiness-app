@@ -5,13 +5,14 @@
  * as a dedicated card on the home screen. Only renders when riskLevel ≠ 'none'.
  *
  * ── Visual language ─────────────────────────────────────────────────────────
- *   low      → amber left border, amber badge     ("Watch closely")
- *   moderate → orange left border, orange badge   ("Overtraining Risk")
- *   high     → red left border, red badge         ("High Risk")
+ *   low      → amber left border and status       ("Watch closely")
+ *   moderate → orange left border and status      ("Overtraining Risk")
+ *   high     → red left border and status         ("High Risk")
  *
- * The card collapses to a compact summary by default.
- * Tapping "See what's triggering this ▾" expands the full signal list and the
- * 3-point action plan.
+ * The card collapses to a compact summary by default. The status and the
+ * signals are computed, so they are drawn as plain text, never as pills that
+ * look editable. A tap anywhere on the summary expands the full signal list
+ * and the 3-point action plan.
  *
  * ── Usage ────────────────────────────────────────────────────────────────────
  *   <OvertrainingWarningCard warning={warning} />
@@ -21,7 +22,8 @@
 
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors, fontSize, fontWeight, spacing, radius } from '@constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, fontFamily, fontSize, fontWeight, spacing, surface, typography } from '@constants/theme';
 import type { OvertrainingWarning, OvertRiskLevel, OvertSignal } from '@hooks/useOvertrainingWarning';
 
 // ─── Risk palette ─────────────────────────────────────────────────────────────
@@ -32,7 +34,6 @@ interface RiskPalette {
   badgeBg:  string;
   glow:     string;
   title:    string;
-  icon:     string;
 }
 
 const PALETTE: Record<Exclude<OvertRiskLevel, 'none'>, RiskPalette> = {
@@ -42,7 +43,6 @@ const PALETTE: Record<Exclude<OvertRiskLevel, 'none'>, RiskPalette> = {
     badgeBg: 'rgba(245,166,35,0.12)',
     glow:    'rgba(245,166,35,0.06)',
     title:   'Watch Closely',
-    icon:    '⚠️',
   },
   moderate: {
     border:  '#FB8C00',
@@ -50,7 +50,6 @@ const PALETTE: Record<Exclude<OvertRiskLevel, 'none'>, RiskPalette> = {
     badgeBg: 'rgba(251,140,0,0.12)',
     glow:    'rgba(251,140,0,0.06)',
     title:   'Overtraining Risk',
-    icon:    '🔶',
   },
   high: {
     border:  colors.error,
@@ -58,7 +57,6 @@ const PALETTE: Record<Exclude<OvertRiskLevel, 'none'>, RiskPalette> = {
     badgeBg: 'rgba(229,57,53,0.12)',
     glow:    'rgba(229,57,53,0.06)',
     title:   'High Overtraining Risk',
-    icon:    '🚨',
   },
 };
 
@@ -77,32 +75,23 @@ interface SignalRowProps {
 
 function SignalRow({ signal, palette }: SignalRowProps) {
   const [expanded, setExpanded] = useState(false);
+  const tone = signal.severity === 'alert' ? palette.badge : colors.text.secondary;
 
   return (
     <TouchableOpacity
       style={styles.signalRow}
       onPress={() => setExpanded(e => !e)}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityState={{ expanded }}
     >
       <View style={styles.signalHeader}>
-        <Text style={styles.signalIcon}>{signal.icon}</Text>
-        <View style={styles.signalLabelWrap}>
-          <Text style={[styles.signalLabel, { color: signal.severity === 'alert' ? palette.badge : colors.text.primary }]}>
-            {signal.label}
-          </Text>
-        </View>
-        <View style={[
-          styles.severityPill,
-          { backgroundColor: signal.severity === 'alert' ? palette.badgeBg : 'rgba(155,163,184,0.10)' },
-        ]}>
-          <Text style={[
-            styles.severityText,
-            { color: signal.severity === 'alert' ? palette.badge : colors.text.secondary },
-          ]}>
-            {signal.severity === 'alert' ? 'Alert' : 'Warning'}
-          </Text>
-        </View>
-        <Text style={styles.chevron}>{expanded ? '▲' : '▼'}</Text>
+        <View style={[styles.signalDot, { backgroundColor: tone }]} />
+        <Text style={styles.signalLabel}>{signal.label}</Text>
+        <Text style={[styles.severityText, { color: tone }]}>
+          {signal.severity === 'alert' ? 'Alert' : 'Warning'}
+        </Text>
+        <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.text.tertiary} />
       </View>
 
       {expanded && (
@@ -157,51 +146,38 @@ export function OvertrainingWarningCard({ warning }: Props) {
     : 'An early fatigue signal is building. Keep today light and monitor your trend.';
 
   return (
-    <View style={[styles.card, { borderLeftColor: palette.border, backgroundColor: palette.glow }]}>
+    <View style={[styles.card, { borderLeftColor: palette.border }]}>
 
-      {/* ── Header ──────────────────────────────────────────────────────── */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.headerIcon}>{palette.icon}</Text>
-          <Text style={styles.sectionLabel}>{fromTraining ? 'OVERTRAINING ALERT' : 'RECOVERY ALERT'}</Text>
-        </View>
-        <View style={[styles.riskBadge, { backgroundColor: palette.badgeBg, borderColor: palette.border }]}>
-          <Text style={[styles.riskBadgeText, { color: palette.badge }]}>
-            {title}
-          </Text>
-        </View>
-      </View>
-
-      {/* ── Summary ─────────────────────────────────────────────────────── */}
-      <Text style={styles.summary}>{summaryText}</Text>
-
-      {/* ── Signal pills (compact) ───────────────────────────────────────── */}
-      <View style={styles.pillRow}>
-        {warning.signals.map((s, i) => (
-          <View
-            key={i}
-            style={[styles.signalPill, { borderColor: s.severity === 'alert' ? palette.border : colors.border.default }]}
-          >
-            <Text style={styles.pillIcon}>{s.icon}</Text>
-            <Text style={[
-              styles.pillText,
-              { color: s.severity === 'alert' ? palette.badge : colors.text.secondary },
-            ]}>
-              {s.label}
-            </Text>
-          </View>
-        ))}
-      </View>
-
-      {/* ── Expand / collapse ────────────────────────────────────────────── */}
+      {/* ── Summary: one tap target that opens the detail ───────────────── */}
       <TouchableOpacity
-        style={styles.expandButton}
         onPress={() => setExpanded(e => !e)}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
       >
-        <Text style={[styles.expandText, { color: palette.badge }]}>
-          {expanded ? 'Hide detail ▲' : 'See what\'s triggering this ▼'}
-        </Text>
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <Ionicons name="warning" size={15} color={palette.badge} />
+            <Text style={styles.sectionLabel}>{fromTraining ? 'OVERTRAINING ALERT' : 'RECOVERY ALERT'}</Text>
+          </View>
+          <Text style={[styles.statusText, { color: palette.badge }]}>{title}</Text>
+        </View>
+
+        <Text style={styles.summary}>{summaryText}</Text>
+
+        {warning.signals.map((s, i) => (
+          <View key={i} style={styles.signalLine}>
+            <View style={[styles.signalDot, { backgroundColor: s.severity === 'alert' ? palette.badge : colors.text.secondary }]} />
+            <Text style={styles.signalLineText}>{s.label}</Text>
+          </View>
+        ))}
+
+        <View style={styles.expandRow}>
+          <Text style={[styles.expandText, { color: palette.badge }]}>
+            {expanded ? 'Hide detail' : 'See what\'s triggering this'}
+          </Text>
+          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={14} color={palette.badge} />
+        </View>
       </TouchableOpacity>
 
       {/* ── Expanded detail ──────────────────────────────────────────────── */}
@@ -224,7 +200,7 @@ export function OvertrainingWarningCard({ warning }: Props) {
           ))}
 
           <Text style={styles.disclaimer}>
-            These signals are based on your personal baselines and recent training data. Always listen to your body.
+            These signals are based on your personal baselines and your recent data. Always listen to your body.
           </Text>
         </View>
       )}
@@ -238,19 +214,15 @@ const styles = StyleSheet.create({
   // No side margin: Today's scroll view already insets its content, and a
   // second inset made this card narrower than its neighbours.
   card: {
-    marginBottom:     spacing[3],
-    borderRadius:     radius.lg,
-    borderLeftWidth:  3,
-    backgroundColor:  colors.bg.tertiary,
-    paddingTop:       spacing[4],
-    paddingRight:     spacing[4],
-    paddingBottom:    spacing[4],
-    paddingLeft:      spacing[4],
-    overflow:         'hidden',
+    ...surface.card,
+    borderLeftWidth: 3,
+    marginBottom:    spacing[3],
+    padding:         spacing[4],
+    overflow:        'hidden',
   },
 
   // Header
-  // Wraps the badge onto its own line when the label and badge don't fit
+  // Wraps the status onto its own line when the label and status don't fit
   // side by side, instead of letting them touch.
   header: {
     flexDirection:  'row',
@@ -265,66 +237,45 @@ const styles = StyleSheet.create({
     alignItems:    'center',
     gap:           spacing[2],
   },
-  headerIcon: {
-    fontSize: 16,
-  },
   sectionLabel: {
-    fontSize:   fontSize.xs,
+    ...typography.label,
+  },
+  statusText: {
+    fontSize:   13,
     fontWeight: fontWeight.semiBold,
-    color:      colors.text.secondary,
-    letterSpacing: 1.0,
-  },
-  riskBadge: {
-    paddingHorizontal: spacing[2],
-    paddingVertical:   3,
-    borderRadius:      radius.full,
-    borderWidth:       1,
-  },
-  riskBadgeText: {
-    fontSize:   11,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 0.3,
   },
 
   // Summary
   summary: {
-    fontSize:     fontSize.sm,
-    color:        colors.text.primary,
-    lineHeight:   20,
-    marginBottom: spacing[3],
+    ...typography.body,
+    marginBottom: spacing[2.5],
   },
 
-  // Compact signal pills
-  pillRow: {
-    flexDirection:  'row',
-    flexWrap:       'wrap',
-    gap:            spacing[2],
-    marginBottom:   spacing[2],
+  // Signals in the summary: plain lines, not pills
+  signalLine: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           spacing[2],
+    marginBottom:  spacing[1],
   },
-  signalPill: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    gap:               4,
-    paddingHorizontal: spacing[2],
-    paddingVertical:   4,
-    borderRadius:      radius.sm,
-    borderWidth:       1,
-    backgroundColor:   colors.bg.secondary,
+  signalLineText: {
+    ...typography.caption,
   },
-  pillIcon: {
-    fontSize: 12,
-  },
-  pillText: {
-    fontSize:   12,
-    fontWeight: fontWeight.medium,
+  signalDot: {
+    width:        6,
+    height:       6,
+    borderRadius: 3,
   },
 
-  // Expand button
-  expandButton: {
-    paddingTop: spacing[1],
+  // Expand link
+  expandRow: {
+    flexDirection: 'row',
+    alignItems:    'center',
+    gap:           spacing[1],
+    paddingTop:    spacing[2],
   },
   expandText: {
-    fontSize:   fontSize.xs,
+    fontSize:   13,
     fontWeight: fontWeight.semiBold,
   },
 
@@ -337,52 +288,33 @@ const styles = StyleSheet.create({
     marginBottom:  spacing[3],
   },
   sectionSubLabel: {
-    fontSize:     11,
-    fontWeight:   fontWeight.bold,
-    color:        colors.text.tertiary,
-    letterSpacing: 1.2,
-    marginBottom:  spacing[2],
+    ...typography.label,
+    marginBottom: spacing[2],
   },
 
   // Signal rows
   signalRow: {
-    marginBottom: spacing[2],
+    marginBottom: spacing[2.5],
   },
   signalHeader: {
     flexDirection: 'row',
     alignItems:    'center',
     gap:           spacing[2],
   },
-  signalIcon: {
-    fontSize: 16,
-    width:    20,
-  },
-  signalLabelWrap: {
-    flex: 1,
-  },
   signalLabel: {
+    flex:       1,
     fontSize:   fontSize.sm,
     fontWeight: fontWeight.medium,
-  },
-  severityPill: {
-    paddingHorizontal: 6,
-    paddingVertical:   2,
-    borderRadius:      radius.sm,
+    color:      colors.text.primary,
   },
   severityText: {
-    fontSize: 11,
+    fontSize:   fontSize.xs,
     fontWeight: fontWeight.semiBold,
   },
-  chevron: {
-    fontSize: 11,
-    color:    colors.text.tertiary,
-  },
   signalDetail: {
-    fontSize:   fontSize.xs,
-    color:      colors.text.secondary,
-    lineHeight: 17,
+    ...typography.caption,
     marginTop:  spacing[1],
-    marginLeft: 24,
+    marginLeft: 6 + spacing[2],
   },
 
   // Action plan
@@ -393,32 +325,29 @@ const styles = StyleSheet.create({
     alignItems:    'flex-start',
   },
   actionIndex: {
-    width:         22,
-    height:        22,
-    borderRadius:  11,
-    borderWidth:   1,
-    alignItems:    'center',
+    width:          22,
+    height:         22,
+    borderRadius:   11,
+    borderWidth:    1,
+    alignItems:     'center',
     justifyContent: 'center',
-    flexShrink:    0,
-    marginTop:     1,
+    flexShrink:     0,
+    marginTop:      1,
   },
   actionIndexText: {
-    fontSize:   12,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.numeral,
+    fontSize:   14,
   },
   actionText: {
-    flex:       1,
-    fontSize:   fontSize.sm,
-    color:      colors.text.primary,
-    lineHeight: 20,
+    flex: 1,
+    ...typography.body,
   },
 
   // Disclaimer
   disclaimer: {
-    fontSize:   11,
+    fontSize:   fontSize['2xs'],
     color:      colors.text.tertiary,
-    lineHeight: 14,
+    lineHeight: 15,
     marginTop:  spacing[1],
-    fontStyle:  'italic',
   },
 });

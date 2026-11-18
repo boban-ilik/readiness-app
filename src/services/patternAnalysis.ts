@@ -157,7 +157,7 @@ function detectSleepDebt(rows: SupabaseScoreRow[]): PatternInsight | null {
   return {
     type:     'sleep_debt',
     severity: debtMin >= 60 ? 'alert' : 'warning',
-    message:  `Sleep debt is accumulating, averaging ${debtHours} h less per night than your 2-week baseline over the past 5 days. Chronic sleep restriction suppresses HRV and immune function even when the user feels fine.`,
+    message:  `Sleep debt is accumulating, averaging ${debtHours} h less per night than your 2-week baseline over the past 5 days. Several short nights in a row can lower HRV and slow recovery even when you feel fine.`,
   };
 }
 

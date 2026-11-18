@@ -31,7 +31,7 @@ import CalibrationReportModal from '@components/score/CalibrationReportModal';
 import { hasSeenCalibrationReport, markCalibrationReportSeen } from '@services/calibrationReport';
 import { canUseFreeBriefing, markFreeBriefingUsed, chargesFreeBriefing } from '@services/freeBriefing';
 import ShareCard from '@components/score/ShareCard';
-import { colors, fontSize, fontWeight, spacing, radius, getScoreColor, getScoreLabel } from '@constants/theme';
+import { colors, fontFamily, fontSize, fontWeight, spacing, radius, getScoreColor, getScoreLabel, typography } from '@constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useHealthData } from '@hooks/useHealthData';
 import { useRecentWorkouts } from '@hooks/useRecentWorkouts';
@@ -387,6 +387,21 @@ export default function HomeScreen() {
     );
   }
 
+  // The ring and the line under it both open the daily briefing. Pro gets it
+  // daily; free users keep one per week after the trial, because a briefing
+  // written from their own numbers is the best ad for the daily one.
+  const openBriefing = async () => {
+    if (!hasUsableScore) return;
+    if (!isPro && !(await canUseFreeBriefing())) { presentPaywall(); return; }
+    // The week is marked used once a briefing is delivered (onDelivered below).
+    track('briefing_opened', { pro: isPro });
+    setBriefingVisible(true);
+  };
+  const scoreDelta = hasUsableScore && yesterdayScore !== null ? score - yesterdayScore : null;
+  const briefingLinkText = isPro && scoreDelta !== null && scoreDelta < -7
+    ? "Understand today's drop"
+    : 'Read the briefing';
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
@@ -405,12 +420,18 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.greeting}>
-              {getGreeting()}{userName ? `, ${userName}` : ''} 👋
-            </Text>
             <Text style={styles.dateText}>{formatDisplayDate()}</Text>
+            <Text style={styles.greeting}>
+              {getGreeting()}{userName ? `, ${userName}` : ''}
+            </Text>
           </View>
           <View style={styles.headerRight}>
+            {/* The free Pro week, visible where it matters instead of only in Profile */}
+            {isTrialActive && (
+              <View style={[styles.freeBadge, styles.trialBadge]}>
+                <Text style={[styles.freeBadgeText, styles.trialBadgeText]}>{trialPillText(trialDaysLeft)}</Text>
+              </View>
+            )}
             {hasUsableScore && (
               <TouchableOpacity
                 style={[styles.shareBtn, isSharing && { opacity: 0.4 }]}
@@ -421,110 +442,87 @@ export default function HomeScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Share today's score"
               >
-                <Text style={styles.shareBtnIcon}>⬆</Text>
+                <Ionicons name="share-outline" size={18} color={colors.text.secondary} />
               </TouchableOpacity>
-            )}
-            {!isPro && (
-              <View style={styles.freeBadge}>
-                <Text style={styles.freeBadgeText}>FREE</Text>
-              </View>
-            )}
-            {/* The free Pro week, visible where it matters instead of only in Profile */}
-            {isTrialActive && (
-              <View style={[styles.freeBadge, styles.trialBadge]}>
-                <Text style={[styles.freeBadgeText, styles.trialBadgeText]}>{trialPillText(trialDaysLeft)}</Text>
-              </View>
             )}
           </View>
         </View>
 
-        {/* Score ring — tappable for the daily briefing. Pro gets it daily;
-            free users keep one per week after the trial, because a briefing
-            written from their own numbers is the best ad for the daily one. */}
-        <TouchableOpacity
-          style={styles.ringContainer}
-          activeOpacity={hasUsableScore ? 0.7 : 1}
-          onPress={async () => {
-            if (!hasUsableScore) return;
-            if (!isPro) {
-              if (await canUseFreeBriefing()) {
-                // The week is marked used once a briefing is delivered (onDelivered below).
-                track('briefing_opened', { pro: isPro }); setBriefingVisible(true);
-              } else {
-                presentPaywall();
-              }
-              return;
-            }
-            track('briefing_opened', { pro: isPro }); setBriefingVisible(true);
-          }}
-        >
-          <ScoreRing score={displayScore} color={scoreColor} size={240} strokeWidth={14} />
-
-          {/* Score number overlaid in the ring center */}
-          <View style={styles.scoreOverlay} pointerEvents="none">
-            <Text style={[styles.scoreNumber, { color: scoreColor }]}>
-              {hasUsableScore ? Math.round(score) : '—'}
-            </Text>
-            <Text style={styles.scoreLabel}>{scoreLabel}</Text>
-            {/* Delta vs yesterday */}
-            {hasUsableScore && yesterdayScore !== null && (() => {
-              const delta = score - yesterdayScore;
-              if (Math.abs(delta) < 2) return null;
-              const up = delta >= 0;
-              const col = up ? '#4ADE80' : '#F87171';
-              return (
-                <Text style={[styles.scoreDelta, { color: col }]}>
-                  {up ? '▲' : '▼'} {Math.abs(delta)} vs yesterday
-                </Text>
-              );
-            })()}
-            {hasUsableScore && (
-              <Text style={styles.tapHint}>
-                {isPro
-                  ? (yesterdayScore !== null && score - yesterdayScore < -7
-                      ? 'Tap to understand today\'s drop'
-                      : 'Tap for briefing')
-                  : 'Tap for briefing'}
+        {/* Score: the ring with the number and its label inside; under it the
+            change since yesterday and the way into the briefing. */}
+        <View style={styles.scoreBlock}>
+          <TouchableOpacity
+            style={styles.ringContainer}
+            activeOpacity={hasUsableScore ? 0.7 : 1}
+            onPress={openBriefing}
+            accessibilityRole="button"
+            accessibilityLabel={hasUsableScore
+              ? `Readiness ${Math.round(score)}, ${scoreLabel}. Opens the briefing`
+              : 'No readiness score yet'}
+          >
+            <ScoreRing score={displayScore} color={scoreColor} size={220} strokeWidth={8} trackColor={colors.bg.secondary} />
+            <View style={styles.scoreOverlay} pointerEvents="none">
+              <Text style={[styles.scoreNumber, { color: scoreColor }]}>
+                {hasUsableScore ? Math.round(score) : '—'}
               </Text>
-            )}
-          </View>
-        </TouchableOpacity>
+              <Text style={[styles.scoreLabel, { color: hasUsableScore ? scoreColor : colors.text.secondary }]}>
+                {scoreLabel}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          {hasUsableScore && (
+            <View style={styles.ringLine}>
+              {scoreDelta !== null && Math.abs(scoreDelta) >= 2 && (
+                <>
+                  <Text style={[styles.scoreDelta, { color: scoreDelta >= 0 ? colors.score.good : colors.score.poor }]}>
+                    {scoreDelta >= 0 ? '+' : '-'}{Math.abs(scoreDelta)} vs yesterday
+                  </Text>
+                  <View style={styles.ringLineDot} />
+                </>
+              )}
+              <TouchableOpacity onPress={openBriefing} hitSlop={8} accessibilityRole="button">
+                <Text style={styles.briefingLink}>{briefingLinkText}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* The open score model: every number the score used, free for all. */}
+          {hasUsableScore && (
+            <TouchableOpacity
+              style={styles.mathLink}
+              onPress={() => { track('score_math_opened', { cycleAdjusted: scoreSnapshot?.uncorrectedScore != null }); router.push('/score-math'); }}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+            >
+              <Text style={styles.mathLinkText}>
+                How today's score was calculated{scoreSnapshot?.uncorrectedScore != null ? ' · cycle-adjusted' : ''} ›
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Today's typed-in HRV, changeable by everyone. The Recovery detail
+              that also has this button is Pro, and free users without a watch
+              that writes HRV enter it every morning. */}
+          {hasUsableScore && readiness?.healthData?.hrvSource === 'manual' && (
+            <TouchableOpacity
+              style={styles.mathLink}
+              onPress={handleEnterManualHRV}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Update today's HRV"
+            >
+              <Text style={styles.mathLinkText}>
+                HRV {readiness.healthData.hrv} ms, entered by you today · <Text style={styles.updateLink}>Update</Text>
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* Honest empty state — never show a fabricated numeric score.
             Directly under the ring, so the reason is the first thing read. */}
         {!isLoading && !error && (hasInsufficientData || score === 0) && (
           <InsufficientDataCard reason={noDataWhy} onRefresh={refresh} onEnterHRV={handleEnterManualHRV} />
-        )}
-
-        {/* The open score model: every number the score used, free for all. */}
-        {hasUsableScore && (
-          <TouchableOpacity
-            style={styles.mathLink}
-            onPress={() => { track('score_math_opened', { cycleAdjusted: scoreSnapshot?.uncorrectedScore != null }); router.push('/score-math'); }}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-          >
-            <Text style={styles.mathLinkText}>
-              How today's score was calculated{scoreSnapshot?.uncorrectedScore != null ? ' · cycle-adjusted' : ''} ›
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Today's typed-in HRV, changeable by everyone. The Recovery detail
-            that also has this button is Pro, and free users without a watch
-            that writes HRV enter it every morning. */}
-        {hasUsableScore && readiness?.healthData?.hrvSource === 'manual' && (
-          <TouchableOpacity
-            style={styles.manualHrvLink}
-            onPress={handleEnterManualHRV}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Update today's HRV"
-          >
-            <Text style={styles.manualHrvLinkText}>
-              HRV {readiness.healthData.hrv} ms, entered by you today · <Text style={styles.mathLinkText}>Update</Text>
-            </Text>
-          </TouchableOpacity>
         )}
 
         {/* The only Pro pitch in the stream (see proBannerMode). */}
@@ -552,7 +550,8 @@ export default function HomeScreen() {
         )}
 
         {/* Breakdown, directly under the score: what made today's number,
-            before any of the cards that react to it. */}
+            before any of the cards that react to it. Every row opens the
+            detail sheet; for free users the AI read inside it is the lock. */}
         {hasUsableScore && (
           <View style={styles.breakdown}>
             <Text style={styles.sectionTitle} accessibilityRole="header">BREAKDOWN</Text>
@@ -561,11 +560,8 @@ export default function HomeScreen() {
               <ScoreBreakdownCard
                 label="Recovery"
                 score={readiness?.components.recovery ?? 0}
-                weight="45%"
-                icon="💓"
                 detail={buildRecoveryDetail(readiness?.healthData ?? null, rhrBaseline)}
-                isLocked={!isPro}
-                onPress={() => isPro ? setSelectedCard('recovery') : router.push('/paywall')}
+                onPress={() => setSelectedCard('recovery')}
               />
             </Animated.View>
 
@@ -573,11 +569,8 @@ export default function HomeScreen() {
               <ScoreBreakdownCard
                 label="Sleep"
                 score={readiness?.components.sleep ?? 0}
-                weight="40%"
-                icon="🌙"
                 detail={buildSleepDetail(readiness?.healthData ?? null)}
-                isLocked={!isPro}
-                onPress={() => isPro ? setSelectedCard('sleep') : router.push('/paywall')}
+                onPress={() => setSelectedCard('sleep')}
               />
             </Animated.View>
 
@@ -585,11 +578,8 @@ export default function HomeScreen() {
               <ScoreBreakdownCard
                 label="Stress"
                 score={readiness?.components.stress ?? 0}
-                weight="15%"
-                icon="🧠"
                 detail={buildStressDetail(readiness?.healthData ?? null, rhrBaseline, hrvBaseline)}
-                isLocked={!isPro}
-                onPress={() => isPro ? setSelectedCard('stress') : router.push('/paywall')}
+                onPress={() => setSelectedCard('stress')}
               />
             </Animated.View>
 
@@ -597,11 +587,9 @@ export default function HomeScreen() {
               <ScoreBreakdownCard
                 label="Activity"
                 score={activityScore}
-                weight="Context"
-                icon="🏃"
                 detail={buildActivityDetail(readiness?.healthData ?? null, todayActivity)}
-                isLocked={!isPro}
-                onPress={() => isPro ? setSelectedCard('activity') : presentPaywall()}
+                onPress={() => setSelectedCard('activity')}
+                divider={false}
               />
             </Animated.View>
           </View>
@@ -809,7 +797,9 @@ export default function HomeScreen() {
         onClearManualHRV={
           readiness?.healthData?.hrvSource === 'manual' ? handleClearManualHRV : undefined
         }
-        onUpgrade={presentPaywall}
+        // The sheet is a native Modal: a route pushed underneath it would be
+        // invisible, so close the sheet first.
+        onUpgrade={() => { setSelectedCard(null); presentPaywall(); }}
       />
 
       {/* ── Daily briefing modal (Pro only) ── */}
@@ -875,23 +865,24 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
-    marginBottom: spacing[6],
+    marginBottom: spacing[7],
   },
   headerLeft: {
     flex: 1,
-    gap: spacing[0.5],
+    gap: spacing[1],
   },
   greeting: {
     color: colors.text.primary,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
+    fontFamily: fontFamily.heading,
+    fontSize: fontSize.xl,
+    letterSpacing: -0.3,
   },
   dateText: {
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
-    letterSpacing: 0.3,
+    ...typography.label,
+    fontSize: 12,
+    letterSpacing: 1.6,
   },
   headerRight: {
     flexDirection: 'row',
@@ -899,18 +890,13 @@ const styles = StyleSheet.create({
     gap:           spacing[2],
   },
   shareBtn: {
-    width:           36,
-    height:          36,
-    borderRadius:    18,
-    backgroundColor: colors.bg.elevated,
-    borderWidth:     1,
-    borderColor:     colors.border.default,
-    alignItems:      'center',
-    justifyContent:  'center',
-  },
-  shareBtnIcon: {
-    fontSize: 16,
-    color:    colors.text.secondary,
+    width:          44,
+    height:         44,
+    borderRadius:   22,
+    borderWidth:    1,
+    borderColor:    colors.border.subtle,
+    alignItems:     'center',
+    justifyContent: 'center',
   },
   freeBadge: {
     backgroundColor: colors.bg.elevated,
@@ -939,33 +925,48 @@ const styles = StyleSheet.create({
     left:      -9999,
     opacity:   0,
   },
+  scoreBlock: {
+    alignItems:   'center',
+    gap:          spacing[3],
+    marginBottom: spacing[7],
+  },
   ringContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing[8],
+  },
+  ringLine: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    justifyContent: 'center',
+    gap:            spacing[2.5],
+  },
+  ringLineDot: {
+    width:           3,
+    height:          3,
+    borderRadius:    2,
+    backgroundColor: colors.border.strong,
+  },
+  scoreDelta: {
+    fontSize:   14,
+    fontWeight: fontWeight.semiBold,
+  },
+  briefingLink: {
+    color:      colors.amber[400],
+    fontSize:   14,
+    fontWeight: fontWeight.semiBold,
   },
   mathLink: {
-    alignSelf: 'center',
-    marginTop: -spacing[5],
-    marginBottom: spacing[6],
-    paddingVertical: spacing[2],
+    paddingVertical:   spacing[1],
     paddingHorizontal: spacing[3],
   },
   mathLinkText: {
-    color: colors.amber[400],
-    fontSize: fontSize.sm,
+    color:      colors.text.secondary,
+    fontSize:   13,
     fontWeight: fontWeight.medium,
   },
-  manualHrvLink: {
-    alignSelf: 'center',
-    marginTop: -spacing[5],
-    marginBottom: spacing[6],
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[3],
-  },
-  manualHrvLinkText: {
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
+  updateLink: {
+    color:      colors.amber[400],
+    fontWeight: fontWeight.semiBold,
   },
   insufficientActions: {
     flexDirection: 'row',
@@ -978,30 +979,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   scoreNumber: {
-    fontSize: fontSize['5xl'],
-    fontWeight: fontWeight.bold,
+    ...typography.displayNumeral,
     // No fixed lineHeight: it clipped the number at large Dynamic Type sizes.
   },
   scoreLabel: {
-    color: colors.text.secondary,
-    fontSize: fontSize.sm,
-    letterSpacing: 0.5,
-    marginTop: spacing[1],
-  },
-  tapHint: {
-    fontSize:    fontSize.xs,
-    color:       colors.text.tertiary,
-    marginTop:   spacing[1],
-    letterSpacing: 0.3,
-    // Keep clear of the ring: the inside narrows below the centre
-    maxWidth:    150,
-    textAlign:   'center',
-  },
-  scoreDelta: {
-    fontSize:    11,
-    fontWeight:  fontWeight.semiBold,
-    marginTop:   spacing[0.5],
-    letterSpacing: 0.2,
+    fontSize:      13,
+    letterSpacing: 1.6,
+    fontWeight:    fontWeight.bold,
+    textTransform: 'uppercase',
+    marginTop:     2,
   },
   // Subtle amber strip shown when Apple Watch data quality is medium or low
   // Neutral, not amber: missing wearable data is a setup step, not a fault.
@@ -1091,22 +1077,18 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semiBold,
   },
   breakdown: {
-    gap: spacing[3],
-    marginBottom: spacing[5],
+    marginBottom: spacing[7],
   },
   trainingSection: {
-    gap: spacing[2],
-    marginBottom: spacing[5],
+    gap: spacing[2.5],
+    marginBottom: spacing[7],
   },
   // Groups inside This week: the section body spaces them, so no margin of their own.
   weekGroup: {
     gap: spacing[2],
   },
   sectionTitle: {
-    color: colors.text.tertiary,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semiBold,
-    letterSpacing: 2,
+    ...typography.label,
     marginBottom: spacing[1],
   },
   bottomPad: {

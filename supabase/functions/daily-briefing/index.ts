@@ -23,6 +23,7 @@ import { sanitiseWater, waterLines, WATER_RULE, type WaterInput } from '../_shar
 import { sanitiseReadingCheck, readingCheckLines, READING_CHECK_RULE, type ReadingCheckInput } from '../_shared/readingCheck.ts';
 import { trainingCallLine, baselineNote, TRAINING_RULE } from '../_shared/coaching.ts';
 import { postClaude, CLAUDE_HAIKU } from '../_shared/anthropic.ts';
+import { formatSleep, SCORE_SCALE_RULE } from '../_shared/promptFacts.ts';
 import { CORS_HEADERS } from '../_shared/cors.ts';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -162,6 +163,8 @@ ${WATER_RULE}
 
 ${TRAINING_RULE}
 
+${SCORE_SCALE_RULE}
+
 ${READING_CHECK_RULE} In this briefing you cannot ask back, so mention the unusual reading neutrally in the overview and make one FOLLOW_UPS item a first-person question about it (for example "Why is my HRV so high today?").`;
 
 function buildPrompt(input: DailyBriefingInput): string {
@@ -185,7 +188,6 @@ function buildPrompt(input: DailyBriefingInput): string {
     lines.push(`  Resting heart rate: ${h.restingHeartRate} bpm  (${baselineNote('rhr', rhrBaseline, input.rhrBaselinePersonal)}; delta: ${d >= 0 ? '+' : ''}${d} bpm)`);
   }
   if (h.sleepDuration !== null) {
-    const hrs = (h.sleepDuration / 60).toFixed(1);
     // Without an anchor the model called 6.3 hours "decent in duration". The
     // shortfall and its tiers mirror OPTIMAL_SLEEP (7h) and the breakdown copy, so
     // the coach and the sleep detail describe the same night the same way.
@@ -194,7 +196,7 @@ function buildPrompt(input: DailyBriefingInput): string {
       shortfall <= 0  ? '  (at or above the 7 hour guideline)'
     : shortfall <= 60 ? `  (${Math.round(shortfall)} min below the 7 hour guideline: a mild shortfall)`
     :                   `  (${Math.round(shortfall)} min below the 7 hour guideline. Do not call this decent, solid or adequate.)`;
-    lines.push(`  Sleep duration: ${hrs} hours${note}`);
+    lines.push(`  Sleep duration: ${formatSleep(h.sleepDuration)}${note}`);
   }
   if (h.sleepEfficiency !== null) {
     // Already a percentage (0-100) from the app, like coach-chat and ai-insight
