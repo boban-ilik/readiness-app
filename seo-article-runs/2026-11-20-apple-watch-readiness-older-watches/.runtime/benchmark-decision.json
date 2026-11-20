@@ -1,0 +1,66 @@
+{
+ "status": "benchmarked",
+ "rationale": "Three ranking pages were captured in full and benchmarked by passage (research.md section 3): Apple's support article (position 2, the top organic result and the primary source for what the score supports and uses), Tom's Guide (position 9, the highest-ranking readable editorial how-to for the dominant intent) and Body Insights (position 10, the only ranking page read that serves the unsupported-watch reader this article is for). Position 3 is the same publisher as position 2 and was captured as evidence instead. Position 6 (stuff.tv) returned a Cloudflare 403 and was not worked around. Reddit, an App Store listing and a video are excluded by format or access. Position 11 (tej.as) was captured as an alternate. The user approved the angle and this set at Checkpoint A on 2026-11-20.",
+ "evidence_ref": "research.md#serp-and-competitor-benchmark",
+ "ranking_evidence": {
+  "basis": "observed_serp",
+  "reference": "Ahrefs SERP overview, keyword 'readiness score apple watch', US, retrieved 2026-11-20 by the orchestrator via the Ahrefs MCP serp-overview tool (Ahrefs update 2026-11-10T20:23:25Z), stored at .runtime/serp-readiness-score-apple-watch-us.json",
+  "inspection_complete": true,
+  "inspected_results": [
+   {
+    "url": "https://support.apple.com/en-us/128112",
+    "observed_position": 2,
+    "disposition": "selected",
+    "reason": "Top organic result and AI Overview source; Apple's own explanation of the score. Captured in full."
+   },
+   {
+    "url": "https://support.apple.com/en-gb/guide/watch/flx4gnzby346/watchos",
+    "observed_position": 3,
+    "disposition": "excluded",
+    "reason": "Same publisher as position 2; captured in full and used as primary evidence rather than as a second benchmark page."
+   },
+   {
+    "url": "https://www.reddit.com/r/AppleWatch/comments/1wsewy5/whats_your_opinion_so_far_on_the_new_readiness/",
+    "observed_position": 5,
+    "disposition": "excluded",
+    "reason": "Discussion thread; Reddit blocks automated access here and was not worked around. Unread."
+   },
+   {
+    "url": "https://www.stuff.tv/features/apples-readiness-score-explained-what-it-is-how-to-get-it-and-why-its-so-stingy/",
+    "observed_position": 6,
+    "disposition": "excluded",
+    "reason": "Inaccessible: Cloudflare 403 to curl; not worked around. Title only."
+   },
+   {
+    "url": "https://apps.apple.com/us/app/readiness/id6764448634",
+    "observed_position": 7,
+    "disposition": "excluded",
+    "reason": "App Store listing, not an article; captured as evidence."
+   },
+   {
+    "url": "https://www.youtube.com/watch?v=p8gL0rQ29Bw",
+    "observed_position": 8,
+    "disposition": "excluded",
+    "reason": "Video, not an article."
+   },
+   {
+    "url": "https://www.tomsguide.com/wellness/smartwatches/how-to-unlock-apples-new-dynamic-readiness-score-on-your-apple-watch",
+    "observed_position": 9,
+    "disposition": "selected",
+    "reason": "Highest-ranking readable editorial how-to for the dominant intent. Captured in full."
+   },
+   {
+    "url": "https://bodyinsightsapp.com/blog/readiness-score-older-apple-watch",
+    "observed_position": 10,
+    "disposition": "selected",
+    "reason": "Only ranking page read that serves owners of unsupported watches; closest publisher peer. Captured in full."
+   },
+   {
+    "url": "https://tej.as/blog/apple-watch-readiness-score-wrong",
+    "observed_position": 11,
+    "disposition": "excluded",
+    "reason": "Personal critique; captured as an alternate, ranks below three suitable pages."
+   }
+  ]
+ }
+}

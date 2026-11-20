@@ -1,0 +1,32 @@
+{
+  "query": "readiness score apple watch",
+  "locale": "US, English",
+  "provider": "Ahrefs SERP overview via MCP (orchestrator-supplied file .runtime/serp-readiness-score-apple-watch-us.json, retrieved 2026-11-20, Ahrefs update 2026-11-10)",
+  "captured_at": "2026-11-20",
+  "pages": [
+    {
+      "url": "https://support.apple.com/en-us/128112",
+      "title": "Understand your readiness score on Apple Watch (Apple Support)",
+      "observed_position": 2,
+      "selection_basis": "observed_rank",
+      "reason": "Highest-ranking organic result and the first AI Overview citation. It answers the three questions the SERP is built around: which watches show the score, why a score is missing, and how the score is calculated. Official documentation rather than an editorial article, kept in the sample because it is the page every other result paraphrases and a strong brand is not dropped for convenience. It is also the primary source for Apple facts (dual role stated in research.md).",
+      "capture_path": "apple-support-128112-readiness-score.md"
+    },
+    {
+      "url": "https://www.tomsguide.com/wellness/smartwatches/how-to-unlock-apples-new-dynamic-readiness-score-on-your-apple-watch",
+      "title": "How to unlock Apple's new dynamic Readiness Score on your Apple Watch (Tom's Guide)",
+      "observed_position": 9,
+      "selection_basis": "observed_rank",
+      "reason": "Highest-ranking editorial article that could be captured in full (position 6, stuff.tv, returned a Cloudflare 403 block and is excluded as inaccessible). Four-step how-to for owners of supported watches, published 2026-10-22. Represents the dominant intent on this SERP: how to get and read Apple's score.",
+      "capture_path": "tomsguide-unlock-readiness-score.md"
+    },
+    {
+      "url": "https://bodyinsightsapp.com/blog/readiness-score-older-apple-watch",
+      "title": "Apple Watch Readiness Score on Series 10, 11 and Ultra 3 (Body Insights)",
+      "observed_position": 10,
+      "selection_basis": "observed_rank",
+      "reason": "The only ranking page read that is aimed at the planned reader (owner of an unsupported watch; positions 5, 6 and 8 were not read) and the closest format and authority peer: an app vendor's blog (DR 41) with a model table, a not-showing checklist, an Apple-versus-own-app comparison and an FAQ. Published 2026-10-01.",
+      "capture_path": "bodyinsights-readiness-older-apple-watch.md"
+    }
+  ]
+}

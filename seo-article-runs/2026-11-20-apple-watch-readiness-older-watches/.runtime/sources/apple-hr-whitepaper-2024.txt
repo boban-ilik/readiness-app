@@ -1,0 +1,1426 @@
+<!-- capture: Apple white paper: Using Apple Watch to measure heart rate, calorimetry, and activity, November 2024 (PDF, 19,802,539 bytes) | url: https://www.apple.com/health/pdf/Heart_Rate_Calorimetry_Activity_on_Apple_Watch_November_2024.pdf | fetched: 2026-11-20 by curl (browser User-Agent), HTTP 200 | extraction: pdftotext -layout -->
+
+Using Apple Watch to
+measure heart rate,
+calorimetry, and activity
+November 2024
+Contents
+
+Overview                                                                                                                                                                    3
+
+Measuring heart rate                                                                                                                                                        4
+
+Introduction .................................................................................................................................................................4
+
+Optical heart sensor ...................................................................................................................................................4
+
+Heart rate algorithms .................................................................................................................................................9
+
+Heart rate features ....................................................................................................................................................12
+
+Measuring calories                                                                                                                                                        15
+
+Introduction ...............................................................................................................................................................15
+
+Calorimetric hardware ..............................................................................................................................................15
+
+Calorimetry algorithms .............................................................................................................................................17
+
+Additional fitness features .......................................................................................................................................23
+
+How to access data                                                                                                                                                        26
+
+Conclusion                                                                                                                                                                27
+
+
+
+
+Using Apple Watch to measure heart rate, calorimetry, and activity                          November 2024                                                                    2
+
+
+
+                                                                                                                                          ￼
+                                                                                                                                      ￼
+                                                                                                                                      ￼
+                                                                                                                                      ￼
+                                                                                                                                      ￼
+                                                                                                                                      ￼
+                                                                                                                           ￼
+                                                                                                                          ￼￼      ￼
+                                                                                                                               ￼
+                                                                                                                               ￼
+                                                                                                                              ￼￼
+Overview
+
+
+
+This paper highlights the methodologies, research studies, and variables that Apple
+evaluates and uses when developing Apple Watch heart rate and calorimetric
+capabilities, along with their associated algorithms. It also provides guidance on best
+practices to follow to ensure optimal performance.
+
+The paper reviews the underlying hardware and software technologies of Apple Watch
+that measure heart rate, estimate calories burned, and serve as the basis for associated
+heart health and fitness features. It begins by detailing the development and validation
+of the optical heart sensor. It then discusses how Apple Watch uses sensor fusion and
+machine learning (ML) models to provide heart rate monitoring throughout the day. The
+paper explores the methodology for calorie measurement on Apple Watch, covering
+best practices in estimating calories burned during the day. It explains how combining
+ML-based models for activity classification, combined with workout context, heart rate,
+acceleration, rotation, elevation, and geolocation signals can augment calorimetry
+models. Next, the paper evaluates the development and validation of calorimetry
+estimates across different workout types and details the approach to sensor fusion and
+how it prioritizes information depending on the workout type. In addition, it examines
+various health and fitness features informed by heart rate and calorimetry data. Finally,
+the paper outlines several options for accessing the data and features provided by
+Apple Watch.
+
+Data collection for the development and validation of heart rate and calorimetry
+measurements across multiple studies was approved by an internal review board,
+additional approval was obtained from an institutional review board (IRB) as needed,
+with participants consenting to the collection and use of their data for this purpose.
+
+
+
+
+Using Apple Watch to measure heart rate, calorimetry, and activity   November 2024        3
+
+
+
+                                                                                     ￼
+Measuring heart rate
+
+
+
+Introduction
+Heart rate and its response to activity are important indicators of health and fitness. If the heart beats too
+quickly or too slowly, or if it beats with an irregular rhythm, it may be a sign of a significant change in health
+and fitness. Apple Watch enables users to monitor their heart rate and gain insights into their
+cardiovascular health using two sensor modalities: an optical heart sensor and an electrical heart sensor.
+
+All Apple Watch models are equipped with an optical heart sensor, capable of measuring heart rate during
+user-initiated activities such as those in the Heart Rate app, Workout app, and Mindfulness
+app. It also performs background measurements throughout the day, without requiring users to interact
+with their watch. From these readings, Apple Watch provides additional insights and notifications, including
+resting heart rate, walking heart rate average, cardio recovery, high and low heart rate notifications,
+irregular rhythm notifications, AFib History, calorimetry, and cardio fitness.
+
+This section reviews the development, validation, and performance of the optical heart sensor and the
+foundational heart rate algorithms on Apple Watch. It also discusses how Apple Watch uses the optical
+heart rate monitoring capability to inform heart rate features.
+
+For detailed information regarding the development, validation, and performance of the electrical heart
+sensor, please visit Using Apple Watch for Arrhythmia Detection.
+
+
+
+Optical heart sensor
+Principles of operation
+All Apple Watch models include an optical heart sensor located on the back of the watch. This sensor
+uses infrared and green LEDs, paired with light-sensitive photodiodes, to measure heart rate at the wrist via
+photoplethysmography (PPG). When the heart beats, the volume of blood in the wrist increases, leading to
+increased light absorption. Between beats, blood volume and light absorption decrease. Apple Watch
+records heart rate based on the fluctuation in light absorption by rapidly flashing its LEDs and using the
+photodiodes to measure the returned light. The infrared LEDs monitor heart rate in the background
+throughout the day, invisible to the user. During user-initiated workouts, Apple Watch uses the green LEDs
+to better accommodate heart rate measurements in challenging motion scenarios. Operating the sensor
+with the green LEDs consumes more battery than when using the infrared LEDs.
+
+Figure 1 on the following page shows the sensor layout on Apple Watch Series 6, representative of
+Apple Watch Series 6 and later and Apple Watch Ultra 1 and later.
+
+
+
+
+Using Apple Watch to measure heart rate, calorimetry, and activity   November 2024                               4
+
+
+
+                                                                                     ￼
+        Figure 1. Apple Watch Series 6 sensor layout.
+
+
+
+        Development
+        Understanding the structures present in wrist tissue was crucial in developing the optical heart sensor for
+        Apple Watch. Arteries contain the desired heartbeat signal but constitute only approximately 30 percent
+        of the tissue s blood. The remaining blood is found in veins, is nonpulsatile, and is highly influenced by
+        user motion. A sensor that samples deeper vessels can interrogate more tissue and may have a stronger
+        heartbeat signal, but it also samples wider vessels, which are more prone to motion artifacts caused
+        by blood inertia during motion. It may also be more sensitive to motion artifacts from muscles and tendons.
+        In contrast, sensors sampling shallower vessels may produce signals too weak to reliably measure some
+        users heartbeats.
+
+        Motion artifacts are one of the most important factors influencing the optimal sensor design. Many
+        properties of the sensor can affect its motion tolerance, including:
+
+        • LED-photodiode separation distance
+
+        • Shape of the optical illumination profile
+
+        • Number of individual sensor locations on the skin (when sensors are used simultaneously, algorithms can
+          focus on areas of skin with better signal or fewer motion artifacts)
+
+        • Light wavelength
+
+        • Back crystal shape
+
+        • Back crystal material
+
+        • Watch band tightness
+
+
+
+
+        Using Apple Watch to measure heart rate, calorimetry, and activity   November 2024                            5
+
+
+
+                                                                                             ￼
+    ’
+’
+In addition to physiological sensitivities, hardware susceptibility to aggressors (confounding sources of
+error) must also be minimized. This includes rejecting ambient light from the signal — for example, sunlight
+or flickering indoor light sources such as LED lighting — and ensuring that the sensor can coexist without
+interference from a variety of other electrical and optical signals in a small form factor. To develop a sensor
+that meets all these requirements, Apple employed the following techniques:
+
+• Conducting research studies with motion, which required building research hardware and testing across
+  many cohorts and activity types
+
+• Performing optical modeling of sensor hardware and tissue properties
+
+• Validating and refining optical models across a diverse cohort of users
+
+• Collecting data across activities and cohorts from regions throughout the world to develop algorithms
+  and refine hardware
+
+Figure 2 shows an example of a research study conducted during the development of the Apple Watch
+optical sensor. The study used a custom optical fiber-based sensor to explore multiple potential design
+concepts simultaneously without needing to switch devices on the arm, including various wavelengths and
+source-receiver separations during motion. It yielded valuable information about how to make the best
+possible sensor across a range of conditions and users.
+
+                                                                                 Sensor layout examples
+ Acquisition system
+
+
+      Accelerometer
+         signals
+
+                                Detector
+                                modules
+
+                               Detector 1
+      Optical signals          Detector 2
+                               Detector 3
+
+
+
+                               Detector 7
+
+
+                                Source
+                                modules                                               Optical
+                                                                                      fiber
+                                                                                      bundle
+                                LED 1
+
+
+                                LED 2
+
+        LED drive
+         signals                LED 3
+
+
+                                LED 4
+
+
+
+
+Figure 2. The setup of an optical fiber-based system that was used to develop the Apple Watch optical sensor. This system, which could
+be worn during a variety of activities, allowed the testing of various combinations of optical sources, with separate optical fiber bundles
+placed in unique locations to receive light that had passed through the skin before exiting at a different location.
+
+
+
+
+Using Apple Watch to measure heart rate, calorimetry, and activity        November 2024                                                       6
+
+
+
+                                                                                                     ￼
+    Validation
+    The performance of heart rate measurements on Apple Watch has been validated across a broad range
+    of physiological and environmental factors that can impact signal quality, including skin variability, skin
+    perfusion, watch band fit, and motion. With each update to Apple Watch hardware and software, sensor
+    performance is revalidated to ensure continued high-quality results.
+
+    Skin variability
+    Making sure that Apple Watch performs well for all users, across the full global range of skin types and
+    tones, significantly influenced hardware design and validation. Melanin strongly absorbs light at the
+    wavelengths used by the Apple Watch optical sensor — particularly in the green part of the spectrum —
+    potentially making PPG measurements more challenging for users with darker skin tones. To account for
+    this, the Apple Watch sensing platform automatically adjusts the LED current (and hence the light output),
+    photodiode gain (sensitivity to light), and sampling rate to achieve adequate signal resolution across the full
+    global range of human skin tones. Permanent or temporary changes to skin, such as tattoos, can impact
+    heart sensor performance. The ink, pattern, and saturation of some tattoos can block light from the sensor,
+    making it difficult to get reliable readings.
+
+    Skin perfusion
+    Skin perfusion — the amount of blood flow present in the tissue — is another major factor in the optical
+    heart sensor s measurement efficacy. Perfusion varies significantly from person to person due to
+    physiological differences, such as skin composition, body mass index (BMI), and body temperature, and
+    can also be impacted by the user s environment. For example, when users exercise in the cold or swim in a
+    pool, blood vessels may undergo vasoconstriction, especially in a user's extremities. This may cause skin
+    perfusion in the wrist to be too low for the heart sensor to obtain a high-quality measurement.
+
+    Watch band usage
+    For best results, Apple Watch should be worn snugly but comfortably. To obtain optimal measurements, the
+    back of Apple Watch needs continuous skin contact with the optical heart sensor. Watch band material may
+    affect how tightly a user chooses to wear their watch, but it doesn t impact heart rate measurements after
+    accounting for band tightness. Please visit the Wearing your Apple Watch page to learn more about
+    achieving a good fit and potential skin sensitivities.
+
+    User activity
+    The optical heart sensor has been developed to optimize performance across a wide range of activities and
+    ambient conditions. Heart rate algorithms use accelerometer signals to suppress motion-induced noise
+    from PPG signals, and they withhold measurements if the PPG signal is corrupted by motion. Rhythmic
+    movements, such as running or cycling, are easier to track and provide more reliable measurements
+    compared with irregular movements like tennis or boxing. Activities that involve significant finger or wrist
+    movements are also challenging due to additional artifacts introduced by muscle and tendon motion.
+    Measuring heart rate during activities such as swimming can be difficult due to water disrupting the
+    interface between the sensor and skin, as well as cold water causing vasoconstriction, which reduces blood
+    perfusion in the skin. Apple Watch maintains robust performance in features such as calorimetry —
+    regardless of heart rate availability — with other sensor signals. This is discussed in more detail in the
+    Calorimetry algorithms section.
+
+
+
+
+    Using Apple Watch to measure heart rate, calorimetry, and activity   November 2024                             7
+
+
+
+                                                                                         ￼
+                                                   ’
+         ’
+’
+Hardware validation studies
+When developing and validating a new generation of the Apple Watch optical sensor, multiple types of
+studies are conducted:
+
+• Stationary signal studies assess the strength of the received signal across a diverse range of
+  participants in stationary settings.
+
+• Ambient light rejection studies collect data in various indoor and outdoor environments to validate
+  measurements in different lighting scenarios.
+
+• Cold chamber studies capture data in cold environments to validate performance when skin perfusion
+  and PPG signal quality are low.
+
+• Motion studies collect data during a variety of exercises to optimize hardware design and validate
+  performance across diverse ambient conditions.
+
+• Fine motion studies gather data during stationary use cases to determine the quality of beat-to-beat
+  measurements in the presence of small motions, during which the watch remains stationary — such as
+  when tapping fingers while the wrist rests on a surface.
+
+• Everyday use studies check product performance during real-world use
+
+ Key variable studied                Stationary      Ambient light        Cold chamber     Motion       Fine motion   Everyday use
+                                    signal study    rejection study           study        study           study         study
+
+ Optical model validation                ✓                 ✓
+
+ Skin tone                               ✓                 ✓                   ✓             ✓              ✓              ✓
+
+ Skin perfusion                          ✓                                     ✓             ✓              ✓              ✓
+
+ BMI                                     ✓                                                                                 ✓
+
+ Age                                     ✓                                                                                 ✓
+
+ Skin site variability                   ✓                                     ✓             ✓                             ✓
+
+ Band tightness                          ✓                 ✓                                 ✓              ✓              ✓
+
+ Exercise type                                                                 ✓             ✓                             ✓
+
+ Small hand motion                                                             ✓                            ✓              ✓
+
+ Climate                                 ✓                                     ✓             ✓              ✓              ✓
+
+ Ambient lighting                        ✓                 ✓                                 ✓                             ✓
+
+ Uncontrolled environment                ✓                                                                                 ✓
+
+
+Table 1. Summary of the study types used to validate the key variables.
+
+
+
+
+Using Apple Watch to measure heart rate, calorimetry, and activity         November 2024                                             8
+
+
+
+                                                                                                    ￼
+Heart rate algorithms
+Apple Watch uses three heart rate algorithms to support heart rate monitoring across a diverse range of
+use cases. The foreground heart rate algorithm optimizes performance for a variety of common activities
+and is primarily used to support user-initiated measurement, regardless of whether the user is active or still.
+It attempts to provide one heart rate measurement in beats per minute (bpm) every five seconds. The
+background algorithm monitors heart rate throughout the day but reports measurements only when the
+user is still. It attempts to report one heart rate in bpm every 5 minutes. The tachogram algorithm measures
+pulse-to-pulse intervals in milliseconds to inform Heart Rate Variability (HRV) and irregular rhythm
+detection. Together, these algorithms support heart rate measurement in a range of 30 to 210 bpm.
+
+The latest versions of these three foundational heart rate algorithms use ML models trained on large and
+diverse research studies to fuse information from multiple PPG sensors and accelerometers, extracting
+reliable heart rate information across a variety of activities and ambient conditions. The two key types of
+metrics for evaluating the heart rate performance of these algorithms are accuracy (relative to ground truth
+heart rate) and availability (the fraction of time that heart rate measurements are available). The heart rate
+algorithms on Apple Watch prioritize accuracy over availability, withholding measurements when they
+determine that sensor signals are inadequate to support reliable heart rate readings. This section of the
+paper details the development and validation of the three foundational heart rate algorithms and their
+performance, including accuracy and availability.
+
+Later sections — including Heart rate features, Measuring calories, and Additional fitness features —
+explore how Apple Watch uses the heart rate monitoring capability provided by the three foundational
+algorithms to enable additional downstream health and fitness features. The paper also describes how
+Apple Watch maintains robust performance — regardless of heart rate availability — for features such as
+calorimetry.
+
+Foreground heart rate algorithm
+The foreground heart rate algorithm consumes green PPG and accelerometer signals. It s primarily used to
+measure heart rate when users open the Heart Rate app or start a workout session in the Workout app. In
+every non-overlapping five seconds window, the algorithm chooses one heart rate measurement with the
+highest quality to display and publish to HealthKit.
+
+The algorithm was developed and validated using Apple Watch sensor data and reference heart rate data
+collected from over one hundred thousand indoor and outdoor workout sessions, covering various workout
+types such as walking, running, cycling, and high-intensity interval training (HIIT). The studies recruited
+participants across diverse demographics, including sex, BMI, race, ethnicity, and skin tone. Some studies
+were conducted in Apple laboratories and global field study sites, where participants followed step-by-step
+instructions for indoor or outdoor activities at different exertion levels. Other studies involved real-world
+wear of Apple Watch over extended periods, with participants recording workouts in their chosen
+environments and at their preferred exertion levels. All sessions collected ground truth heart rate data using
+chest strap heart rate monitors or ECG monitors simultaneously.
+
+Table 2 on the following page summarizes the performance of the foreground heart rate algorithm across a
+variety of common activities during a subset of sessions from subjects not used for ML model training or
+hyperparameter tuning.
+
+
+
+
+Using Apple Watch to measure heart rate, calorimetry, and activity   November 2024                               9
+
+
+
+                                                                                     ￼
+                                                                      ’
+                                                              Average foreground heart rate performance
+
+
+ Activity                            Measurements within      Measurements within        Availability             Test data†
+                                      5 bpm of truth (%)       10 bpm of truth (%)          (%)
+
+ Sedentary activity                           98                       99.7                  99             410 sessions, 60 hours
+
+ Walking
+                                              87                        95                   91          6,770 sessions, 3,060 hours
+ (all terrain / conditions)
+
+ Walking
+                                              96                        99                   99            630 sessions, 180 hours
+ (treadmill, lab conditions)
+
+ Running
+                                              88                        94                   88           2,420 sessions, 1,260 hours
+ (all terrain / conditions)
+
+ Running
+                                              96                        98                   97            370 sessions, 160 hours
+ (treadmill, lab conditions)
+
+ Cycling
+                                              96                        99                   97           1,480 sessions, 1,010 hours
+ (all terrain / conditions)
+
+ Cycling
+                                              99                       99.8                  99             100 sessions, 30 hours
+ (stationary bike, lab conditions)
+
+ HIIT                                         91                        97                   95            630 sessions, 440 hours
+
+ Yoga                                         92                        98                   96            1,010 sessions, 660 hours
+
+ Other                                        89                        96                   93           8,270 sessions, 5,160 hours
+
+Table 2. Performance is measured with a five-second reporting cadence across all activity sessions. Accuracy is defined as the fraction
+of published measurements within 5 or 10 bpm of the truth from a chest strap reference. Availability represents the fraction of time when
+heart rate is reported. Activity type is determined based on study protocol (for example, the sedentary protocol in the table required no
+movement during data collection) or the type of workout recorded by the study participant. The majority of walking, running, and cycling
+sessions were conducted under natural usage, spanning a broad range of terrain, environmental conditions and participant behavior.
+Additionally, a small subset of sessions were collected in Apple laboratories under controlled conditions using treadmills and stationary
+exercise equipment. These laboratory-based exercise sessions tend to yield significantly higher accuracy and availability. †Test data
+excludes all sessions from subjects used in ML model training and hyperparameter tuning.
+
+
+Background heart rate algorithm
+The background heart rate algorithm consumes infrared PPG and accelerometer signals to measure heart
+rate throughout the day without requiring users to interact with their watch. Because infrared PPG is
+sensitive to motion artifacts, all background heart measurements are limited to times when the user is still
+(that is, acceleration in any direction is below a minimal threshold). In every non-overlapping five minutes
+window, Apple Watch attempts to publish one background heart rate to HealthKit, with availability subject to
+signal quality and user motion.
+
+The algorithm was developed using Apple Watch sensor data and ECG or chest strap reference heart rate
+data collected during tens of thousands of hours of real-world wear, with a diverse range of activity levels and
+environments (for example, home, workplace, indoor, outdoor, and typical daily use). Participants with high or
+low heart rates were included in the studies to cover the full range of heart rates supported by Apple Watch.
+
+Apple Watch SE, Apple Watch Series 4, and Apple Watch Series 5 use version 1 of the background heart
+rate algorithm. Apple Watch Series 6 and later and all Apple Watch Ultra models use the updated version 2
+of the algorithm to measure heart rate. Version 2 is an ML model that provides improved accuracy,
+developed and validated using Apple Watch sensor data and reference ground truth spanning over 50,000
+hours from more than 1,000 subjects. Table 3 summarizes the algorithm s performance on a real-world data
+set of 21,000 hours of daily living from 480 subjects not used for ML model training or hyperparameter
+tuning.
+
+
+
+
+Using Apple Watch to measure heart rate, calorimetry, and activity       November 2024                                                  10
+
+
+
+                                                                                                  ￼
+                                                       ’
+                                                                  Average background heart rate performance
+
+
+Algorithm version                     Measurements within           Measurements within             Average reports            Test data†
+                                       5 bpm of truth (%)            10 bpm of truth (%)               per hour
+
+V1 (available on Apple Watch
+SE, Apple Watch Series 4, and                    72                             85                            12
+Apple Watch Series 5)
+                                                                                                                              480 subjects,
+                                                                                                                              21,000 hours
+V2 (available on
+Apple Watch Series 6 and later                   89                             97                            12
+and Apple Watch Ultra)
+
+
+Table 3. Algorithm performance is presented for measurements made in the background during daily living when the user is still at a
+five-minute cadence for the average user in the data set. Accuracy is defined as the fraction of published measurements within 5 or
+10 bpm of the truth from a chest strap reference. Availability represents the average number of published measurements per hour. The
+analysis compares both versions of the algorithm applied to the same PPG data. Results demonstrate the improvement in performance
+achieved using ML techniques in V2. †Test data excludes all sessions from subjects used in ML model training and hyperparameter tuning.
+
+
+Tachogram algorithm
+The tachogram algorithm consumes green PPG and accelerometer signals to produce a tachogram — a list
+of the time between heartbeats — while the user is still. It captures tachograms opportunistically in the
+background throughout the day. Based on these background recordings, Apple Watch provides HRV
+measurements, irregular rhythm detection, and AFib History monitoring. The algorithm also measures
+tachograms during a user-initiated Breathe session in the Mindfulness app, which asks users to remain still.
+
+The tachogram algorithm was developed using Apple Watch sensor data and ECG reference data collected
+during various conditions and user behaviors, such as daytime and overnight wear, fine motion, hand
+tremors, reduced wrist perfusion, rapid ventricular response in arrhythmias like AFib, riding in a car, and
+deep breathing. For more information on the development and validation of the tachogram algorithm,
+please review Using Apple Watch for Arrhythmia Detection.
+
+Table 4 summarizes the performance of the tachogram algorithm on a subset of subjects not used for ML
+model training or hyperparameter tuning. This algorithm is primarily used by irregular rhythm notifications
+version 2,1 AFib History, and Breathe, as well as to compute HRV. Users can verify their version of the
+irregular rhythm notification feature by visiting Find your version of the irregular rhythm notification feature.
+
+
+                                                                        Average tachogram performance
+
+
+ Rhythm type or activity            Instantaneous pulse rates       Coverage (%)       Availability (%)                  Test data†
+                                     within 5 bpm of truth (%)
+
+ Normal sinus rhythm                            99.6                       92                 98              240 subjects, 266,000 tachograms
+
+ Permanent or persistent AFib                    97                        88                 96               70 subjects, 86,000 tachograms
+
+ Paroxysmal AFib                                 99                        92                 98              100 subjects, 117,000 tachograms
+
+ Other arrhythmias                               95                        90                 96               56 subjects, 69,000 tachograms
+
+ Deep breathing                                 99.7                       90                 99               400 subjects, 2,000 tachograms
+
+
+Table 4. Performance is measured across all tachograms collected passively throughout the day and published to HealthKit. Accuracy
+is defined as the fraction of instantaneous pulse rates accurate within 5 bpm of the reference heart rate measured by ECG. Coverage
+indicates the fraction of the tachogram duration when instantaneous pulse rate is reported in a tachogram. Availability represents the
+fraction of tachograms successfully measured and reported to HealthKit (containing at least 10 consecutive pulses). Arrhythmia
+categories in the table are determined based on reference data collected from a reference ambulatory ECG patch. The “other arrhythmias”
+category includes premature atrial contractions (PACs), premature ventricular contractions (PVCs), bundle branch block (BBB), atrial
+tachycardia, heart block, junctional rhythms, and supraventricular tachycardia (SVT). †Test data excludes all sessions from subjects used
+in ML model training and hyperparameter tuning.
+
+
+
+
+1 At the time of publication, irregular rhythm notification feature version 2 is not available in all markets.
+
+Using Apple Watch to measure heart rate, calorimetry, and activity              November 2024                                                    11
+
+
+
+                                                                                                          ￼
+    Heart rate features
+    The optical heart sensor and heart rate algorithms on Apple Watch enable many heart rate features. Users
+    can measure their heart rate any time when using the Heart Rate app, during exercise with the Workout app,
+    or during a Reflect session in the Mindfulness app — regardless of whether they re active or still. Apple Watch
+    also measures heart rate and tachograms in the background when the user is still or during a user-initiated
+    Breathe session in the Mindfulness app. Every measurement is published to HealthKit along with its time
+    stamp. Apple Watch then aggregates longitudinal heart rate data to produce additional heart health and
+    fitness insights and notifications, such as resting heart rate, walking heart rate average, cardio recovery, high
+    and low heart rate notifications, irregular rhythm notifications, AFib History, calorimetry, and cardio fitness.
+
+    This section discusses how Apple Watch uses the three foundational heart rate algorithms to enable heart
+    rate features.
+
+    Heart Rate app, Workout app, and cardio recovery
+    When using the Heart Rate app or Workout app including Fitness+ sessions, Apple Watch attempts to
+    report one heart rate every five seconds using the foreground heart rate algorithm, with availability subject
+    to signal quality. While in extended workout mode, the watch duty cycles the green LEDs to reduce power
+    and support longer workouts. Based on signal quality and use of extended workout mode, the time between
+    published measurements can vary.
+
+    After a user-initiated workout ends, Apple Watch continues to use the foreground heart rate algorithm to
+    monitor heart rate for three minutes to estimate cardio recovery. This measure is a prediction of a user s
+    60-second heart rate recovery after submaximal exercise at 85 percent of the predicted heart rate maximum.
+    Reported cardio recovery has an upper bound of 55 bpm and is designed to be robust to differences in
+    exertion across a user s workouts. Higher cardio recovery values can indicate better cardiovascular health.
+
+    Mindfulness app
+    In the Mindfulness app, the user may initiate a Breathe or Reflect session. During a Breathe session, the
+    user is guided through a deep breathing exercise while remaining still for one minute or more. Apple Watch
+    measures heartbeats using the tachogram algorithm, then displays one heart rate every minute, reflecting
+    the average heart rate during the guided breathing cycle. Along with these heart rates, estimated HRV and
+    a tachogram are published to HealthKit. (The Breathe session tachograms aren t used to determine if
+    irregular rhythm notifications should be sent, nor do they contribute to AFib History measurements). Users
+    can view their heart rate and HRV after completing a Breathe session and use the data for biofeedback
+    retrospectively.
+
+    During a Reflect session, the user is presented with a thought-provoking theme to focus on for one minute
+    or more. Unlike a Breathe session, Reflect doesn t ask the user to be still. Apple Watch measures heart rate
+    during a Reflect session using the foreground heart rate algorithm and displays the average heart rate at
+    the end of the session.
+
+    Apple Fitness+ subscribers can listen to guided meditations with their Apple Watch, which measures heart
+    rate using the foreground heart rate algorithm. As the meditation plays, the elapsed time and heart rate are
+    displayed on Apple Watch.
+
+
+
+
+    Using Apple Watch to measure heart rate, calorimetry, and activity    November 2024                                12
+
+
+
+                                                                                              ￼
+                                                                                          ’
+                                                                      ’
+                                                                  ’
+                            ’
+’
+Background heart rate, resting heart rate, and walking heart rate
+The background heart rate algorithm monitors heart rate in the background throughout the day when the
+user is still. Every five minutes, it attempts to publish a heart rate to HealthKit, with availability subject to
+signal quality and user motion.
+
+When sufficient background heart rate measurements are available, a subset from the most inactive parts
+of the day — except those recorded during Sleep Focus, scheduled Bedtime, or time of sleep— is used to
+estimate resting heart rate. This is an estimation of the user s lowest heart rate during periods of rest while
+awake and is updated periodically throughout the day, with a single daily resting heart rate published to
+HealthKit at the end of the day. These daily estimates can be reviewed longitudinally in the Health app. A
+lower resting heart rate typically indicates better heart health and cardiovascular fitness.
+
+Apple Watch occasionally activates the foreground heart rate algorithm in the background when it senses
+that the user is performing certain activities. For example, the foreground heart rate algorithm is triggered
+for up to one minute for spot checks when the user appears to be walking, without the user needing to
+interact with their watch. If signal quality is adequate, a spot-checked walking heart rate is published to
+HealthKit. The user also receives one average walking heart rate daily. Walking heart rate can be used as
+a baseline for light exercise to measure how the user s heart responds to activity.
+
+High and low heart rate notifications
+Apple Watch checks for unusually high or low heart rates in the background, which could be signs of a
+serious underlying condition. The default threshold is 120 bpm for high heart rate notifications and 40 bpm
+for low heart rate notifications.
+
+Apple Watch monitors background heart rate using the background heart rate algorithm. If a user s heart
+rate exceeds the high threshold or drops below the low threshold while they appear to have been inactive
+for 10 minutes and multiple additional conditions are met, Apple Watch activates the tachogram algorithm
+for up to one minute. If the results from the two algorithms are consistent, Apple Watch sends the user a
+notification. The user can view and set their high and low thresholds for notifications in the Apple Watch
+app or the Health app on iPhone.
+
+Irregular rhythm notifications, and AFib History, and heart rate variability
+Apple Watch attempts to measure tachograms in the background using the tachogram algorithm.
+Tachograms are collected and analyzed only if the user remains still enough to obtain a measurement.
+The default tachogram measurement cadence is every four hours, increasing to two hours or 15 minutes
+when a user enables irregular rhythm notifications or AFib History, respectively. Apple Watch calculates
+HRV using the standard deviation of normal-to-normal measurements (SDNN) and attempts to reject
+ectopic (non-normal) beats before publishing tachograms for SDNN calculation. In cases of high ectopic
+burden (or AFib arrhythmia), SDNN may be influenced by non-normal beats that couldn t be rejected.
+Within HealthKit, SDNN is stored alongside the sequence of individual beat-to-beat measurements, used to
+calculate other HRV metrics.
+
+The irregular rhythm notification feature, intended for adult users without a prior AFib diagnosis, monitors
+tachograms in the background for irregular rhythms suggestive of AFib and notifies users upon detection (a
+positive tachogram classification followed by a positive confirmation cycle). For more information on the
+development, validation, and performance of the irregular rhythm notification feature, please refer to the
+validation summary Using Apple Watch for Arrhythmia Detection.
+
+The AFib History feature is intended for adult users with a diagnosis of AFib to help them understand their
+AFib burden over time as well as the relationship between their AFib burden and lifestyle over time. AFib
+burden is defined as the proportion of time the user is in AFib during a monitoring period, expressed as an
+estimated percentage of time their heart showed signs of AFib during the previous week of watch wear.
+
+Using Apple Watch to measure heart rate, calorimetry, and activity   November 2024                                  13
+
+
+
+                                                                                     ￼
+                                                                                ’
+                                                                      ’
+                                      ’
+                              ’
+The lowest percentage reported is “2% or less.” Due to sampling, AFib History cannot determine a
+complete absence of AFib. The user receives notifications every Monday with a retrospective estimate of
+the average AFib burden measured compared with the previous week. Users must wear their Apple Watch
+at least 12 hours a day for five days a week to consistently receive estimates. AFib History also shows users
+the day of week and time of day that their heart is most frequently showing signs of AFib, called highlights.
+AFib History highlights are available to view after six weeks of wearing Apple Watch. The AFib History
+feature is compatible with Apple Watch Series 4 or later and all Apple Watch Ultra models, paired with an
+iPhone 8 or later. To learn how to set up AFib History and log life factors that impact AFib, please visit Track
+your AFib History with Apple Watch.
+
+
+
+
+Using Apple Watch to measure heart rate, calorimetry, and activity   November 2024                            14
+
+
+
+                                                                                     ￼
+Measuring calories
+
+
+
+Introduction
+In addition to being a robust heart rate measurement tool, Apple Watch offers an accurate and consistent
+way to track calories burned. Apple Watch uses heart rate and calorimetry data to inform various health and
+fitness features, including those in the Workout, Activity, Fitness, and Health apps, which are highlighted
+later in this section.
+
+Tracking calorie expenditure can help users maintain an active and healthy lifestyle. On Apple Watch,
+calories are an estimate of energy burned. Active Calories, represented by the red Move ring, are the
+calories burned above basal (resting) calories. Total calories are a combination of active and basal calories.
+Monitoring calories burned can help users stay active throughout the day, track workout expenditures, and
+make informed refueling choices.
+
+Apple Watch is also a useful device for researchers who want to measure calorimetric data during specific
+activities or longer-term remote monitoring, inside or outside a laboratory, for both small and large-scale
+studies.
+
+Current laboratory standards, including indirect calorimetry, pressure-sensitive mats for gait estimation, and
+courses with distance verified via measuring wheel, each requiring proctors, a dedicated laboratory space,
+and resources — are accepted as accurate but are not feasible for all study types or larger populations. And
+they can be carried out on only an infrequent basis due to resource and facility constraints, as well as
+participant availability. Apple Watch removes these barriers by providing a more accessible way to collect
+data, enabling rich data sets across a diverse population in a variety of everyday settings.
+
+Many elements go into estimating calorie expenditure: hardware sensors, software algorithms, and user
+health data. This section describes the process for detecting and reporting calorimetry on Apple Watch —
+starting with the sensors, followed by the motion coprocessor and the system on chip (SoC) for signal
+processing, ML-based activity classification, and algorithm calculations — that fuse together information
+from the various sensors, complemented by user metrics to produce an individualized calorie count. The
+section also details best practices for obtaining reliable signals.
+
+
+
+Calorimetric hardware
+Several key sensors support calorimetry algorithms on Apple Watch, in addition to a motion coprocessor
+and an Apple Watch SoC that process sensor data and calculate algorithms.
+
+Optical Heart Sensor
+The optical heart sensor in Apple Watch uses green PPG and accelerometer signals with the foreground heart
+rate algorithm to measure heart rate during potentially challenging motion scenarios in workouts. Heart rate,
+measured in bpm, is one of the signals Apple Watch uses to inform activity intensity for calorimetry. For more
+information, see in the Optical heart sensor section earlier in this paper.
+
+
+
+
+Using Apple Watch to measure heart rate, calorimetry, and activity   November 2024                               15
+
+
+
+                                                                                     ￼
+Accelerometer
+An accelerometer is a sensor that measures change in velocity.
+Apple Watch has a three-axis accelerometer that delivers                                            Y
+acceleration values in each of three orthogonal directions. The
+values reported by the accelerometer are measured in increments
+of the gravitational acceleration, with the value 1.0 representing
+an acceleration of 9.8 meters per second squared in the given
+direction. Acceleration values may be positive or negative
+depending on the direction of the acceleration. In Figure 3, the X,
+Y, and Z arrows show the direction of positive acceleration in the
+
+                                                                                                    Z
+three orthogonal directions. The accelerometer is used to inform
+motion-based features such as steps.
+                                                                                                                                  X
+
+Gyroscope
+A gyroscope measures the rate at which a device rotates around
+a spatial axis. Apple Watch is equipped with a three-axis
+gyroscope, which delivers rotation values around each of three
+orthogonal axes. Rotation values are measured in radians per                         Figure 3. Apple Watch labeled with the
+                                                                                     three orthogonal directions for sensing
+second around the given axis. Rotation values may be positive or                     accelerations and rotations using the built-in
+negative depending on the direction of the rotation. In Figure 3,                    accelerometer and gyroscope, respectively.
+
+the curved arrows show the direction of positive rotation around
+the X, Y, and Z directional axes. The gyroscope is used to inform
+motion-based features with a lot of rotation, such as the number and intensity of freestyle swimming
+strokes.
+
+Barometer
+A barometer measures atmospheric pressure, detecting varying values at different elevations. Apple Watch
+is equipped with a barometer that combined with user motion, measures elevation changes, detects terrain
+grade, and helps estimate the number of flights of stairs climbed and associated increases in calorie
+expenditure.
+
+Geolocation receiver
+A geolocation receiver estimates its location based on signals from systems such as Global Navigation
+Satellite Systems (GNSS), which includes the Global Positioning System (GPS). Multiple data samples can
+be used to detect distance traveled over time. Distance and steps are used in stride calibration, which
+estimates a more accurate step-based distance traveled throughout the day.
+
+Motion coprocessor and system on chip
+The motion coprocessor runs low-power algorithms and sensor processing that produce all-day calorie
+estimates. The primary motivation for integrating the coprocessor is to provide basic sensor processing
+facilities for all-day features — such as step counting — to decrease the wake-up frequency of the entire
+Apple Watch SoC and reduce battery consumption. During workout sessions, the SoC is active, running
+robust algorithms and sensor processing to inform features such as workout-specific calorimetry.
+
+
+
+
+Using Apple Watch to measure heart rate, calorimetry, and activity   November 2024                                               16
+
+
+
+                                                                                           ￼
+    Calorimetry algorithms
+    Calorimetry best practices
+    Best practices must be understood and followed to obtain accurate energy expenditure values. For targeted
+    activities, users (including researchers) should employ additional methods to optimize calorie
+    measurements. These methods are discussed in the Calorimetry in workouts section. To get optimal all-day
+    measurements from Apple Watch, these guidelines should be followed:
+
+    Understand the values
+    When collecting and reporting data, users need to understand the values and report the desired metrics.
+    For example, Apple Watch reports basal and active calories. These two values should be combined to
+    report total calorie expenditure. A framework such as ResearchKit can be used to build study-specific apps
+    and can be helpful for data collection.
+
+    Keep personal information up to date
+    Apple Watch uses personal information — such as weight, height, age, sex, and wheelchair status — to help
+    inform health and fitness features, including how many calories the user burns. To improve the accuracy of
+    these features, users can update their personal information in the My Watch tab of the Apple Watch app on
+    iPhone. To learn how, read Get the most accurate measurements using your Apple Watch.
+
+    Calibrate Apple Watch
+    During outdoor pedestrian activity, Apple Watch opportunistically attempts automatic calibration to learn
+    the user s cardiorespiratory fitness (CRF or VO2 max) level and stride length. In calorimetry, a user s VO2
+    max can inform the relative intensity of exertion. An individualized value for stride length improves distance
+    and pace accuracy when geolocation information is limited or unavailable. This personalized calibration on
+    Apple Watch enhances the accuracy of calorie, distance, and pace measurements.
+
+    Those who want to accelerate the calibration process — for example, researchers performing short-term
+    targeted data collection, where devices may be used to collect data from participants with different fitness
+    levels and stride lengths — can improve the accuracy of measurements using calibration steps. For more
+    details, visit Calibrate your Apple Watch for improved Workout and Activity accuracy.
+
+    Check Settings
+    For Apple Watch to access the information needed to measure calories, users should turn on Location
+    Services and Motion Calibration & Distance in Privacy & Security settings on their paired iPhone. For
+    details, see Calibrate your Apple Watch for improved Workout and Activity accuracy.
+
+    In the Apple Watch app on iPhone, Wrist Detection must be on to ensure that background heart rate
+    readings (like resting and walking rates) are measured. For instructions on how to turn on Wrist Detection,
+    see Get the most accurate measurements using your Apple Watch.
+
+    Check the fit
+    Apple Watch should be worn snugly but comfortably so that the sensors can obtain the most accurate
+    readings. For guidance, see the Watch band usage part of this paper and visit Wearing your Apple Watch.
+
+
+
+
+    Using Apple Watch to measure heart rate, calorimetry, and activity   November 2024                            17
+
+
+
+                                                                                         ￼
+                                                                                    ’
+’
+        Activity classification and calorie calculation
+        This section focuses on the general methodology for classifying activities and calculating calories during
+        and outside of workout sessions. Later in this paper, the Calorimetry in workouts section details the
+        additional sensor signals and models available in workout sessions.
+
+        Machine learning–based models for activity classification
+        Activity classification is fundamental to ensuring that the correct calorimetry algorithms are running on
+        Apple Watch. ML-based models trained on thousands of hours of data identify movement patterns
+        associated with different activities (for example, swimming, cycling, or running). Apple Watch uses this
+        activity context in various ways, including calorimetry algorithm selection, workout pause/resume and start/
+        end reminders, and automatic progression through Multisport workouts.
+
+        Calculating calories
+        Apple Watch runs algorithms that continuously calculate metrics to inform calorie expenditure, including
+        activity classification, step counting, wheelchair push counting, and activity intensity.
+
+        Activity classification informs which metabolic equivalents (METs) models to use in calorie estimates.
+        These METs models fuse together specific information generated from the sensor signals, and they take
+        individual physiological metrics into account. The basal model is used to estimate the amount of energy
+        required for the user s body to function while at rest. Basal METs are computed from the user s
+        demographics (weight, height, age, sex, wheelchair status) and current activity. The basal model will
+        produce an estimate that varies slightly depending on current activity. The activity models estimate the
+        amount of energy the user expends while active, in addition to the basal levels.
+
+        Finally, the user s weight and the duration of time at a given level of exertion is used to convert METs to
+        calories. Total calories represent the combination of basal and active calorie values. Figure 4 illustrates the
+        flow of data from activity models and calorie conversion to the active calorie calculation.
+
+            Data packet and                            MET models                         Calorie conversion         Active calorie
+          activity classification                                                                                     calculation
+
+                  Activity
+               classification                    Activity specific model
+
+
+                                                      Heart rate model                                              Total
+              Sensor signals                                                       METs        METs x              calories
+                                                                                Weight     Weight x Duration
+                 VO2 max
+                                                      Work rate model
+                                                                                                                      Total calories –      Active
+           User demographics                                                                                           Basal calories      calories
+           • Weight
+           • Height
+                                    Duration
+           • Age
+           • Sex
+                                                                                                                    Basal
+           • Wheelchair status
+                                                                         Basal METs         Basal METs x           calories
+                                                        Basal model
+                                                                          Weight           Weight x Duration
+
+
+
+        Figure 4. Flow diagram representing the process of calculating total and active calories from input data packets, activity classification,
+        and activity specific models.
+
+
+        For users 13 years and younger, a unique ML model was developed for activity classification. Instead of
+        active calories, Apple Watch calculates Move minutes, indicating how many minutes the user has spent
+        actively moving. This model was specifically designed to capture the movement patterns of younger users
+        and is based on hundreds of hours of targeted data collection.
+
+
+
+
+        Using Apple Watch to measure heart rate, calorimetry, and activity            November 2024                                                  18
+
+
+
+                                                                                                               ￼
+                                                                                             ’
+    ’
+’
+Calorimetry in workouts
+Measuring workout calories
+In addition to the all-day signals discussed previously, more sensor information and processing is available
+during workouts, including PPG heart rate and geolocation information. Using a method similar to the
+one described in the last section — Activity classification and calorie calculation — algorithms combine this
+information to estimate METs. Different from all-day measurements, these algorithms are workout-specific
+with richer information, and their resulting calorimetry estimates are more robust. Apple conducted studies
+and collected design and validation data sets, including the gold standard reference Metabolic Cart (MET-
+Cart), to ensure that calories estimated by Apple Watch are as accurate as possible. These efforts are
+discussed in the following section, Calorimetry estimates: Design, validation, and maintenance. In a
+research context, workout sessions are useful for collecting the most robust and accurate data for a given
+activity. Calorimetry best practices detailed earlier in this paper should be followed to obtain optimal
+results.
+
+Depending on the workout type started and the ML model-based activity classification, Apple Watch selects
+the sensor data inputs deemed most appropriate to calculate calories for that activity. Heart rate is just one of
+the many factors that Apple Watch uses to measure activity and exercise. Other important signals are
+acceleration, rotation, elevation, and geolocation. For example, when the user is running indoors, Apple Watch
+uses the accelerometer. To obtain the most accurate calorie and activity data, the user should choose the
+appropriate workout session on Apple Watch for the activity. When starting Fitness+ workout sessions, the
+corresponding workout type will automatically be selected.
+
+By leveraging an activity classification ML model to detect specific user movement patterns, Apple Watch
+can automatically start some workouts if the user forgets to initiate the workout on their own. In this case,
+the user will receive a notification after a certain amount of time spent doing the activity, asking if they want
+to record their workout. If they confirm, the user receives workout credit beginning from the time they
+started exercising. The time it takes for the notification to surface will vary depending on the workout type.
+For the best user experience, the time was chosen to align with likely workout behavior compared with
+everyday activity. Apple Watch can provide workout start reminders for the Indoor Walk, Outdoor Walk,
+Indoor Run, Outdoor Run, Outdoor Cycle, Elliptical, Indoor Rowing, Pool Swim, and Open Water Swim
+workouts.
+
+Workout models
+For each of the workout models, specific sensors and features are used as inputs. Table 5 details which
+primary sensor and feature inputs support the different types of workout models. These workout models
+are represented in the Activity specific model box in Figure 4 of the Activity classification and calorie
+calculation section. The specific workout model types listed in Table 5 have validated calorimetry models,
+with performance detailed in the next section. Note that for other outdoor workouts where walking or
+running is the predominant form of movement, calories are estimated using a combination of the pedestrian
+and heart rate models. For all other models, the user will earn at least the credit equivalent of a brisk walk
+while moving, with the potential for additional credit based on sensor data and activity classification.
+
+
+
+
+Using Apple Watch to measure heart rate, calorimetry, and activity   November 2024                               19
+
+
+
+                                                                                     ￼
+                                                                          Model inputs
+
+ Workout model type          Heart     Motion     Grade     Geolocation-       Stride length         Steps   Pushes     VO2 max,
+                              rate                          based speed         calibration                            user metrics
+
+ Outdoor pedestrian
+ • Walking
+                                ✓         ✓          ✓               ✓               ✓                ✓                       ✓
+ • Running
+ • Hiking
+
+ Indoor pedestrian
+ • Walking                      ✓         ✓                                          ✓                ✓                       ✓
+ • Running
+
+ Outdoor wheelchair
+ • Walking pace                           ✓          ✓               ✓                                         ✓              ✓
+ • Running pace
+
+ Outdoor cycling                ✓         ✓          ✓               ✓                                                        ✓
+
+ Swimming                                 ✓                          ✓                                                        ✓
+
+ Rowing                                   ✓                                                                                   ✓
+
+ Additional heart rate
+ and motion fused
+ • Elliptical
+                                ✓         ✓                                                                                   ✓
+ • Stair stepper
+ • Dance
+ • Kickboxing
+
+ Heart rate
+ predominant
+ • Indoor cycling
+ • High-intensity
+   interval training
+ • Cross country skiing
+ • Functional strength          ✓         ✓                                                                                   ✓
+   training
+ • Core training
+ • Pilates
+ • Yoga
+ • Cooldown
+ • Tai chi
+
+ Other workouts                 ✓         ✓                                          ✓                ✓                       ✓
+
+
+Table 5. Different types of workout models and key inputs. Motion input includes signals from sensors such as accelerometer and
+gyroscope, and features derived from those signals. Heart rate predominant models refer to calorimetry models that more heavily rely on
+the heart rate sensor signals.
+
+
+
+
+Using Apple Watch to measure heart rate, calorimetry, and activity       November 2024                                                20
+
+
+
+                                                                                                 ￼
+    Calorimetry estimates: Design, validation, and maintenance
+    To validate calorimetry, Apple conducted studies to collect separate design and validation data sets. A gold
+    standard is used for the source of reference truth for step metrics and calorimetry models. For step metrics,
+    the reference truth is a wheeled distance and a proctor tallied step-count. For the steady-state aerobic
+    calorimetry models, the reference truth is indirect calorimetry from a calibrated MET-Cart, which produces
+    measurements of VO2 consumed.
+
+    The flow of product feature conception, collection of data sets, development, implementation, validation,
+    and maintenance are illustrated in Figure 5 below.
+
+
+
+          Define new               Collect data with            Develop and                   Validate                    Maintain
+           feature                 truth reference            implement model                  model                       model
+
+
+
+
+                                                                                            Assess model                Run simulation,
+        Establish supported          Collect separate           Develop and code           performance on               in-person, and
+           use cases and               design and               model on design           validation data set          robotic testing to
+       accuracy/consistency            validation                data set to meet        and in-person testing          ensure function
+           specifications               data sets                specifications           to ensure it meets           and performance
+                                                                                            specifications              are maintained
+
+
+
+
+    Figure 5. Apple s process for calorimetry model conception, data collection, development, implementation, validation, and maintenance.
+
+
+    In general, calorimetry estimates are based on activity context. In all-day calorimetry, when exertions are
+    below walking effort, estimates of sit, stand, and sedentary (at rest) behavior inform accuracy. Table 6 on the
+    following page details the calorimetry accuracy for aerobic activities when best practices are followed. The
+    calorimetry design and validation studies included hundreds of data sets, powered based on the complexity
+    of the model.
+
+    Algorithm performance is evaluated and maintained across new hardware releases and software updates
+    using simulation, in-person, and robotic testing. It is important that the best practices highlighted in the
+    Calorimetry algorithms section are followed to obtain the most accurate energy expenditure values.
+
+
+
+
+    Using Apple Watch to measure heart rate, calorimetry, and activity      November 2024                                                   21
+
+
+
+                                                                                                     ￼
+’
+ Model type                                              N (validation)                    % Error calories relative to reference
+                                                                                                       (mean ± SD)
+
+ Outdoor/Indoor pedestrian
+ • Walking
+                                                               130                                            0±9
+ • Running
+ • Hiking
+
+ Outdoor wheelchair
+ • Walking pace                                                130                                           -1 ± 16
+ • Running pace
+
+ Outdoor cycling                                               298                                            5 ± 13
+
+ Swimming                                                      151                                            5 ± 20
+
+ Rowing                                                        100                                           -2 ± 15
+
+ Additional indoor machines
+ • Elliptical                                                   75                                            0 ± 15
+ • Stair stepper
+
+ Dance
+                                                               243                                            0 ± 14
+ • Cardio styles (3)
+
+ Kickboxing                                                    145                                            3 ± 15
+
+ Heart rate predominant
+ (higher intensity)
+ • Indoor cycling                                              218                                           -2 ± 14
+ • High-intensity interval training
+ • Cross country skiing
+
+ Heart rate predominant
+ (moderate intensity)
+ • Functional strength training                                 53                                            2 ± 17
+ • Core training
+ • Pilates
+
+ Heart rate predominant
+ (lower to moderate intensity)
+ • Yoga                                                         43                                            3 ± 20
+ • Cooldown
+ • Tai chi
+
+Table 6. Accuracy represented by mean and standard deviation (SD) of error of aerobic calorimetry models relative to reference when
+best practices are followed. The errors in the table represent performance from ongoing validation data collections, across a typical range
+of exertion and fitness levels. Errors may be higher in scenarios where devices are not calibrated, or atypical environments for activities
+where the user may experience prolonged anaerobic calorie expenditure such as extended periods of steep incline during pedestrian
+activities or extreme water temperature during swimming. Heart rate predominant models refer to calorimetry models that more heavily
+rely on the heart rate sensor signal.
+
+
+
+
+Using Apple Watch to measure heart rate, calorimetry, and activity        November 2024                                                  22
+
+
+
+                                                                                                   ￼
+Additional fitness features
+The models discussed in this paper inform numerous features and data streams, including the Activity,
+Workout app experiences on Apple Watch, plus the Fitness app experience and Health app features on
+iPhone.
+
+
+
+
+Cardiorespiratory fitness
+Apple Watch estimates a user s cardio fitness level as measured by VO2 max, the maximum volume of
+oxygen that an individual can extract from inhaled air. Users can view how their cardio fitness level is
+classified based on their age group and sex in the Health app on iPhone and iPad, and they can receive a
+notification if it falls within the low range. Learn more by reading Using Apple Watch to Estimate Cardio
+Fitness with VO2 max, Track your cardio fitness levels, and Cardio fitness notifications are available today
+on Apple Watch.
+
+Activity app
+The Activity app experience includes setting personal Activity goals, tracking progress throughout the
+day with Activity rings (red Move ring, green Exercise ring, and blue Stand or Roll ring), observing trends
+over time on a paired iPhone, and even competing with friends. The Activity app tracks how often the user
+stands or rolls, the calories burned from movement, and the minutes of brisk activity (exercise) completed.
+The three differently colored rings summarize the user s progress. The objective is to sit less, move more,
+and get some exercise by completing each ring every day.
+
+Activity goals
+Activity goals help the user track how their activity is adding up over the day. The user can customize goals
+to align with their activity objectives for each day of the week. The Move ring encourages the user to match
+or exceed their daily active calorie burn goal to ensure they stay as active as they intend throughout the
+day. The Exercise ring measures how many total minutes of active calories burned were brisk enough to
+reach an intensity that can make a positive impact on the user s heart health. The Stand ring is designed to
+measure how many hours per day the user stood up or moved for at least one minute, helping reduce long
+sedentary periods. Apple Watch notifies the user when goals are reached and offers suggestions and
+encouragement to help them close their rings.
+
+When Activity goals are met, they re represented by a closed Activity ring, and the user earns an award.
+Workouts completed in the Workout app, as well as those from third-party apps or user-entered workouts
+written to the Health app, count toward ring totals. At midnight each day, the ring totals reset, giving the
+user a new opportunity to meet daily goals. If the user wants to take a break from activity tracking, they can
+pause the ring experience for 1 to 90 days while retaining their award streak. The Activity goals experience
+provides summaries of activity and aims to keep users engaged with their fitness and health goals in both
+the short and long term. Researchers carrying out activity studies with Apple Watch will benefit from
+comprehensive and robust data sets from engaged participants. Learn more at Track daily activity with
+Apple Watch.
+
+Move ring
+The Move ring provides a cumulative estimate of how many active calories a user has burned in a day.
+Active calories, explained in more detail in the Calculating calories portion of this paper, are burned through
+activities such as standing or moving around, in addition to resting (basal) calories.
+
+For users 13 years and younger, the Move ring shows how many minutes the user has spent actively
+moving around. For help earning Move credit, visit Get the most accurate measurements using your
+Apple Watch.
+
+Using Apple Watch to measure heart rate, calorimetry, and activity   November 2024                             23
+
+
+
+                                                                                     ￼
+                                          ’
+                                ’
+     ’
+ ’
+    Exercise ring
+    Users can complete the default daily Exercise goal by exercising for at least 30 minutes each day, or
+    they can customize it to any amount of time between 5 and 90 minutes. Every full minute of movement
+    that equals or exceeds the intensity of a brisk walk counts toward daily Exercise goals on Apple Watch,
+    including activity outside of a workout session. The intensity threshold equivalent to a brisk walk is adjusted
+    based on personal information, such as Apple Watch–detected cardiorespiratory fitness (VO2 max). This
+    personalization creates a balanced Exercise ring experience for users of all cardiorespiratory fitness levels
+    (see Cardiorespiratory fitness on the previous page). In workout sessions, the user can also earn exercise
+    minutes for sustained exertions at a personalized moderate intensity.
+
+    For wheelchair users, brisk activity is measured in brisk pushes. Any activity below this level counts only
+    toward the daily Move goal.
+
+    For users 13 years and younger, the Exercise ring focuses on minutes of brisk activity, such as running,
+    jumping, and playing. (For more information, refer to See activity and health reports for family members.)
+    Learn how to meet the Exercise goal at Get the most accurate measurements using your Apple Watch.
+
+    Stand or Roll ring
+    Users can complete the default daily Stand goal by standing up and moving around for at least one minute
+    during 12 different hours of the day, or they can customize the goal to any number of hours between 6 and
+    16. Apple Watch awards Stand credit when it detects a standing pose. Users can also earn credit through
+    movements such as swaying, twisting, shifting, fidgeting, and walking.
+
+    If the user specifies that they use a wheelchair, the Stand ring switches to the Roll ring. Roll shows hours in
+    which the user pushed around in a wheelchair for at least one minute.
+
+    Stand or Roll minutes
+    Stand minutes are the number of minutes throughout the day that a user is standing and moving. Apple
+    Watch automatically tracks and logs these minutes in Health. Reviewing Stand minutes over time can help
+    the user understand how active or sedentary they are. Earning at least one Stand minute each hour also
+    earns an hour in the user s Stand ring.
+
+    If the user specifies that they use a wheelchair, Apple Watch will track Roll minutes, similar to the Stand and
+    Roll rings. Roll minutes represent the number of minutes throughout the day that they have spent pushing
+    around in a wheelchair. They will also earn the hour in their Roll ring for each hour in which they earn at least
+    one Roll minute.
+
+    Fitness trends
+    Trends in the Fitness app on iPhone give users a brief overview of their progress in Move, Exercise, Stand or
+    Roll goals, as well as other key metrics compared with past performance. This view allows users to easily
+    determine if they are on track or identify areas that need more attention.
+
+    Trends are based on how metrics have developed over the last 90 days compared with the last 365 days.
+    (Estimates might change due to updates in how they are calculated.) If the Trend arrow for a particular
+    metric points up, the user is maintaining or improving fitness levels. If an arrow points down, the user s
+    90-day average for that metric has declined.
+
+
+
+
+    Using Apple Watch to measure heart rate, calorimetry, and activity   November 2024                            24
+
+
+
+                                                                                             ￼
+                                                                                         ’
+’
+    Fitness+ Burn Bar
+    The Burn Bar leverages crowd-sourced data to create an interactive experience within Fitness+ workouts.
+    Weight-normalized calories — calculated as METs multiplied by duration — are tracked throughout each
+    workout for the community of users. This feature enables users to continuously compare their energy
+    expenditure during the workout with that of others who have completed the same session. To learn more
+    about Apple Fitness+ and the Burn Bar, see How to Use Apple Fitness+.
+
+    GymKit
+    Apple Watch can pair and sync data with compatible cardio equipment such as treadmills, indoor bikes,
+    ellipticals, and stair steppers, which provide the user with more personalized and accurate information
+    about their workout. The user can use connected gym equipment to start and stop Apple Watch workouts
+    and exchange workout data, such as distance and heart rate. To learn more, see Use gym equipment with
+    Apple Watch.
+
+    Multisport
+    The Multisport workout type automatically progresses between any sequence of swimming, cycling, and
+    running workouts by leveraging activity classification from an ML model. To learn how to set up a Multisport
+    workout, see Combine multiple workouts on Apple Watch.
+
+    Functional threshold power and Power Zones
+    Algorithms combining sensor data from Apple Watch and connected power meters can estimate functional
+    threshold power (FTP), the highest level of cycling intensity a rider could theoretically maintain for an hour.
+    Using FTP, Apple Watch calculates personalized Power Zones, allowing users to easily see the current zone
+    they are working in and track how much time they spend in each zone. FTP is an important metric because
+    it provides cyclists with a helpful way to measure conditioning progress over a period of time and forms the
+    foundation for Power Zones. For more information see: Go cycling with Apple Watch.
+
+    Effort estimates to inform training load
+    Workout Effort is a notion of workout session intensity. Effort multiplied by workout duration informs the
+    training load experience in the Activity and Fitness apps. Training load compares the user s training over the
+    last seven days with the previous 28 days, helping the user make informed decisions about upcoming
+    workouts. To learn about how to set up and view training load, see Track your training load on Apple Watch.
+
+    Apple Watch supports automatic Effort estimation for most cardio-focused workouts. This estimation
+    leverages an ML model trained on approximately 70,000 workout sessions from the Apple Heart and
+    Movement Study. The model s features are generated from a combination of user information — such as
+    age and VO2 max — and data used in calorimetry, including heart rate. Users can manually adjust the Effort
+    estimate or enter a value in sessions where an estimate is not provided. To learn more, see End and view a
+    summary of your workout on Apple Watch.
+
+
+
+
+    Using Apple Watch to measure heart rate, calorimetry, and activity   November 2024                            25
+
+
+
+                                                                                         ￼
+                                                                            ’
+’
+        How to access data
+
+
+
+        Users have several options for accessing the data and features discussed in this paper. The best choice will
+        depend on the requirements of each use case.
+
+        ResearchKit
+        ResearchKit is an open source framework introduced by Apple that enables researchers and developers
+        to create powerful apps for medical research. Developers can easily create visual consent flows, real-time
+        dynamic active tasks, and surveys using a variety of customizable modules to build on and share with the
+        community. ResearchKit was designed to easily interface with HealthKit, so researchers can access — with
+        user consent — highly relevant data for their studies, like daily step counts, calorie use, and heart rate. To
+        learn more, visit Apple s Research & Care page.
+
+        HealthKit
+        HealthKit is a central repository for health and fitness data on iPhone, iPad, and Apple Watch. With user
+        consent, apps communicate with the HealthKit store to access and share this data. Creating a complete,
+        personalized health and fitness experience involves the following tasks:
+        • Collecting and storing health and fitness data
+        • Analyzing and visualizing the data
+        • Enabling social interactions
+
+        HealthKit apps take a collaborative approach to building this experience. Developers can focus their apps
+        on a subset of tasks that interest them most. To learn more, visit the HealthKit Documentation page.
+
+        SensorKit
+        As the system gathers information using various sensors on a device, SensorKit enables an app, with user
+        consent, to access select raw data or metrics processes from a sensor, such as:
+        • Steps information
+        • Accelerometer or rotation-rate data
+        • Optical and electrical heart sensor data
+        • The configuration of a watch on the user s wrist
+        • Ambient light in the physical environment
+        • Details about a user s routine commute or travel
+
+        SensorKit is a private entitlement; thus apps require Apple approval. Use cases are limited to health research,
+        and access to the data types also requires user permission. To learn more, see SensorKit Documentation.
+
+        Apple Watch and iPhone
+        Users can view many features and data types directly on Apple Watch and iPhone, including in the Heart Rate,
+        Health, Activity, and Fitness apps. They can track a range of signals, such as their heart rate, cardio fitness,
+        and how much they move, exercise, and stand day-to-day. For many features, users can check their daily
+        progress on their Apple Watch or review their entire history in the Fitness and Health apps on iPhone. To learn
+        more, visit Track daily activity with Apple Watch and Use the Health app on your iPhone or iPad.
+
+
+
+
+        Using Apple Watch to measure heart rate, calorimetry, and activity   November 2024                                 26
+
+
+
+                                                                                             ￼
+                      ’
+    ’
+’
+Conclusion
+
+
+
+Apple Watch accurately measures and reports heart rate and calories burned, and it creates an engaging
+health and fitness experience for all users. This paper highlights the methodologies, research studies,
+and variables that Apple evaluates and uses when developing heart rate and calorimetric capabilities
+along with their associated algorithms. It also provides guidance on best practices to follow to ensure
+optimal performance.
+
+
+
+
+Using Apple Watch to measure heart rate, calorimetry, and activity   November 2024                        27
+
+
+
+                                                                                     ￼
+

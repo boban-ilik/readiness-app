@@ -1,0 +1,15 @@
+# Readiness Coach: first-party product facts (collected by the orchestrator 2026-11-20)
+
+Use only these for claims about the publisher's own app. Anything not listed here is Unknown; check the repo file named or leave it out.
+
+- Name on the App Store: "Readiness Coach: HRV Score". Publisher of thereadiness.app. Live version 1.3.0 since 2026-11-18 (iTunes lookup, 2026-11-19). App Store link: https://apps.apple.com/app/id6760478506
+- Platform: iPhone only, iOS 16.4 or later (iTunes lookup minimumOsVersion). No Android app. No Apple Watch app of its own: it reads what the watch writes to Apple Health. Home screen widget exists.
+- Inputs: overnight HRV, resting heart rate, sleep (duration, stages, efficiency), steps and activity, workouts, read from Apple Health. Works with any watch that writes to Apple Health (listing names Apple Watch, Garmin, Polar, Fitbit, Whoop, Samsung Galaxy Watch, Oura). HRV can be typed in by hand when a device does not share it. Optional direct Garmin connection through Garmin's cloud Health API (live since 1.2.1, 2026-11-04). Do NOT lead with the Garmin direct connection or promise it to everyone: access is on a limited Garmin developer tier.
+- Score model (public, see https://thereadiness.app/blog/what-is-a-readiness-score/): 45% recovery (HRV vs personal baseline 60%, resting heart rate 40%), 40% sleep, 15% stress; personal 30-day baselines; the first 7 days are a calibration week. The score is calculated on the phone. The app shows how each day's score was calculated (free).
+- It does NOT use wrist temperature, respiratory rate or blood oxygen. It has no hardware, no strain score from continuous heart rate, no journal-style behaviour correlation engine beyond day tags, no Android, no web app.
+- Free tier (website pricing section + app code, 2026-11-20): daily readiness score; recovery, sleep and stress components, with the detail of what went into each (opened to everyone in 1.3); home screen widget; manual HRV entry; streaks; 7-day history; 3 coach questions a week (app/coach-chat.tsx FREE_WEEKLY_QUESTIONS = 3); one free briefing a week (src/services/freeBriefing.ts).
+- Every new account gets full Pro for its first 7 days, no card needed (src/contexts/SubscriptionContext.tsx TRIAL_DAYS = 7).
+- Pro: $9.99 a month or $69.99 a year with a 14-day free trial on the annual plan (app/paywall.tsx and website pricing, read 2026-11-20). Pro adds the daily AI briefing and coach chat, full history, patterns and CSV export, the 3-day forecast, training and nutrition guidance, overtraining and HRV-drop alerts, the weekly report. Billed by Apple. Prices are US prices on the date read.
+- AI features send the relevant metrics to Anthropic's Claude; the score itself is computed on device (App Store description).
+- General wellness app, not a medical device; no medical claims.
+- Evidence limits: no clinical validation study of the score exists. The publisher has not tested competitor apps or devices hands-on. The app has 0 public App Store ratings as of 2026-11-19, so do not cite ratings or user counts.

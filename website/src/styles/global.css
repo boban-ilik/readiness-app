@@ -455,12 +455,24 @@ details p { margin-top: 14px; font-size: 0.95rem; }
   font-size: 1.45rem; font-weight: 700;
   margin: 40px 0 14px;
 }
+.post-body h3 { font-size: 1.15rem; font-weight: 700; margin: 28px 0 10px; }
 .post-body p { margin: 0 0 20px; }
-.post-body ul { margin: 0 0 20px 22px; }
+.post-body ul, .post-body ol { margin: 0 0 20px 22px; }
 .post-body li { margin-bottom: 10px; }
 .post-body strong { color: var(--text-primary); }
 .post-body em { color: var(--text-primary); font-style: italic; }
 .post-body a { text-decoration: underline; text-underline-offset: 3px; }
+/* Tables scroll sideways inside the article instead of widening the page on phones. */
+.post-body table {
+  display: block; max-width: 100%; overflow-x: auto;
+  border-collapse: collapse; margin: 0 0 24px;
+  font-size: 0.9rem; line-height: 1.5;
+}
+.post-body th, .post-body td {
+  padding: 8px 12px; border: 1px solid var(--border-subtle);
+  text-align: left; vertical-align: top; min-width: 6rem;
+}
+.post-body th { color: var(--text-primary); background: var(--bg-secondary); }
 
 .post-cta {
   margin: 56px 0 48px;

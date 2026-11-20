@@ -1,0 +1,94 @@
+<!-- capture: Apple Support 108906 sleep | url: https://support.apple.com/en-us/108906 | fetched: 2026-11-20 by curl (browser User-Agent), HTTP 200 | extraction: deterministic HTML-to-text (BeautifulSoup/lxml script), no model summarisation | publisher: Apple -->
+
+# Track your sleep on Apple Watch and use Sleep on iPhone
+
+Create personalized sleep schedules to help meet your sleep goals and improve your overall health.
+
+## Here's what you need
+
+- An iPhone with [the latest version of iOS](https://support.apple.com/en-us/118575).
+- An Apple Watch with [the latest version of watchOS](https://support.apple.com/en-us/108926).
+- Make sure you charge your Apple Watch to at least 30% before bed with Sleep Tracking on Apple Watch enabled.
+- Wear your Apple Watch to sleep for at least 1 hour.
+
+## Set up Sleep
+
+Getting enough sleep is important to your overall health. The Health app on iPhone can help you set a sleep goal and create a customized sleep schedule.
+
+1. Open the Health app on your iPhone.
+2. Tap Get Started under Set Up Sleep1, then tap Next.
+  ![An iPhone that shows the Sleep screen in the Health app with a blue Get Started button to set up Sleep.](https://cdsassets.apple.com/live/7WUAS350/images/health/ios-27-iphone-17-pro-health-browse-set-up-sleep.png)
+3. Follow the onscreen prompts to establish:
+
+- **Sleep Goals:** Set the number of hours you'd like to spend asleep. You can [adjust your sleep goal and wind down](https://support.apple.com/guide/iphone/iph304a683a0)as needed.
+- **Bedtime and Wake Up times:**Set when you'd like to go to bed and wake up.
+- **Sleep Focus:** Simplify your Lock Screen and turn on Sleep Focus at your scheduled bedtime to reduce distractions. You can also give certain people or apps permission to notify you.
+- **Track Sleep with Apple Watch:**Wear your watch to bed to track your sleep. This option is available during setup if you've paired your Apple Watch with your iPhone beforehand. If you pair your Apple Watch after setup, you can still [turn on Track Sleep with Apple Watch](#results) later.
+
+## Edit your sleep schedule
+
+You can make changes to your full sleep schedule or for Next Wake Up Only. With Next Wake Up Only, the changes you make apply only to the following day. Changes made to your full schedule apply to all future days. You can also [edit your sleep schedule on Apple Watch](https://support.apple.com/guide/watch/apd830528336).
+
+### Update Next Wake Up Only
+
+1. Open the Health app, then tap the Browse tab at the bottom of the screen.
+2. Tap Sleep, then tap Sleep. If you have Sleep saved to your Favorites list, you can access it from the Summary page in the Health app.
+3. Tap Edit under the sleep schedule under Your Schedule.
+4. Drag the curved slider to set Bedtime and Wake Up times. The slider turns orange if the schedule doesn't meet your sleep goal.
+5. Tap Alarm to turn on the alarm and adjust your alarm sound, volume, and haptics.
+  ![An iPhone that shows the Next Wake Up Only screen with a sleep schedule set for 8
+hours and 30 minutes.](https://cdsassets.apple.com/live/7WUAS350/images/health/ios-27-iphone-17-pro-health-browse-sleep-update-next-wakeup.png)
+6. Tap the Done button![](https://cdsassets.apple.com/live/7WUAS350/images/inline-icons/checkmark-circle-fill-blue-icon.png) to save your changes.
+
+You can also change your next Wake Up alarm from the Clock app.
+
+### Update your full schedule
+
+1. Open the Health app, then tap the Browse tab at the bottom of the screen.
+2. Tap Sleep, then tap Sleep.
+3. Tap a schedule in Full Schedule & Options.
+4. Tap Edit under the schedule you would like to update.
+5. Tap the Days Active and drag the curved slider to set Bedtime and Wake Up times. The slider turns orange if the schedule doesn't meet your sleep goal.
+  ![An iPhone that shows the Edit Your Schedule screen with a sleep schedule set for 8 hours
+and 30 minutes Monday through Friday.](https://cdsassets.apple.com/live/7WUAS350/images/health/ios-27-iphone-17-pro-health-browse-sleep-update-full-schedule.png)
+6. Tap Alarm to turn on an alarm and adjust your alarm sound, volume, and haptics.
+7. Tap the Done button![](https://cdsassets.apple.com/live/7WUAS350/images/inline-icons/checkmark-circle-fill-blue-icon.png) to save your changes.
+
+You can also turn off your sleep schedule as needed. In the Health app, tap the Browse tab. Tap Sleep, then tap Full Schedule & Options. Then tap Sleep Schedule at the top of the screen to turn your schedule off or on.
+
+## View your Sleep Score
+
+Every morning after you wake up, you'll receive a Sleep Score rating from 0-100. This is based on your previous night's sleep. Your score is based on sleep duration (50 points), bedtime consistency (30 points), and interruptions (20 points). Bedtime consistency considers when you fell asleep during the last 13 nights. Interruptions looks at both the quality and duration of moments you were awake during your sleep.
+
+If you're in the Health app on your iPhone, tap the Browse tab at bottom of the screen, then tap Sleep. If you're in the Health app on your iPad, tap the sidebar button![](https://cdsassets.apple.com/live/7WUAS350/images/inline-icons/sidebar-left-icon.png) to open the sidebar, then tap Sleep.
+
+![An iPhone with a Sleep Score rating of 93.](https://cdsassets.apple.com/live/7WUAS350/images/health/ios-27-iphone-17-pro-health-sleep-sleep-score.png)
+Your total score ranges from Very Low to Very High. Tap your Sleep Score, then tap the info icon![](https://cdsassets.apple.com/live/7WUAS350/images/inline-icons/info-circle-fill-icon.png) to learn more about it and how it's calculated.
+
+## View your sleep history
+
+To receive sleep data, you must turn on Track Sleep with Apple Watch. You must also wear your Apple Watch for at least 1 hour each night. If you don't wear your Apple Watch to sleep, your graph might not show any data.
+
+To view your sleep history and sleep stages data, open the Health app on your iPhone or iPad. If you're on your iPhone, tap the Browse tab at bottom of the screen. If you're on your iPad, tap the sidebar button![](https://cdsassets.apple.com/live/7WUAS350/images/inline-icons/sidebar-left-icon.png) to open the sidebar, then tap Sleep. If you have Sleep saved as a favorite, you can access it from the Summary page in the Health app.
+
+![An iPhone that shows a graph with the total time spent asleep for a previous night, as well as the time spent in each sleep stage.](https://cdsassets.apple.com/live/7WUAS350/images/health/ios-27-iphone-17-pro-health-browse-sleep-history.png)
+The bar graph defaults to D for daily. Tap W at the top of the chart to view your sleep history for the past week. You can also tap M or 6M to view your history for the past month or 6 months. Tap Show More Sleep Data and select a category to review additional sleep details.
+
+- **Stages:**You can view the time and percentage you spent Awake or in REM, Core, or Deep sleep. Learn more about [the validation of sleep stages](https://www.apple.com/healthcare/docs/site/Estimating_Sleep_Stages_from_Apple_Watch_Sept_2023.pdf).
+- **Amounts:**View your Sleep Duration details such as your Sleep Goal and Time Asleep.
+- **Comparisons:** View your Heart Rate and Respiratory Rate in relation to your time spent asleep.2 If you have Apple Watch Series 8 or later or any model of Apple Watch Ultra, you can also compare changes in your [nightly wrist temperature data](https://support.apple.com/en-us/102674).
+
+You can also view your recent sleep score and sleep data on your Apple Watch. Open the Sleep app on your watch, then turn the Digital Crown. You can view your Sleep Stages data, Time Asleep, and your Sleep Duration for the last 14 days.
+
+## Get more accurate results
+
+To get the most accurate results when wearing your watch to sleep:
+
+- Turn on Charging Reminders. On your iPhone, open the Watch app and tap the My Watch tab, then tap Sleep. Tap Charging Reminders to turn on a reminder on your Apple Watch to charge before your Wind Down time. If your watch battery dies, it won't track your sleep data.
+- Make sure that you're wearing your Apple Watch at a comfortable fit. If your watch is too loose, the accelerometer might register too much movement during your natural sleep.
+
+1. Sleep is not available on watches that were set up using Apple Watch For Your Kids (formerly known as Family Setup).
+2. Respiratory Rate is not available for users under 13 years old.
+
+Published Date: September 14, 2026
+
