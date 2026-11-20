@@ -1,0 +1,66 @@
+{
+ "status": "benchmarked",
+ "rationale": "The three highest-ranking articles for the query were captured in full and benchmarked by passage (research.md section 3): 9to5Mac (position 2), CNET (position 5) and Garage Gym Reviews (position 7). The Reddit megathread and discussion threads (positions 3 and 6) and a video (position 8) are excluded by format and access and are unread. Positions 9, 10 and 11 were captured and read but rank below three suitable pages; Lifestack (11), the only captured page that covers Series 12, is held as supporting evidence. The user approved the angle and this set at Checkpoint A on 2026-11-20.",
+ "evidence_ref": "research.md#serp-and-competitor-benchmark",
+ "ranking_evidence": {
+  "basis": "observed_serp",
+  "reference": "Ahrefs SERP overview, keyword 'whoop vs apple watch', US, retrieved 2026-11-20 by the orchestrator via the Ahrefs MCP serp-overview tool (Ahrefs update 2026-11-17T02:20:00Z), stored at .runtime/serp-whoop-vs-apple-watch-us.json",
+  "inspection_complete": true,
+  "inspected_results": [
+   {
+    "url": "https://9to5mac.com/2026/05/08/apple-watch-vs-whoop-heres-what-i-learned-after-60-days-wearing-both-video/",
+    "observed_position": 2,
+    "disposition": "selected",
+    "reason": "First organic result and AI Overview source; head-to-head with a verdict. Captured in full."
+   },
+   {
+    "url": "https://www.reddit.com/r/whoop/comments/1scr43n/whoop_vs_apple_watch_megathread_updated_quarterly/",
+    "observed_position": 3,
+    "disposition": "excluded",
+    "reason": "Discussion megathread, not an article; Reddit blocks automated access here and was not worked around. Unread."
+   },
+   {
+    "url": "https://www.cnet.com/tech/mobile/apple-watch-vs-whoop-band-buying-guide/",
+    "observed_position": 5,
+    "disposition": "selected",
+    "reason": "Second-ranking article and AI Overview source; buying-guide comparison. Captured in full."
+   },
+   {
+    "url": "https://www.reddit.com/r/whoop/comments/1p6re4x/whoop_vs_apple_watch_is_both_the_answer/",
+    "observed_position": 6,
+    "disposition": "excluded",
+    "reason": "Discussions block at position 6 holding this Reddit thread and a MacRumors forum thread (https://forums.macrumors.com/threads/apple-watch-vs-whoop-strap.2258656/). Forum threads, not articles. Titles only; unread."
+   },
+   {
+    "url": "https://www.garagegymreviews.com/whoop-vs-apple-watch",
+    "observed_position": 7,
+    "disposition": "selected",
+    "reason": "Third-ranking article and AI Overview source; the most structured X vs Y page. Captured in full."
+   },
+   {
+    "url": "https://www.youtube.com/watch?v=VCM7vpKBsk4",
+    "observed_position": 8,
+    "disposition": "excluded",
+    "reason": "Video, not an article."
+   },
+   {
+    "url": "https://powermoves.blog/health/whoop-vs-apple/",
+    "observed_position": 9,
+    "disposition": "excluded",
+    "reason": "Captured and read in full; ranks below three suitable pages."
+   },
+   {
+    "url": "https://www.ambitiousathletics.com/blog/whoop-vs-apple-watch",
+    "observed_position": 10,
+    "disposition": "excluded",
+    "reason": "Captured; a short gym blog post ranking below three suitable pages."
+   },
+   {
+    "url": "https://lifestack.ai/blog/whoop-vs-apple-watch",
+    "observed_position": 11,
+    "disposition": "excluded",
+    "reason": "Captured and read; the only page covering Series 12, held as supporting evidence. Ranks below three suitable pages."
+   }
+  ]
+ }
+}

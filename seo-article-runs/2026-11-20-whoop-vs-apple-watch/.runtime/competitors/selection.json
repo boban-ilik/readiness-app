@@ -1,0 +1,32 @@
+{
+  "query": "whoop vs apple watch",
+  "locale": "US English",
+  "provider": "ahrefs serp-overview (orchestrator-supplied, retrieved 2026-11-20, Ahrefs update 2026-11-17)",
+  "captured_at": "2026-11-20",
+  "pages": [
+    {
+      "url": "https://9to5mac.com/2026/05/08/apple-watch-vs-whoop-heres-what-i-learned-after-60-days-wearing-both-video/",
+      "title": "Apple Watch vs WHOOP: Here's what I learned after 60 days wearing both [Video] (9to5Mac)",
+      "observed_position": 2,
+      "selection_basis": "observed_rank",
+      "reason": "First organic result and an AI Overview source. A head-to-head article whose job matches the reader task (which one, and do I need both): design philosophy, battery, sensors, app experience, price and subscription, verdict. It is also the page that already makes the 'an app closes the gap' argument (Bevel), so it is the direct test of the intake's one-line direction. Hands-on, 60 days, Apple Watch Ultra 2 and WHOOP MG; published 2026-05-08, before Series 12 and Apple's Readiness app.",
+      "capture_path": "9to5mac-apple-watch-vs-whoop.md"
+    },
+    {
+      "url": "https://www.cnet.com/tech/mobile/apple-watch-vs-whoop-band-buying-guide/",
+      "title": "Apple Watch vs. Whoop Band: Here's Which Wearable to Buy (CNET)",
+      "observed_position": 5,
+      "selection_basis": "observed_rank",
+      "reason": "Second-highest ranking article (positions 3 and 6 are Reddit and forum threads) and an AI Overview source. Buying-guide comparison: price and subscription table, wear positions, what each does with the same biomarkers, AI coach, a chest-strap heart-rate check, health and safety features, battery, bottom line. Hands-on, two months, Apple Watch Series 11 and Whoop MG; published 2026-04-17. Its tier table (One on Whoop 4.0, 5-day battery) no longer matches Whoop's US pages, which is a freshness gap to record.",
+      "capture_path": "cnet-apple-watch-vs-whoop-band.md"
+    },
+    {
+      "url": "https://www.garagegymreviews.com/whoop-vs-apple-watch",
+      "title": "WHOOP vs Apple Watch: Is Screen-Free Fitness Tracking the Superior Choice? (Garage Gym Reviews)",
+      "observed_position": 7,
+      "selection_basis": "observed_rank",
+      "reason": "Third-highest ranking article and an AI Overview source. The most structured X-vs-Y page in the set: at-a-glance table, similarities and differences, price, design, battery, workout tracking, sleep, smartwatch features, policies, choose-if lists, FAQ. Updated 2026-09-29 and the only selected page that mentions Series 12 exists (editor's note; still compares Series 11). Team-tested with quoted testers.",
+      "capture_path": "garagegymreviews-whoop-vs-apple-watch.md"
+    }
+  ]
+}

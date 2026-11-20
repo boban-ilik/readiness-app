@@ -1,0 +1,93 @@
+# Update your Apple Watch - Apple Support
+
+Source URL: https://support.apple.com/en-us/108926
+Publisher: Apple (vendor's own page).
+Captured: 2026-11-20 via curl (browser User-Agent, HTTP 200) and deterministic stdlib HTML-to-text extraction (headings, paragraphs, list items, table cells, links as [anchor -> URL], image alt text and paths). Navigation, scripts and footer chrome omitted. US edition.
+
+---
+
+# Update your Apple Watch
+You can get the latest version of watchOS directly on your Apple Watch, or use your iPhone to update.
+## Check your Apple Watch compatibility
+First, make sure that your Apple Watch works with the latest software. watchOS 27 is compatible with these Apple Watch models:
+-
+Apple Watch SE 3
+-
+Apple Watch Series 9 and later
+-
+Apple Watch Ultra 2 and later
+If your Apple Watch isn't compatible with the latest version of watchOS, Software Update will show you the newest version that your watch can use.
+Not all watchOS 27 features are available on all devices. Updating to watchOS 27 requires iPhone 11 or later, or iPhone SE (2nd generation) or later, with iOS 27. Identify which [Apple Watch -> https://support.apple.com/108056] or [iPhone -> https://support.apple.com/108044] model you have.
+## Get ready to update
+Next, check these things:
+-
+Make sure that your [iPhone is updated to the latest version of iOS -> https://support.apple.com/118575].
+-
+Make sure that your [Apple Watch is at least 50 percent charged -> https://support.apple.com/108760].
+-
+Make sure that your [iPhone is connected to Wi-Fi -> https://support.apple.com/111107].
+-
+If your iPhone has a VPN (virtual private network) installed, turn it off while updating your Apple Watch. [Connecting through a VPN -> https://support.apple.com/en-us/102281] can block some connections required for the update.
+Keep your iPhone near your Apple Watch throughout the update. It could take from several minutes to an hour for the update to complete, so you might want to update overnight or wait until you have time.
+## Update your Apple Watch using your iPhone
+You can wait until Apple Watch notifies you when a new update is available. Tap Update Tonight in the notification, then go to your iPhone to confirm that you want to update overnight. At the end of the day, leave your Apple Watch and iPhone charging overnight so the update can complete.
+Or you can update your Apple Watch with your iPhone manually:
+-
+On your iPhone, open the Apple Watch app, then tap the My Watch tab.
+-
+Tap General, then tap Software Update.
+[image: iPhone screen shows the Apple Watch app's Software Update screen with a notification badge. | https://cdsassets.apple.com/live/7WUAS350/images/apple-watch/ios-26-iphone-16-pro-settings-general-software-update-available.png]
+-
+Download the update. If asked for your iPhone passcode or Apple Watch passcode, enter it.
+-
+Wait for the progress wheel to appear on your Apple Watch. It could take from several minutes to an hour for the update to complete.
+Leave your Apple Watch on its charger while the update completes. Don't restart your iPhone or Apple Watch, and don't quit the Apple Watch app. When the update completes, your Apple Watch restarts on its own.
+## Update directly on your Apple Watch
+You can install updates without your iPhone:
+-
+Make sure that your [watch is connected to Wi-Fi -> https://support.apple.com/111818].
+-
+Open the Settings app.
+-
+Tap General, then tap Software Update.
+-
+Tap Install if a software update is available, then follow the onscreen instructions.
+Leave your Apple Watch on its charger while the update completes, and don't restart your Apple Watch. When the update completes, your Apple Watch restarts on its own.
+## Some iPhone updates might require that you update your Apple Watch
+It's important to keep your Apple devices up to date so that they have the latest bug fixes and security enhancements.
+Some iOS updates on your iPhone require that you also update watchOS on your Apple Watch. So if you see an alert on your iPhone that says "Update Apple Watch" and "Your Apple Watch software is out of date," you should update to the latest version of watchOS so that your data, including Activity data, continues to sync to your iPhone.
+## Need more help with updating?
+Try these steps:
+-
+Make sure that your Apple Watch is [connecting properly to its charger -> https://support.apple.com/108927].
+-
+[Restart your Apple Watch -> https://support.apple.com/guide/watch/apd521a8a902].
+-
+[Restart your paired iPhone -> https://support.apple.com/118259].
+-
+Make sure your iPhone isn't connected to a VPN.
+-
+Try again to update your Apple Watch.
+If the update won't start:
+-
+Open the Apple Watch app on your iPhone.
+-
+Tap General, then tap Storage.
+-
+Delete the update file.
+-
+Try again to update your Apple Watch.
+Learn what to do [if you see 'Cannot Install Update' when updating Apple Watch -> https://support.apple.com/102407] or [if your Apple Watch says you need more available storage -> https://support.apple.com/102407] to install a watchOS update.
+### If you installed an iOS or watchOS beta or developer seed
+If you installed beta software on your iPhone or Apple Watch, you need to remove the beta profile before you can update to the next major software version:
+-
+Open the Apple Watch app on your iPhone, then tap the My Watch tab. Go to General, then tap Profiles. Tap the beta profile that you want to remove, then tap Delete Profile. Enter your iPhone passcode if requested.
+-
+Open the Settings app on your iPhone. Tap General, then tap Profiles & Device Management. Tap the beta profile that you want to remove, then tap Delete profile. Enter your iPhone passcode if requested.
+After you remove the profiles, restart both devices and check for the update again.
+## Need more help?
+Tell us more about what's happening, and we’ll suggest what you can do next.
+[Get suggestions -> https://getsupport.apple.com/?caller=ikb]
+Published Date: November 12, 2026
+Helpful?
+Thanks for your feedback.
